@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="ca"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Carpe Boletum</title>
+<meta name="description" content="Quan anar a buscar ceps i ous de reig, amb la pluja de cada dia.">
+<meta name="theme-color" content="#132417">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Carpe Boletum">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: dues pestanyes (Llocs, Mapa). Cada lloc s'obre en una fitxa amb el calendari d'un mes: aigua en blau, dies de bolets en verd */
+:root{
+  --bg:#E9EDE2; --surface:#F8FAF3; --surface2:#EFF2E8; --ink:#1C2218; --muted:#5D6655; --line:#D0D7C4;
+  --moss:#3E5B2B; --on-moss:#F8FAF3;
+  --go:#2E8B4B; --go-soft:#CDEBD5; --soon:#A86F08; --soon-soft:#F6E7C6; --wait:#7E857A; --wait-soft:#E3E6DE;
+  --rain:#2F67A6; --rain-soft:#D6E5F4; --obaga:#3468C8; --solana:#E88430; --cep:#7A4A2A; --sun:#D98A0B;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10140D; --surface:#192015; --surface2:#222B1D; --ink:#E5EADD; --muted:#9BA591; --line:#2F3A28;
+  --moss:#A3C982; --on-moss:#14190F;
+  --go:#5FC683; --go-soft:#1F4A2C; --soon:#E6AD45; --soon-soft:#3A2E14; --wait:#868E7F; --wait-soft:#262B22;
+  --rain:#7FB0E0; --rain-soft:#1D2D3D; --cep:#D9A57E; --sun:#F0B54A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10140D; --surface:#192015; --surface2:#222B1D; --ink:#E5EADD; --muted:#9BA591; --line:#2F3A28;
+  --moss:#A3C982; --on-moss:#14190F;
+  --go:#5FC683; --go-soft:#1F4A2C; --soon:#E6AD45; --soon-soft:#3A2E14; --wait:#868E7F; --wait-soft:#262B22;
+  --rain:#7FB0E0; --rain-soft:#1D2D3D; --cep:#D9A57E; --sun:#F0B54A; color-scheme:dark}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:520px;margin:0 auto;padding-block:14px calc(130px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+body{padding-top:env(safe-area-inset-top,0px)}
+a.btn{text-decoration:none;text-align:center;display:inline-block}
+.coords{font-family:var(--f-data);font-size:13px;color:var(--muted)}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+.mono{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.small{font-size:13.5px;color:var(--muted)}
+.topbar{display:flex;align-items:center;gap:10px}
+.topbar h1{font-size:24px;font-weight:800;line-height:1;font-style:italic;letter-spacing:-.02em}
+.brand{display:flex;flex-direction:column;gap:3px}
+.brand .tag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.logo{flex:none;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.spacer{flex:1}
+.row{display:flex;align-items:center;gap:10px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--moss);outline-offset:2px}
+.iconbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.btn{border:0;border-radius:14px;padding:13px 16px;font-weight:800;background:var(--moss);color:var(--on-moss);font-family:var(--f-display);font-size:17px}
+.btn.ghost{background:var(--surface2);color:var(--ink);border:1px solid var(--line);font-family:var(--f-body);font-size:15px;font-weight:700;padding:9px 13px}
+.btn:disabled{opacity:.45}
+.chip{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;border-radius:999px;padding:4px 11px;white-space:nowrap}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.s-go{color:var(--go);background:var(--go-soft)} .s-soon{color:var(--soon);background:var(--soon-soft)} .s-wait{color:var(--wait);background:var(--wait-soft)}
+
+/* Sol */
+.sun{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
+.sun strong{font-family:var(--f-display);font-size:18px}
+
+/* Llista de llocs */
+.spot{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px;text-align:left;width:100%}
+.spot .name{font-family:var(--f-display);font-weight:800;font-size:21px}
+.spot .what{font-size:15.5px}
+.strip{display:grid;grid-template-columns:repeat(21,1fr);gap:2px;align-items:end;width:100%}
+.strip i{display:block;height:20px;border-radius:3px;background:var(--surface2);position:relative}
+.strip i.b{background:var(--go-soft);box-shadow:inset 0 0 0 1.5px var(--go)}
+.strip i.p{background:var(--go)}
+.strip i.t{outline:2px solid var(--ink);outline-offset:1px}
+.strip i u{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:var(--rain);text-decoration:none;box-shadow:0 0 0 1.5px var(--surface)}
+.strip i u.f{opacity:.5}
+.striplab{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);width:100%}
+.last{font-size:13.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+
+/* Fitxa */
+.back{background:none;border:0;padding:0;color:var(--moss);font-weight:800;align-self:flex-start;font-size:16px}
+.big{font-family:var(--f-display);font-weight:800;font-size:28px;line-height:1.08}
+.cal-head{display:flex;align-items:center;gap:8px}
+.cal-head h3{font-size:18px;flex:1;text-align:center}
+.cal-head button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);font-weight:800;font-size:18px}
+.cal-head button:disabled{opacity:.35}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .wd{font-size:11px;color:var(--muted);text-align:center;font-weight:700}
+.day{position:relative;aspect-ratio:1/1.15;border-radius:10px;background:var(--surface2);border:0;padding:3px 0 0;display:flex;flex-direction:column;align-items:center;font-size:12px;min-width:0}
+.day .n{font-weight:700;line-height:1.1}
+.day.bol{background:var(--go-soft)}
+.day.bol .n{color:var(--go)}
+.day.top{background:var(--go)}
+.day.top .n{color:#fff}
+.day.top .drop{opacity:1;filter:brightness(2.2)}
+.day.top .drop span{color:#fff}
+.day.out{opacity:.4}
+.day.today{outline:2.5px solid var(--ink);outline-offset:1px}
+.day.sel{box-shadow:0 0 0 3px var(--moss) inset}
+.day .drop{display:flex;flex-direction:column;align-items:center;margin-top:auto;margin-bottom:3px;line-height:1}
+.day .drop span{font-family:var(--f-data);font-size:10px;color:var(--rain);font-weight:500}
+.day .drop.f{opacity:.5}
+.day .c{position:absolute;top:2px;right:2px;font-size:9.5px;font-weight:800;color:#fff;background:var(--cep);border-radius:999px;min-width:15px;height:15px;line-height:15px;text-align:center;padding:0 2px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:13px;height:13px;border-radius:4px;display:inline-block;flex:none}
+.daynote{background:var(--surface2);border-radius:12px;padding:10px 12px;font-size:15px}
+.facebar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--surface2)}
+.facebar i{display:block;height:100%}
+
+/* Diari */
+.sheet{display:flex;flex-direction:column;gap:12px}
+.stepper{display:flex;align-items:center;gap:14px;justify-content:center}
+.stepper button{width:46px;height:46px;border-radius:50%;background:var(--surface2);border:1px solid var(--line);font-size:24px;font-weight:700}
+.stepper output{font-family:var(--f-display);font-size:46px;font-weight:800;min-width:70px;text-align:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.opt{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:7px 12px;font-weight:700;font-size:14px}
+.opt[aria-pressed="true"]{background:var(--moss);color:var(--on-moss);border-color:var(--moss)}
+label{font-size:13px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px}
+input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px;box-sizing:border-box;width:100%}
+.visit{display:flex;gap:10px;align-items:baseline;border-top:1px solid var(--line);padding-top:8px;font-size:15px}
+.visit:first-of-type{border-top:0;padding-top:0}
+
+/* Mapa */
+.mapbox{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line)}
+#map{width:100%;height:62vh;min-height:400px;max-height:700px;background:#e8e8e2}
+.layerbar{display:flex;gap:6px;flex-wrap:wrap}
+.pin{display:flex;flex-direction:column;align-items:center}
+.pin b{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:block;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.pin em{font-style:normal;font-weight:800;font-size:12px;background:#fff;color:#1c2218;border-radius:6px;padding:1px 6px;margin-top:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tapmark{width:14px;height:14px;border-radius:50%;border:3px solid #fff;background:#7A2E8E;box-shadow:0 0 0 2px #7A2E8E}
+.vtx{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #7A2E8E}
+.leaflet-container .gris img,.leaflet-container img.gris{filter:grayscale(1) contrast(.75) brightness(1.18)}
+.leaflet-container img.multi{mix-blend-mode:multiply}
+
+/* Com funciona */
+.how p,.how li{font-size:15.5px}
+.how ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.slider{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.slider label{margin:0}
+.slider output{font-family:var(--f-data)}
+.slider input{grid-column:1/-1;width:100%;accent-color:var(--moss)}
+
+/* Pestanyes */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:2000;
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.tabs nav{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr}
+.tabs button{background:none;border:0;padding:10px 0 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:13px;font-weight:800;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--moss)}
+.tabs svg{width:24px;height:24px}
+.screen{display:flex;flex-direction:column;gap:12px}
+
+/* Leaflet (subconjunt mínim de leaflet.css 1.9.4) */
+.leaflet-pane,.leaflet-marker-icon,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;-webkit-tap-highlight-color:transparent;font-family:var(--f-body)}
+.leaflet-container img.leaflet-image-layer{max-width:none!important;max-height:none!important}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{touch-action:none}
+.leaflet-marker-icon,.leaflet-image-layer{user-select:none;-webkit-user-drag:none}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-marker-pane{z-index:600}
+.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}
+.leaflet-zoom-animated{transform-origin:0 0}
+.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}
+.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:grab}.leaflet-dragging .leaflet-grab{cursor:grabbing}
+.leaflet-control{position:relative;z-index:800;pointer-events:auto;float:left;clear:both}
+.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}
+.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}
+.leaflet-right .leaflet-control{float:right}
+.leaflet-top .leaflet-control{margin-top:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-bottom .leaflet-control{margin-bottom:6px}
+.leaflet-bar{border-radius:10px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.35)}
+.leaflet-bar a{display:block;width:38px;height:38px;line-height:38px;text-align:center;background:var(--surface);color:var(--ink);text-decoration:none;font:700 20px var(--f-body);border-bottom:1px solid var(--line)}
+.leaflet-bar a:last-child{border-bottom:0}
+.leaflet-control-attribution{background:rgba(255,255,255,.85);padding:1px 6px;font-size:10.5px;color:#444;border-radius:6px}
+.leaflet-div-icon{background:none;border:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22402A"/><stop offset="1" stop-color="#132417"/></linearGradient>
+    <radialGradient id="sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#E8962E"/></radialGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A5530"/><stop offset=".55" stop-color="#5A3219"/><stop offset="1" stop-color="#3A1F10"/></linearGradient>
+    <linearGradient id="stem" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E9DDC2"/><stop offset=".5" stop-color="#FBF5E8"/><stop offset="1" stop-color="#DCCDAA"/></linearGradient>
+    <clipPath id="r"><rect width="64" height="64" rx="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="64" height="64" fill="url(#bg)"/>
+    <circle cx="46" cy="52" r="15" fill="url(#sun)" opacity=".95"/>
+    <path d="M0 55 Q16 50 32 54 T64 52 V64 H0Z" fill="#0E1A10"/>
+    <path d="M22 37 C20.5 45 20 52 23 57 C26.5 60.5 37.5 60.5 41 57 C44 52 43.5 45 42 37 Z" fill="url(#stem)"/>
+    <g fill="none" stroke="#C2AE84" stroke-width=".9" opacity=".9">
+      <path d="M24 41 l4 3 4-3 4 3 4-3"/><path d="M23.5 46 l4.2 3 4.3-3 4.3 3 4.2-3"/><path d="M23.6 51 l4.2 3 4.2-3 4.2 3 4.2-3"/>
+    </g>
+    <path d="M7 34 C7 19 19 9 32 9 C45 9 57 19 57 34 C57 37.5 54 39 50 39 H14 C10 39 7 37.5 7 34 Z" fill="url(#cap)"/>
+    <path d="M10.5 37.5 H53.5 C52 39.5 50.5 40 48 40 H16 C13.5 40 12 39.5 10.5 37.5Z" fill="#D9C98F"/>
+    <ellipse cx="23" cy="20" rx="9" ry="4.5" transform="rotate(-24 23 20)" fill="#fff" opacity=".18"/>
+  </g>
+</svg>
+    <div class="brand"><h1>Carpe Boletum</h1><span class="tag">radar de ceps</span></div><span class="spacer"></span>
+    <button class="iconbtn" id="howbtn" aria-label="Com funciona"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
+  </header>
+  <section class="screen" id="s-llocs"><p class="small">Carregant…</p></section>
+  <section class="screen" id="s-fitxa" hidden></section>
+  <section class="screen" id="s-mapa" hidden></section>
+  <section class="screen" id="s-com" hidden></section>
+</div>
+<div class="tabs"><nav role="tablist">
+  <button role="tab" data-t="llocs" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Llocs</button>
+  <button role="tab" data-t="mapa" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Mapa</button>
+</nav></div>
+
+<script src="vendor/leaflet.js"></script>
+<script>
+(async function(){
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem('rc3-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('rc3-'+k,JSON.stringify(v))}catch(e){}}};
+const DAY=86400000;
+const dnum=s=>Math.round(Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10))/DAY);
+const dstr=n=>new Date(n*DAY).toISOString().slice(0,10);
+const D=n=>new Date(n*DAY);
+const fmt=(n,o)=>D(n).toLocaleDateString('ca-ES',Object.assign({day:'numeric',month:'short',timeZone:'UTC'},o||{}));
+const wdn=n=>D(n).toLocaleDateString('ca-ES',{weekday:'short',timeZone:'UTC'}).replace('.','');
+const _t=new Date();const TODAY=dnum(`${_t.getFullYear()}-${String(_t.getMonth()+1).padStart(2,'0')}-${String(_t.getDate()).padStart(2,'0')}`);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- Dades ---------- */
+const j=u=>fetch(u).then(r=>{if(!r.ok)throw new Error(u);return r.json()});
+let META,HIST,G,PRIV=null;
+try{
+  [META,HIST]=await Promise.all([j('data/meta.json'),j('data/hist.json')]);
+  const buf=await fetch('data/grid.bin').then(r=>{if(!r.ok)throw new Error('grid');return r.arrayBuffer()});
+  const [gw,gh]=META.grid,n=gw*gh;let o=0;const take=(T,b)=>{const a=new T(buf.slice(o,o+n*b));o+=n*b;return a};
+  G={gw,gh,elev:take(Uint16Array,2),slope:take(Uint8Array,1),asp:take(Uint16Array,2),sec:take(Uint8Array,1),cov:take(Uint8Array,1),rock:take(Uint8Array,1),rdesc:take(Int16Array,2)};
+}catch(e){$('#s-llocs').innerHTML='<div class="card">No s\'han pogut carregar les dades. Torna a obrir l\'app amb connexió.</div>';return}
+
+/* ---------- Clau dels llocs: va dins l'enllaç (#k=...) i es guarda al mòbil ---------- */
+addEventListener('hashchange',()=>{if(/[#&]k=/.test(location.hash))location.reload()});
+const hk=new URLSearchParams(location.hash.slice(1)).get('k');
+if(hk){try{localStorage.setItem('cb-key',hk)}catch(e){}history.replaceState(null,'',location.pathname+location.search)}
+async function unlock(key){
+  const e=await j('data/llocs.enc.json'),u=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(key),'PBKDF2',false,['deriveKey']);
+  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:u(e.salt),iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u(e.iv)},k,u(e.data))))}
+let KEY=null;try{KEY=localStorage.getItem('cb-key')}catch(e){}
+try{if(KEY)PRIV=await unlock(KEY)}catch(e){PRIV=null}
+if(!PRIV){
+  document.querySelector('.tabs').hidden=true;$('#howbtn').hidden=true;
+  $('#s-llocs').innerHTML=`<div class="card"><strong style="font-family:var(--f-display);font-size:20px">Aquesta app és privada</strong>
+   <p>Obre-la amb l'enllaç que t'han passat. Si el tens copiat, enganxa'l aquí:</p>
+   <form id="keyf" class="sheet"><textarea id="keyin" rows="2" placeholder="Enganxa l'enllaç"></textarea><button class="btn">Entrar</button></form>
+   ${KEY?'<p class="small" style="color:#c55">Aquesta clau no és correcta.</p>':''}</div>`;
+  $('#keyf').onsubmit=ev=>{ev.preventDefault();const v=$('#keyin').value.trim();const m=v.match(/[#&]k=([\w-]+)/);try{localStorage.setItem('cb-key',m?m[1]:v)}catch(e){}location.reload()};
+  return}
+const [[S_,W_],[N_,E_]]=META.bounds;const mY=lat=>Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
+G.w=W_;G.e=E_;G.ny=mY(N_);G.sy=mY(S_);
+const forestSet=new Set(META.forest_ids);
+const cellOf=(lat,lng)=>{const x=Math.floor((lng-G.w)/(G.e-G.w)*G.gw),y=Math.floor((G.ny-mY(lat))/(G.ny-G.sy)*G.gh);return(x<0||y<0||x>=G.gw||y>=G.gh)?-1:y*G.gw+x};
+const cellLL=i=>{const x=i%G.gw,y=Math.floor(i/G.gw);const my=G.ny-(y+.5)/G.gh*(G.ny-G.sy);return[(2*Math.atan(Math.exp(my))-Math.PI/2)*180/Math.PI,G.w+(x+.5)/G.gw*(G.e-G.w)]};
+const DIRS=['nord','nord-est','est','sud-est','sud','sud-oest','oest','nord-oest','pla'];
+const coverName=k=>{const s=(META.cover_names[k]||'').replace(/^[\d.]+\s*\(\d+\)\s*/,'');
+  return /aciculifolis/.test(s)?'pinar':/esclerofil/.test(s)?'alzinar o suredes':/caducifolis/.test(s)?'roureda':/Matollar/.test(s)?'matolls':/Altres conreus llenyosos/.test(s)?'avellaners o fruiters':/conreus|Oliverars|Vinyes/i.test(s)?'conreus':s.toLowerCase()||'sense dades'};
+// Arbres que acompanyen les espècies que busquem: roure, alzina, surera i avellaner
+const hazelId=META.cover_names.findIndex(n=>/Altres conreus llenyosos/.test(n));
+const goodTree=k=>{const s=META.cover_names[k]||'';return /esclerofil|caducifolis/.test(s)||k===hazelId};
+
+/* ---------- Estadística d'una zona ---------- */
+function zoneStats(test,box){
+  const st={n:0,forest:0,sec:Array(9).fill(0),elev:0,rock:[0,0,0,0]};
+  const c0=cellOf(box[1],box[0]),c1=cellOf(box[3],box[2]);
+  if(c0<0||c1<0)return Object.assign(st,{pct:Array(9).fill(0),obaga:0,solana:0,outside:true});
+  const xs=[c0%G.gw,c1%G.gw],ys=[Math.floor(c0/G.gw),Math.floor(c1/G.gw)];
+  const cells=[];
+  for(let y=Math.max(0,Math.min(...ys)-1);y<=Math.min(G.gh-1,Math.max(...ys)+1);y++)for(let x=Math.max(0,Math.min(...xs)-1);x<=Math.min(G.gw-1,Math.max(...xs)+1);x++){const i=y*G.gw+x;if(test(cellLL(i)))cells.push(i)}
+  const anyF=cells.some(i=>forestSet.has(G.cov[i]));
+  for(const i of cells){const f=forestSet.has(G.cov[i]);st.n++;if(f)st.forest++;if(!anyF||f){st.sec[G.sec[i]]++;st.elev+=G.elev[i];st.rock[G.rock[i]]++}}
+  const m=st.sec.reduce((a,b)=>a+b,0)||1;st.pct=st.sec.map(v=>v/m);st.elev=Math.round(st.elev/m);
+  st.obaga=st.pct[7]+st.pct[0]+st.pct[1];st.solana=st.pct[3]+st.pct[4]+st.pct[5];return st}
+const pip=(p,poly)=>{let c=false;for(let i=0,k=poly.length-1;i<poly.length;k=i++){const[yi,xi]=poly[i],[yk,xk]=poly[k];if(((yi>p[0])!==(yk>p[0]))&&(p[1]<(xk-xi)*(p[0]-yi)/(yk-yi)+xi))c=!c}return c};
+const polyStats=poly=>{const la=poly.map(p=>p[0]),lo=poly.map(p=>p[1]);return zoneStats(p=>pip(p,poly),[Math.min(...lo),Math.min(...la),Math.max(...lo),Math.max(...la)])};
+const circleStats=(lat,lng,r)=>{const k=Math.cos(lat*Math.PI/180),dl=r/111320,dn=r/(111320*k);return zoneStats(([a,b])=>((a-lat)*111320)**2+((b-lng)*111320*k)**2<=r*r,[lng-dn,lat-dl,lng+dn,lat+dl])};
+
+/* ---------- Sortida del sol ---------- */
+function madridOffset(n){const y=D(n).getUTCFullYear();const lastSun=m=>{let d=dnum(`${y}-${m}-31`);while(D(d).getUTCDay()!==0)d--;return d};return(n>=lastSun('03')&&n<lastSun('10'))?2:1}
+function sunTimes(n,lat,lon){
+  const doy=n-dnum(D(n).getUTCFullYear()+'-01-01')+1,g=2*Math.PI/365*(doy-1);
+  const eq=229.18*(0.000075+0.001868*Math.cos(g)-0.032077*Math.sin(g)-0.014615*Math.cos(2*g)-0.040849*Math.sin(2*g));
+  const de=0.006918-0.399912*Math.cos(g)+0.070257*Math.sin(g)-0.006758*Math.cos(2*g)+0.000907*Math.sin(2*g)-0.002697*Math.cos(3*g)+0.00148*Math.sin(3*g);
+  const at=z=>{const ha=Math.acos(Math.cos(z*Math.PI/180)/(Math.cos(lat*Math.PI/180)*Math.cos(de))-Math.tan(lat*Math.PI/180)*Math.tan(de))*180/Math.PI;
+    return 720-4*(lon+ha)-eq+madridOffset(n)*60};
+  const hm=m=>`${Math.floor(m/60)}:${String(Math.floor(m%60)).padStart(2,'0')}`;
+  return{sol:hm(at(90.833)),llum:hm(Math.floor(at(96)/5)*5)}}
+const sunIcon=`<svg width="38" height="30" viewBox="0 0 38 30" aria-hidden="true" style="flex:none"><path d="M3 26h32" stroke="var(--ink)" stroke-width="2"/><path d="M10 26a9 9 0 0 1 18 0" fill="var(--sun)"/><g stroke="var(--sun)" stroke-width="2.2" stroke-linecap="round"><path d="M19 6v5M8 11l3 3M30 11l-3 3"/></g></svg>`;
+const dropSvg=(w,h)=>`<svg width="${w}" height="${h}" viewBox="0 0 20 25" aria-hidden="true"><path d="M10 1C10 1 2 12 2 17a8 8 0 0 0 16 0C18 12 10 1 10 1z" fill="var(--rain)"/></svg>`;
+
+/* ---------- Llocs ---------- */
+const SITES=PRIV.sites.concat(store.get('extra',[]));
+let zones=store.get('zones',{});
+SITES.forEach(s=>{s.zone=zones[s.id]?{kind:'poly',st:polyStats(zones[s.id])}:{kind:'circle',st:circleStats(s.lat,s.lng,600)}});
+/* Pluja: l'històric ve amb l'app; els últims dies i la previsió es baixen cada dia */
+const histStart=dnum(HIST.start);let histEnd=histStart;
+HIST.sites.forEach(h=>{let k=h.r.length-1;while(k>0&&h.r[k]==null)k--;histEnd=Math.max(histEnd,histStart+k)});
+let WX={},wxInfo='';
+async function loadWX(){
+  const today=dstr(TODAY),ck='wx-'+today;let c=store.get(ck,null);
+  const need=SITES.filter(s=>!(c&&c[s.id]));
+  if(need.length){try{
+    const q=(base,extra)=>fetch(`${base}?latitude=${need.map(s=>s.lat.toFixed(4)).join(',')}&longitude=${need.map(s=>s.lng.toFixed(4)).join(',')}&daily=precipitation_sum,temperature_2m_mean&timezone=Europe%2FMadrid${extra}`)
+      .then(r=>{if(!r.ok)throw new Error('wx');return r.json()}).then(x=>Array.isArray(x)?x:[x]);
+    const live=await q('https://api.open-meteo.com/v1/forecast','&past_days=92&forecast_days=8');
+    const gA=histEnd+1,gB=TODAY-93;const gap=gB>=gA?await q('https://historical-forecast-api.open-meteo.com/v1/forecast',`&start_date=${dstr(gA)}&end_date=${dstr(gB)}`):null;
+    c=c||{};
+    need.forEach((s,i)=>{const o={time:[],r:[],t:[]};[gap&&gap[i],live[i]].forEach(x=>{if(!x)return;x.daily.time.forEach((d,k)=>{o.time.push(d);o.r.push(x.daily.precipitation_sum[k]);o.t.push(x.daily.temperature_2m_mean[k])})});c[s.id]=o});
+    try{Object.keys(localStorage).filter(k=>k.startsWith('rc3-wx-2')&&k!=='rc3-'+ck).forEach(k=>localStorage.removeItem(k))}catch(e){}
+    store.set(ck,c);store.set('wx-last',{d:today,c});
+    const nw=new Date();wxInfo=`Pluja actualitzada avui a les ${nw.getHours()}:${String(nw.getMinutes()).padStart(2,'0')}.`;
+  }catch(e){const last=store.get('wx-last',null);if(last){c=Object.assign({},last.c,c||{});wxInfo=`Sense connexió: la pluja és del ${fmt(dnum(last.d))}.`}else wxInfo='Sense connexió: no s\'ha pogut baixar la pluja d\'avui.'}}
+  else wxInfo='Pluja actualitzada avui.';
+  WX=c||{}}
+await loadWX();
+let NOWF=null;try{NOWF=await j('data/now.json')}catch(e){}
+function buildSeries(s){
+  const h=HIST.sites.find(x=>x.id===s.id),start=histStart;
+  const r=h?h.r.map(v=>v==null?null:v/10):[],t=h?h.t.map(v=>v==null?null:v/10):[];
+  const put=src=>{if(!src)return;src.time.forEach((d,k)=>{const n=dnum(d),i=n-start;if(i<0||(n<=histEnd&&r[i]!=null))return;r[i]=src.r[k];t[i]=src.t[k]})};
+  put(NOWF&&NOWF.sites.find(x=>x.id===s.id));put(WX[s.id]);
+  s.ser={start,r,t,end:start+r.length-1}}
+SITES.forEach(buildSeries);
+const rainOn=(s,d)=>{const v=s.ser.r[d-s.ser.start];return v==null?null:v};
+const wetTxt=(s,d)=>{const r=rainOn(s,d);return r!=null&&r>=1?`<div class="small" style="color:var(--rain);font-weight:700;margin-top:2px">Es preveuen ${Math.round(r)} litres de pluja: porta impermeable.</div>`:(d<=s.ser.end?'<div class="small" style="margin-top:2px">No es preveu pluja.</div>':'')};
+
+/* ---------- Regla (d'exemple; es pot ajustar a "Com funciona") ---------- */
+const RULE0={mm:17,span:2,minT:12,wait:16,before:2,after:2,obagaBonus:1};
+let RULE=Object.assign({},RULE0,store.get('rule4',{}));
+function evalSite(s){
+  const R=RULE,ser=s.ser,out=[],bonus=s.zone.st.obaga>=.5?R.obagaBonus:0;
+  // només amb pluja que ja ha caigut: la previsió serveix per saber si et mullaràs, no per predir bolets
+  const lastReal=Math.min(ser.r.length-1,TODAY-ser.start);
+  // cada episodi de pluja compta des del primer dia que passa el llindar; els dies plujosos seguits no l'allarguen
+  let last=-99;
+  for(let i=R.span-1;i<=lastReal;i++){let sm=0,tt=0,c=0;
+    for(let k=0;k<R.span;k++){const v=ser.r[i-k];if(v!=null)sm+=v;const t=ser.t[i-k];if(t!=null){tt+=t;c++}}
+    if(!(sm>=R.mm&&c&&tt/c>=R.minT))continue;
+    if(i-last>5){const t1=ser.start+i;out.push({t0:t1-R.span+1,t1,peak:t1+R.wait,a:t1+R.wait-R.before,b:t1+R.wait+R.after+bonus,mm:sm})}
+    last=i}
+  s.wins=out;
+  const cur=out.find(w=>w.a<=TODAY&&TODAY<=w.b),next=out.find(w=>w.a>TODAY);
+  s.state=cur?'go':next?'soon':'wait';s.win=cur||next||null;
+  s.bolet=d=>out.some(w=>d>=w.a&&d<=w.b);
+  s.peak=d=>out.some(w=>w.peak===d)}
+SITES.forEach(evalSite);
+const STATE={go:['s-go','Vés-hi'],soon:['s-soon','Aviat'],wait:['s-wait','Falta aigua']};
+const chip=s=>`<span class="chip ${STATE[s.state][0]}">${STATE[s.state][1]}</span>`;
+function what(s){
+  if(s.state==='go')return s.win.peak>=TODAY?`Millor dia: <strong>${s.win.peak===TODAY?'avui':wdn(s.win.peak)+' '+fmt(s.win.peak)}</strong> · bolets fins al ${fmt(s.win.b)}`:`Bolets fins al <strong>${wdn(s.win.b)} ${fmt(s.win.b)}</strong>`;
+  if(s.state==='soon')return `Millor dia: <strong>${wdn(s.win.peak)} ${fmt(s.win.peak)}</strong> · del ${fmt(s.win.a)} al ${fmt(s.win.b)}`;
+  let t=0;for(let d=TODAY-9;d<=TODAY;d++)t+=rainOn(s,d)||0;return `Només ${Math.round(t)} litres els últims 10 dies`}
+
+/* ---------- Diari ---------- */
+let visits=store.get('visits',PRIV.visits||[]);
+const saveVisits=()=>store.set('visits',visits);
+const visitsOn=(s,d)=>visits.filter(v=>v.site===s.id&&dnum(v.d)===d);
+const cepTxt=n=>n==null?'alguns ceps':n===1?'1 cep':`${n} ceps`;
+
+/* ---------- LLOCS ---------- */
+function renderLlocs(){
+  const order={go:0,soon:1,wait:2};
+  const list=[...SITES].sort((a,b)=>order[a.state]-order[b.state]||((a.win&&b.win)?a.win.a-b.win.a:0));
+  const goDay=list[0].state==='soon'?list[0].win.a:TODAY+1;
+  const st=sunTimes(goDay,SITES[0].lat,SITES[0].lng);
+  $('#s-llocs').innerHTML=`
+   <div class="sun">${sunIcon}
+     <div><strong>${goDay===TODAY+1?'Demà':wdn(goDay)+' '+fmt(goDay)} surt el sol a les ${st.sol}</strong><div class="small">Els ceps surten de nit: com més d'hora hi aneu, més en trobareu.</div>${wetTxt(list[0],goDay)}</div></div>
+   ${list.map(s=>{const lv=visits.filter(v=>v.site===s.id).sort((a,b)=>b.d.localeCompare(a.d))[0];
+     let cells='';for(let d=TODAY-7;d<=TODAY+13;d++){const r=rainOn(s,d);const sz=r&&r>=2?Math.min(14,5+Math.sqrt(r)*1.6):0;
+       cells+=`<i class="${s.peak(d)?'p':s.bolet(d)?'b':''} ${d===TODAY?'t':''}">${sz?`<u class="${d>TODAY?'f':''}" style="width:${sz}px;height:${sz}px"></u>`:''}</i>`}
+     return `<button class="spot" data-open="${s.id}">
+       <span class="row" style="width:100%"><span class="name">${esc(s.name)}</span><span class="spacer"></span>${chip(s)}</span>
+       <span class="what">${what(s)}</span>
+       <span class="strip" aria-hidden="true">${cells}</span>
+       <span class="striplab"><span>fa 1 setmana</span><span>avui</span><span>d'aquí a 2 setmanes</span></span>
+       ${lv?`<span class="last"><svg width="14" height="14" viewBox="0 0 34 34" aria-hidden="true"><path d="M4 16c0-7 6-12 13-12s13 5 13 12c0 2-2 3-4 3H8c-2 0-4-1-4-3z" fill="var(--cep)"/><path d="M12 19h10l1 9c0 2-2 3-6 3s-6-1-6-3z" fill="var(--cep)" opacity=".5"/></svg>Última sortida: ${dnum(lv.d)===TODAY?'avui':fmt(dnum(lv.d))}, ${cepTxt(lv.n)}${lv.h?' a les '+esc(lv.h):''}</span>`:''}
+     </button>`}).join('')}
+   <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span><i class="sw" style="background:var(--rain);border-radius:50%"></i>Pluja</span><span><i class="sw" style="background:var(--rain);opacity:.5;border-radius:50%"></i>Pluja prevista</span></div>
+   <p class="small">${esc(wxInfo)} Per afegir un lloc, toca'l al Mapa.</p>`}
+
+/* ---------- FITXA ---------- */
+let cur=null,calOff=0,selDay=null,form=null;
+function openSite(id,from){cur=SITES.find(s=>s.id===id);calOff=0;selDay=TODAY;form=null;cur.from=from||'llocs';renderFitxa();show('fitxa')}
+function dayNote(s,d){
+  const r=rainOn(s,d),vs=visitsOn(s,d),w=s.wins.find(w=>d>=w.a&&d<=w.b);const parts=[];
+  if(r!=null&&r>=1)parts.push(`${d>TODAY?'Previstos':'Van caure'} <strong>${Math.round(r)} litres</strong>.`);
+  if(w)parts.push((w.peak===d?'<strong>El dia més probable</strong>':'Dia de bolets')+` (per la pluja del ${fmt(w.t0)} al ${fmt(w.t1)})`+'.');
+  vs.forEach(v=>parts.push(`Hi vau anar: <strong>${cepTxt(v.n)}</strong>${v.h?' a les '+esc(v.h):''}.${v.nota?' '+esc(v.nota):''}`));
+  if(!parts.length)parts.push(d>TODAY+7?'Encara no hi ha previsió de pluja per a aquest dia.':'Ni pluja ni bolets.');
+  return `<strong>${wdn(d)} ${fmt(d,{year:D(d).getUTCFullYear()!==2026?'numeric':undefined})}</strong> · ${parts.join(' ')}`}
+function calendar(s){
+  const mon=d=>d-((D(d).getUTCDay()+6)%7);
+  const start=mon(TODAY-14)+calOff*28,end=start+41;
+  const title=calOff===0?'Aquest mes':`${fmt(start,{year:'numeric'})} – ${fmt(end,{year:'numeric'})}`;
+  let h=`<div class="cal-head"><button data-cal="-1" aria-label="Setmanes anteriors">‹</button><h3>${title}</h3><button data-cal="1" aria-label="Setmanes següents" ${calOff>=0?'disabled':''}>›</button></div><div class="cal">`;
+  ['dl','dt','dc','dj','dv','ds','dg'].forEach(w=>h+=`<span class="wd">${w}</span>`);
+  for(let d=start;d<=end;d++){const r=rainOn(s,d),vs=visitsOn(s,d),b=s.bolet(d);
+    const cls=['day',b?'bol':'',s.peak(d)?'top':'',d===TODAY?'today':'',d===selDay?'sel':'',d>s.ser.end&&!b?'out':''].join(' ');
+    const ds=r&&r>=1?Math.min(18,7+Math.sqrt(r)*1.7):0;
+    const cnt=vs.length?(vs.reduce((a,v)=>a+(v.n||0),0)||'·'):'';
+    h+=`<button class="${cls}" data-day="${d}" aria-label="${fmt(d)}"><span class="n">${D(d).getUTCDate()}</span>
+      ${vs.length?`<span class="c">${cnt}</span>`:''}
+      ${ds?`<span class="drop ${d>TODAY?'f':''}">${dropSvg(ds*.8,ds)}<span>${Math.round(r)}</span></span>`:''}</button>`}
+  return h+'</div>'}
+function renderFitxa(){
+  const s=cur,st=s.zone.st;
+  const nextGo=s.state==='go'?TODAY+1:s.state==='soon'?s.win.a:null;const sun=nextGo?sunTimes(nextGo,s.lat,s.lng):null;
+  const mine=visits.filter(v=>v.site===s.id).sort((a,b)=>b.d.localeCompare(a.d));
+  $('#s-fitxa').innerHTML=`
+   <button class="back" data-back>‹ ${s.from==='mapa'?'Mapa':'Llocs'}</button>
+   <div class="row"><div style="min-width:0"><span class="small">${esc(s.muni)}</span><h2 class="big">${esc(s.name)}</h2></div><span class="spacer"></span>${chip(s)}</div>
+   <p style="font-size:17px">${what(s)}</p>
+   ${sun?`<div class="sun">${sunIcon}<div><strong>${nextGo===TODAY+1?'Demà':wdn(nextGo)+' '+fmt(nextGo)} surt el sol a les ${sun.sol}</strong>${wetTxt(s,nextGo)}</div></div>`:''}
+   <div class="card">${calendar(s)}
+     <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>Ceps trobats</span></div>
+     <div class="daynote" id="daynote">${dayNote(s,selDay)}</div>
+   </div>
+   <div class="card">
+     <div class="row"><strong>Com és el bosc</strong><span class="spacer"></span><button class="btn ghost" data-showmap>Veure al mapa</button></div>
+     <div class="row"><span class="coords">${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmDir(s.lat,s.lng)}" target="_blank" rel="noopener">Com arribar-hi</a></div>
+     <div class="facebar" aria-hidden="true"><i style="width:${st.obaga*100}%;background:var(--obaga)"></i><i style="width:${Math.max(0,1-st.obaga-st.solana)*100}%;background:var(--surface2)"></i><i style="width:${st.solana*100}%;background:var(--solana)"></i></div>
+     <div class="row"><b style="color:var(--obaga)">${Math.round(st.obaga*100)}% obaga</b><span class="spacer"></span><b style="color:var(--solana)">${Math.round(st.solana*100)}% solana</b></div>
+     <p class="small">${s.zone.kind==='poly'?'Calculat amb la zona que heu marcat.':'Calculat amb el bosc a menys de 600 m de l\'aparcament. Marqueu on busqueu de veritat des del Mapa.'}${st.obaga>=.5?` Com que és sobretot obaga, guarda l'aigua ${RULE.obagaBonus} dies més.`:''}</p>
+   </div>
+   ${form?formHtml():`<button class="btn" data-newvisit>Hi hem anat!</button>`}
+   ${s.id.startsWith('x')?`<button class="btn ghost" data-delsite="${s.id}" style="align-self:flex-start">Esborrar aquest lloc</button>`:''}
+   ${mine.length?`<div class="card"><strong>Sortides</strong>${mine.map(v=>`<div class="visit"><span class="mono">${D(dnum(v.d)).toLocaleDateString('ca-ES',{day:'2-digit',month:'2-digit',year:'2-digit',timeZone:'UTC'})}</span><span><strong>${cepTxt(v.n)}</strong>${v.h?' · '+esc(v.h):''}${v.est&&v.est.length?' · '+v.est.map(esc).join(', '):''}${v.nota?'<br><span class="small">'+esc(v.nota)+'</span>':''}</span></div>`).join('')}</div>`:''}`;
+  bindForm()}
+function formHtml(){
+  return `<div class="card sheet">
+   <strong style="font-family:var(--f-display);font-size:19px">Hi hem anat!</strong>
+   <div><label for="fdate">Dia</label><input type="date" id="fdate" value="${form.d}" max="${dstr(TODAY)}"></div>
+   <div><label>Quants ceps?</label><div class="stepper"><button type="button" data-step="-1" aria-label="Menys">−</button><output id="fn">${form.n}</output><button type="button" data-step="1" aria-label="Més">+</button></div></div>
+   <div><label for="fh">A quina hora hi heu arribat?</label><input type="time" id="fh" value="${form.h}"></div>
+   <div><label>Com estava el bosc?</label><div class="chips">${['Sec','Humit','Molt mullat','Ja hi havia gent','Ceps vells'].map(e=>`<button type="button" class="opt" data-est="${e}" aria-pressed="${form.est.includes(e)}">${e}</button>`).join('')}</div></div>
+   <div><label for="fnota">Nota</label><textarea id="fnota" rows="2">${esc(form.nota)}</textarea></div>
+   <div class="row"><button class="btn" data-save style="flex:1">Desa</button><button class="btn ghost" data-cancel>Cancel·la</button></div></div>`}
+function bindForm(){
+  if(!form)return;
+  $('#s-fitxa').querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{form.n=Math.max(0,form.n+ +b.dataset.step);$('#fn').textContent=form.n});
+  $('#s-fitxa').querySelectorAll('[data-est]').forEach(b=>b.onclick=()=>{const e=b.dataset.est;form.est=form.est.includes(e)?form.est.filter(x=>x!==e):[...form.est,e];b.setAttribute('aria-pressed',form.est.includes(e))})}
+
+/* ---------- MAPA ---------- */
+let map,L1={},pins={},tap=null,sim=null,drawing=null,drawPts=[],drawMarks=[],drawLine=null,zoneLayers={};
+function buildMap(){
+  $('#s-mapa').innerHTML=`
+   <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div></div>
+   <div class="layerbar">
+     <button class="opt" data-lay="obsol" aria-pressed="true">Obaga i solana</button>
+     <button class="opt" data-lay="orto" aria-pressed="true">Foto</button>
+     <button class="opt" data-sim aria-pressed="false">Boscos semblants</button>
+   </div>
+   <div class="legend"><span><i class="sw" style="background:var(--obaga)"></i>Obaga: mira al nord, humida</span><span><i class="sw" style="background:var(--solana)"></i>Solana: mira al sud, seca</span><span id="simkey" hidden><i class="sw" style="background:#FFE040;outline:1px solid #a08000"></i>Semblant als vostres</span></div>
+   <div class="card" id="mapcard"><p class="small">Toca una agulla per obrir el lloc, o qualsevol punt per saber com és.</p></div>`;
+  map=L.map('map',{zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false,minZoom:9,maxZoom:18,maxBounds:[[40.45,0.1],[42.9,3.4]],maxBoundsViscosity:1});
+  map.attributionControl.setPrefix(false).addAttribution('ICGC · Terrain Tiles · Open-Meteo');
+  // Fons en directe de l'ICGC (tota Catalunya, nítid a qualsevol zoom) + obaga/solana calculada
+  map.createPane('obsolP').style.zIndex=250;const tp=map.createPane('topoP');tp.style.zIndex=300;tp.style.mixBlendMode='multiply';tp.style.pointerEvents='none';
+  const ICGC='https://geoserveis.icgc.cat/icc_mapesmultibase/noutm/wmts/';
+  L1.orto=L.tileLayer(ICGC+'orto/GRID3857/{z}/{x}/{y}.jpeg',{maxZoom:18,className:'gris'}).addTo(map);
+  L1.obsol=L.imageOverlay('data/obsol.png',META.bounds,{opacity:.8,pane:'obsolP'}).addTo(map);
+  L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP'}).addTo(map);
+  L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng])),{padding:[80,70],maxZoom:15});L1.fit();
+  drawPins();
+  $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
+    on?L1[k].addTo(map):map.removeLayer(L1[k])});
+  $('#s-mapa').querySelector('[data-sim]').onclick=e=>toggleSim(e.currentTarget);
+  map.on('click',onMapClick)}
+function drawPins(){
+  Object.values(pins).forEach(p=>map.removeLayer(p));Object.values(zoneLayers).forEach(p=>map.removeLayer(p));
+  const col={go:'#2E8B4B',soon:'#C88A12',wait:'#7E857A'};
+  SITES.forEach(s=>{
+    zoneLayers[s.id]=zones[s.id]?L.polygon(zones[s.id],{color:'#1c2218',weight:2.5,fill:false,interactive:false}).addTo(map)
+      :L.circle([s.lat,s.lng],{radius:600,color:'#1c2218',weight:1.5,dashArray:'5 6',fill:false,interactive:false}).addTo(map);
+    pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="pin"><b style="background:${col[s.state]}"></b><em>${esc(s.name)}</em></div>`,iconSize:[130,56],iconAnchor:[65,30]})})
+      .on('click',e=>{L.DomEvent.stopPropagation(e);pinCard(s)}).addTo(map)})}
+function pinCard(s){
+  $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">${esc(s.name)}</strong><span class="spacer"></span>${chip(s)}</div>
+   <p>${what(s)}</p><p class="small">${Math.round(s.zone.st.obaga*100)}% obaga · ${Math.round(s.zone.st.solana*100)}% solana</p>
+   <div class="row"><button class="btn" data-open="${s.id}" data-from="mapa" style="flex:1">Obrir</button><a class="btn ghost" href="${gmDir(s.lat,s.lng)}" target="_blank" rel="noopener">Com arribar-hi</a></div>
+   <div class="row"><span class="coords">${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</span><span class="spacer"></span><button class="btn ghost" data-draw="${s.id}">Marcar on busquem</button></div>`}
+const gmDir=(a,b)=>`https://www.google.com/maps/dir/?api=1&destination=${a.toFixed(6)},${b.toFixed(6)}`;
+const gmPt=(a,b)=>`https://www.google.com/maps/search/?api=1&query=${a.toFixed(6)},${b.toFixed(6)}`;
+function onMapClick(e){
+  if(drawing){drawPts.push([e.latlng.lat,e.latlng.lng]);drawMarks.push(L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="vtx"></div>',iconSize:[12,12],iconAnchor:[6,6]}),interactive:false}).addTo(map));
+    if(drawLine)map.removeLayer(drawLine);drawLine=L.polyline(drawPts,{color:'#7A2E8E',weight:3}).addTo(map);$('#dfin').disabled=drawPts.length<3;return}
+  const i=cellOf(e.latlng.lat,e.latlng.lng);
+  if(tap)map.removeLayer(tap);tap=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
+  const tools=`<div class="row"><span class="coords">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmPt(e.latlng.lat,e.latlng.lng)}" target="_blank" rel="noopener">Google Maps</a><button class="btn ghost" data-addhere="${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}">Afegir lloc</button></div>`;
+  if(i<0){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de la zona estudiada: aquí no tinc obaga, solana ni roca, però la pluja sí que funciona.</p>${tools}`;return}
+  const sec=G.sec[i],face=sec===8?'terreny pla':[7,0,1].includes(sec)?'<b style="color:var(--obaga)">obaga</b>':[3,4,5].includes(sec)?'<b style="color:var(--solana)">solana</b>':`mira a l'${DIRS[sec]}`;
+  const rk=['sense dades','àcida','calcària','barrejada'][G.rock[i]];
+  const fit=goodTree(G.cov[i])&&(G.rock[i]===1||G.rock[i]===3);
+  $('#mapcard').innerHTML=`<strong>Aquí</strong><p>${face} · ${coverName(G.cov[i])} · <span class="mono">${G.elev[i]} m</span> · roca ${rk}</p>${fit?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`}
+function startDraw(id){
+  drawing=id;drawPts=[];if(tap){map.removeLayer(tap);tap=null}
+  $('#mapcard').innerHTML=`<strong>Marca on busqueu a ${esc(SITES.find(s=>s.id===id).name)}</strong><p class="small">Toca el mapa al voltant de la zona (mínim 3 punts).</p>
+   <div class="row"><button class="btn" id="dfin" disabled style="flex:1">Fet</button><button class="btn ghost" id="dcan">Cancel·la</button></div>`;
+  const end=()=>{drawing=null;drawMarks.forEach(m=>map.removeLayer(m));drawMarks=[];if(drawLine)map.removeLayer(drawLine);drawLine=null};
+  $('#dcan').onclick=()=>{end();$('#mapcard').innerHTML='<p class="small">Toca una agulla per obrir el lloc.</p>'};
+  $('#dfin').onclick=()=>{const s=SITES.find(x=>x.id===drawing);zones[s.id]=drawPts.slice();store.set('zones',zones);end();
+    s.zone={kind:'poly',st:polyStats(zones[s.id])};evalSite(s);drawPins();pinCard(s)}}
+function toggleSim(btn){
+  if(sim){map.removeLayer(sim);sim=null;btn.setAttribute('aria-pressed','false');$('#simkey').hidden=true;return}
+  // perfil de referència: tots els vostres llocs junts
+  const ref={sec:Array(9).fill(0),elev:[],acid:0,calc:0};
+  SITES.forEach(s=>{s.zone.st.sec.forEach((v,k)=>ref.sec[k]+=v);ref.elev.push(s.zone.st.elev);ref.acid+=s.zone.st.rock[1]+s.zone.st.rock[3];ref.calc+=s.zone.st.rock[2]});
+  const tot=ref.sec.reduce((a,b)=>a+b,0);const order=ref.sec.map((v,k)=>[v/tot,k]).sort((a,b)=>b[0]-a[0]);let acc=0;const ok=new Set();
+  for(const[p,k]of order){ok.add(k);acc+=p;if(acc>=.6)break}
+  const lo=Math.min(...ref.elev)-120,hi=Math.max(...ref.elev)+120,acid=ref.acid>=ref.calc;
+  const cv=document.createElement('canvas');cv.width=G.gw;cv.height=G.gh;const cx=cv.getContext('2d');const im=cx.createImageData(G.gw,G.gh);
+  for(let i=0;i<G.gw*G.gh;i++){if(!(forestSet.has(G.cov[i])||G.cov[i]===hazelId)||!ok.has(G.sec[i])||G.elev[i]<lo||G.elev[i]>hi)continue;if(acid&&!(G.rock[i]===1||G.rock[i]===3))continue;im.data.set([255,224,64,230],i*4)}
+  cx.putImageData(im,0,0);if(!map.getPane('sim'))map.createPane('sim').style.zIndex=260;sim=L.imageOverlay(cv.toDataURL(),META.bounds,{pane:'sim',opacity:.85}).addTo(map);
+  btn.setAttribute('aria-pressed','true');$('#simkey').hidden=false;
+  $('#mapcard').innerHTML=`<strong>Boscos semblants</strong><p class="small">En groc, bosc o avellaners amb les mateixes cares que els vostres llocs, a una altura de ${lo} a ${hi} m${acid?' i sobre roca àcida':''}. Són llocs per explorar, no llocs segurs.</p>`}
+
+/* ---------- COM FUNCIONA ---------- */
+function renderCom(){
+  $('#s-com').innerHTML=`
+   <button class="back" data-back>‹ Tornar</button>
+   <div class="card how"><h3>Què busquem</h3>
+     <ul><li><strong>Cep negre</strong> (<em>Boletus aereus</em>)</li><li><strong>Cep d'estiu</strong> (<em>Boletus aestivalis</em>)</li><li><strong>Ou de reig</strong> (<em>Amanita caesarea</em>)</li></ul>
+     <p>Són espècies termòfiles, de calor. Surten en terrenys àcids (granit, pissarra, gresos), amb roures, alzines, alzines sureres i avellaners. Per això el mapa mira la roca i el tipus d'arbre.</p></div>
+   <div class="card how"><h3>Obaga i solana</h3>
+     <p>A partir d'un model del relleu, per a cada punt miro cap a on baixa el terreny. Si baixa cap al nord (nord, nord-est o nord-oest) és <b style="color:var(--obaga)">obaga</b>, i si baixa cap al sud, <b style="color:var(--solana)">solana</b>. Només ho pinto on el mapa de l'ICGC diu que hi ha bosc.</p></div>
+   <div class="card how"><h3>Què diu la recerca</h3>
+     <p><strong>Quanta pluja?</strong> Perquè es "moguin" calen uns <strong>15–25 litres en 2–5 dies</strong>. Millor si el terra ja estava humit d'una pluja anterior: per amarar-lo bé, 40–100 litres en una o dues setmanes. Una ruixada d'estiu sola no n'hi ha prou.</p>
+     <p><strong>Quina temperatura?</strong> Són espècies de calor. Surten després d'un període càlid, sovint quan una tempesta freda cau sobre terra calenta. Ideal: nits per sobre de 10–12 °C i dies entre 18 i 24 °C. Amb màximes de més de 28–30 °C s'aturen, i amb màximes de menys de 10 °C no creixen. Les vostres dues sortides bones (2022 i 2026) van tenir una mitjana d'uns 18 °C.</p>
+     <p><strong>Quants dies tarden a sortir?</strong></p>
+     <ul><li>Cep negre: 7–10 dies després d'una pluja forta.</li><li>Ceps en general: 10–15 dies després de la pluja més forta.</li><li>Ou de reig: 15–22 dies.</li><li>Les vostres sortides: 11 dies (2026) i 16–17 dies (2022).</li></ul>
+     <p><strong>Quant duren?</strong> Cada cep passa de botó a adult en 3–7 dies (2–3 si fa calor i humitat) i al cap d'una setmana ja es fa malbé. Amb calor, els cucs i els llimacs se'l mengen abans. La tanda sencera d'una pluja dura uns 10–15 dies.</p>
+     <p class="small">La majoria d'aquestes xifres són de boletaires experts i de guies italianes i espanyoles. Estudis científics amb números exactes per a aquestes espècies n'hi ha molt pocs. Per això el vostre diari és tan important.</p></div>
+   <div class="card how"><h3>Dies de bolets</h3>
+     <p>Regla provisional, ajustada perquè encerti les dues sortides bones que coneixem (25 d'octubre de 2022 i 17 d'octubre de 2026):</p>
+     <ul><li>Si en ${RULE.span} dies seguits cauen ${RULE.mm} litres o més, amb una temperatura mitjana de més de ${RULE.minT} °C…</li>
+     <li>…el <strong>millor dia</strong> és ${RULE.wait} dies després del primer dia que es passa el llindar, i hi ha bolets del dia ${RULE.wait-RULE.before} al ${RULE.wait+RULE.after}.</li>
+     <li>Si el bosc és sobretot obaga, ${RULE.obagaBonus} dia més al final.</li></ul>
+     <p><strong>Per què 5 dies i no 10?</strong> Les dues bones sortides que coneixem, totes dues al mateix lloc, van ser 15 dies (2026) i 17 dies (2022) després de la primera pluja forta. La mitjana és 16. La recerca diu el mateix: els ceps surten sobretot 13–15 dies després de la pluja més forta, i cada cep és bo pocs dies abans de fer-se malbé. Per això la finestra és 16 ± 2 dies: cobreix tot el que hem vist amb un dia de marge per banda i passa d'uns 40 dies possibles per temporada a uns 18.</p></div>
+   <div class="card how"><h3>D'on surt la pluja</h3>
+     <p>Pluja estimada per a cada lloc, de models d'alta resolució (d'1 a 3 km), via Open-Meteo. Cada cop que obres l'app es baixen els últims dies i la previsió de 7 dies; sense connexió es fa servir l'última que tenies. Al calendari de cada lloc pots tirar enrere fins al 2016 per veure si la regla hauria encertat.</p></div>
+   <div class="card how"><h3>Ajustar la regla</h3>
+     <p class="small">Mou els números i mira als calendaris si els dies verds coincideixen amb els dies que vau trobar ceps.</p>
+     ${[['mm','Pluja mínima','l',10,80],['span','En quants dies','dies',1,7],['minT','Temperatura mínima','°C',5,22],['wait','Millor dia (dies després de la pluja)','dies',5,30],['before','Marge abans','dies',0,7],['after','Marge després','dies',0,10],['obagaBonus','Dies extra si és obaga','dies',0,6]]
+       .map(([k,l,u,a,b])=>`<div class="slider"><label for="r-${k}">${l}</label><output id="o-${k}">${RULE[k]} ${u}</output><input type="range" id="r-${k}" data-k="${k}" data-u="${u}" min="${a}" max="${b}" value="${RULE[k]}"></div>`).join('')}
+     <button class="btn ghost" id="rreset" style="align-self:flex-start">Tornar a la regla provisional</button></div>`;
+  $('#s-com').querySelectorAll('input[data-k]').forEach(inp=>inp.oninput=()=>{RULE[inp.dataset.k]=+inp.value;$('#o-'+inp.dataset.k).textContent=inp.value+' '+inp.dataset.u;store.set('rule4',RULE);SITES.forEach(evalSite)});
+  $('#rreset').onclick=()=>{RULE=Object.assign({},RULE0);store.set('rule4',{});SITES.forEach(evalSite);renderCom()}}
+
+/* ---------- Navegació ---------- */
+let mapBuilt=false,lastTab='llocs',screen='llocs';
+function show(t){
+  screen=t;
+  document.querySelectorAll('.screen').forEach(s=>s.hidden=s.id!=='s-'+t);
+  if(t==='llocs'||t==='mapa'){lastTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t))}
+  if(t==='llocs')renderLlocs();
+  if(t==='mapa'){const first=!mapBuilt;if(!mapBuilt){buildMap();mapBuilt=true}else drawPins();setTimeout(()=>{map.invalidateSize();if(first&&!L1.moved)L1.fit()},30)}
+  if(t==='com')renderCom();
+  window.scrollTo(0,0)}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
+  if(e.target.closest('#howbtn')){show('com');return}
+  const o=e.target.closest('[data-open]');if(o){openSite(o.dataset.open,o.dataset.from);return}
+  if(e.target.closest('[data-back]')){show(screen==='fitxa'?cur.from:lastTab);return}
+  const dy=e.target.closest('[data-day]');if(dy){selDay=+dy.dataset.day;$('#s-fitxa').querySelectorAll('.day.sel').forEach(x=>x.classList.remove('sel'));dy.classList.add('sel');$('#daynote').innerHTML=dayNote(cur,selDay);return}
+  const cb=e.target.closest('[data-cal]');if(cb&&!cb.disabled){calOff=Math.min(0,calOff+ +cb.dataset.cal);renderFitxa();return}
+  if(e.target.closest('[data-newvisit]')){const now=new Date();form={d:dstr(TODAY),n:0,h:`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,est:[],nota:''};renderFitxa();return}
+  if(e.target.closest('[data-cancel]')){form=null;renderFitxa();return}
+  if(e.target.closest('[data-save]')){visits.push({d:$('#fdate').value||dstr(TODAY),site:cur.id,n:form.n,h:$('#fh').value,est:form.est,nota:$('#fnota').value.trim()});saveVisits();form=null;renderFitxa();return}
+  if(e.target.closest('[data-showmap]')){const s=cur;L1.moved=true;show('mapa');setTimeout(()=>{map.invalidateSize();map.setView([s.lat,s.lng],15);pinCard(s)},60);return}
+  const ah=e.target.closest('[data-addhere]');if(ah){const[la,lo]=ah.dataset.addhere.split(',').map(Number);
+    $('#mapcard').innerHTML=`<strong>Lloc nou</strong><form id="addf" class="sheet"><div><label for="addn">Nom</label><input id="addn" maxlength="40" required style="font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px;width:100%;box-sizing:border-box"></div><button class="btn">Desa el lloc</button></form><p class="small">Es guarda en aquest mòbil.</p>`;
+    $('#addn').focus();$('#addf').onsubmit=ev=>{ev.preventDefault();const ex=store.get('extra',[]);ex.push({id:'x'+Date.now().toString(36),name:$('#addn').value.trim()||'Lloc nou',muni:'',lat:la,lng:lo});store.set('extra',ex);store.set('tab','llocs');location.reload()};return}
+  const dl=e.target.closest('[data-delsite]');if(dl){if(dl.dataset.sure){store.set('extra',store.get('extra',[]).filter(x=>x.id!==dl.dataset.delsite));location.reload()}else{dl.dataset.sure='1';dl.textContent='Toca un altre cop per esborrar-lo'}return}
+  const dr=e.target.closest('[data-draw]');if(dr){const s=SITES.find(x=>x.id===dr.dataset.draw);map.setView([s.lat,s.lng],15);startDraw(s.id);return}
+});
+show(['llocs','mapa'].includes(store.get('tab','llocs'))?store.get('tab','llocs'):'llocs');store.set('tab','llocs');
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>

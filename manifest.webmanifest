@@ -1,0 +1,17 @@
+{
+  "name": "Carpe Boletum",
+  "short_name": "Carpe Boletum",
+  "description": "Quan anar a buscar ceps i ous de reig, amb la pluja de cada dia.",
+  "lang": "ca",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#10140D",
+  "theme_color": "#132417",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/logo.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
