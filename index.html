@@ -130,7 +130,11 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 /* Mapa */
 .mapbox{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line)}
 #map{width:100%;height:62vh;min-height:400px;max-height:700px;background:#e8e8e2}
-.layerbar{display:flex;gap:6px;flex-wrap:wrap}
+.layerbar{position:absolute;left:8px;right:8px;bottom:26px;z-index:1000;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.layerbar .opt{pointer-events:auto;box-shadow:0 1px 6px rgba(0,0,0,.45);background:rgba(25,32,21,.88);color:#E5EADD;border-color:rgba(255,255,255,.18);font-size:13.5px;padding:8px 12px}
+.layerbar .opt[aria-pressed="true"]{background:#A3C982;color:#14190F;border-color:#A3C982}
+.mapkey{position:absolute;top:8px;right:8px;z-index:1000;background:rgba(25,32,21,.85);color:#E5EADD;border-radius:10px;padding:6px 9px;font-size:12px;display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.mapkey span{display:flex;align-items:center;gap:6px}
 .pin{display:flex;flex-direction:column;align-items:center}
 .pin b{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:block;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
 .pin em{font-style:normal;font-weight:800;font-size:12px;background:#fff;color:#1c2218;border-radius:6px;padding:1px 6px;margin-top:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)}
@@ -458,13 +462,13 @@ function bindForm(){
 let map,L1={},pins={},tap=null,sim=null,drawing=null,drawPts=[],drawMarks=[],drawLine=null,zoneLayers={};
 function buildMap(){
   $('#s-mapa').innerHTML=`
-   <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div></div>
-   <div class="layerbar">
-     <button class="opt" data-lay="obsol" aria-pressed="true">Obaga i solana</button>
-     <button class="opt" data-lay="orto" aria-pressed="true">Foto</button>
-     <button class="opt" data-sim aria-pressed="false">Boscos semblants</button>
-   </div>
-   <div class="legend"><span><i class="sw" style="background:var(--obaga)"></i>Obaga: mira al nord, humida</span><span><i class="sw" style="background:var(--solana)"></i>Solana: mira al sud, seca</span><span id="simkey" hidden><i class="sw" style="background:#FFE040;outline:1px solid #a08000"></i>Semblant als vostres</span></div>
+   <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
+     <div class="mapkey" aria-hidden="true"><span><i class="sw" style="background:var(--obaga)"></i>Obaga (nord)</span><span><i class="sw" style="background:var(--solana)"></i>Solana (sud)</span><span id="simkey" hidden><i class="sw" style="background:#FFE040"></i>Semblant</span></div>
+     <div class="layerbar">
+       <button class="opt" data-lay="obsol" aria-pressed="true">Obaga i solana</button>
+       <button class="opt" data-lay="orto" aria-pressed="true">Foto</button>
+       <button class="opt" data-sim aria-pressed="false">Boscos semblants</button>
+     </div></div>
    <div class="card" id="mapcard"><p class="small">Toca una agulla per obrir el lloc, o qualsevol punt per saber com és.</p></div>`;
   map=L.map('map',{zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false,minZoom:9,maxZoom:18,maxBounds:[[40.45,0.1],[42.9,3.4]],maxBoundsViscosity:1});
   map.attributionControl.setPrefix(false).addAttribution('ICGC · Terrain Tiles · Open-Meteo');
@@ -488,7 +492,7 @@ function drawPins(){
       :L.circle([s.lat,s.lng],{radius:600,color:'#1c2218',weight:1.5,dashArray:'5 6',fill:false,interactive:false}).addTo(map);
     pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="pin"><b style="background:${col[s.state]}"></b><em>${esc(s.name)}</em></div>`,iconSize:[130,56],iconAnchor:[65,30]})})
       .on('click',e=>{L.DomEvent.stopPropagation(e);pinCard(s)}).addTo(map)})}
-function pinCard(s){
+function pinCard(s){setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">${esc(s.name)}</strong><span class="spacer"></span>${chip(s)}</div>
    <p>${what(s)}</p><p class="small">${Math.round(s.zone.st.obaga*100)}% obaga · ${Math.round(s.zone.st.solana*100)}% solana</p>
    <div class="row"><button class="btn" data-open="${s.id}" data-from="mapa" style="flex:1">Obrir</button><a class="btn ghost" href="${gmDir(s.lat,s.lng)}" target="_blank" rel="noopener">Com arribar-hi</a></div>
@@ -498,7 +502,7 @@ const gmPt=(a,b)=>`https://www.google.com/maps/search/?api=1&query=${a.toFixed(6
 function onMapClick(e){
   if(drawing){drawPts.push([e.latlng.lat,e.latlng.lng]);drawMarks.push(L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="vtx"></div>',iconSize:[12,12],iconAnchor:[6,6]}),interactive:false}).addTo(map));
     if(drawLine)map.removeLayer(drawLine);drawLine=L.polyline(drawPts,{color:'#7A2E8E',weight:3}).addTo(map);$('#dfin').disabled=drawPts.length<3;return}
-  const i=cellOf(e.latlng.lat,e.latlng.lng);
+  const i=cellOf(e.latlng.lat,e.latlng.lng);setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   if(tap)map.removeLayer(tap);tap=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
   const tools=`<div class="row"><span class="coords">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmPt(e.latlng.lat,e.latlng.lng)}" target="_blank" rel="noopener">Google Maps</a><button class="btn ghost" data-addhere="${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}">Afegir lloc</button></div>`;
   if(i<0){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de la zona estudiada: aquí no tinc obaga, solana ni roca, però la pluja sí que funciona.</p>${tools}`;return}
