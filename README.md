@@ -1,4 +1,4 @@
-# Carpe Boletum
+# Boletus
 
 App per saber quan anar a buscar ceps (*Boletus aereus*, *B. aestivalis*) i ous de reig (*Amanita caesarea*) a cada lloc, a partir de la pluja i la temperatura.
 

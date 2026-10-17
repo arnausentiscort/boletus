@@ -1,4 +1,4 @@
-// Carpe Boletum: funciona sense cobertura al bosc.
+// Boletus: funciona sense cobertura al bosc.
 // L'app i les dades: primer la xarxa (per tenir sempre l'última versió), si no, la còpia guardada.
 // Mapes i fonts: la còpia guardada, i s'actualitza de fons.
 const APP = 'cb-app-v1', MAPS = 'cb-maps-v1';
