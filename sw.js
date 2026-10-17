@@ -1,7 +1,7 @@
 // Boletus: funciona sense cobertura al bosc.
 // L'app i les dades: primer la xarxa (per tenir sempre l'última versió), si no, la còpia guardada.
 // Mapes i fonts: la còpia guardada, i s'actualitza de fons.
-const APP = 'cb-app-v2', MAPS = 'cb-maps-v1';
+const APP = 'cb-app-v3', MAPS = 'cb-maps-v1';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'vendor/leaflet.js', 'vendor/leaflet.css',
   'icons/logo.svg', 'icons/icon-192.png', 'icons/apple-touch-icon.png',
   'data/meta.json', 'data/grid.bin', 'data/hist.json', 'data/now.json', 'data/llocs.json', 'data/obsol.png'];
@@ -18,7 +18,8 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (url.hostname.endsWith('open-meteo.com')) return; // la pluja la gestiona l'app
   if (url.origin === location.origin) {
-    e.respondWith(fetch(e.request).then(r => {
+    // 'no-cache': sempre pregunta al servidor si hi ha versió nova (així els canvis arriben de seguida)
+    e.respondWith(fetch(e.request, { cache: 'no-cache' }).then(r => {
       if (r.ok) { const cp = r.clone(); caches.open(APP).then(c => c.put(e.request, cp)); }
       return r;
     }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match('index.html'))));
