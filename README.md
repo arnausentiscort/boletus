@@ -5,7 +5,7 @@ App per saber quan anar a buscar ceps (*Boletus aereus*, *B. aestivalis*) i ous 
 - S'instal·la al mòbil des del navegador (Compartir → Afegir a la pantalla d'inici).
 - Cada cop que s'obre baixa la pluja dels últims dies i la previsió (Open-Meteo).
 - Funciona sense cobertura amb les últimes dades guardades.
-- Els llocs van xifrats (`data/llocs.enc.json`); només s'obren amb l'enllaç que porta la clau.
+- Els llocs i les sortides inicials són a `data/llocs.json`.
 
 ## Dades
 - Relleu: Terrain Tiles (Terrarium, AWS). Cobertes del sòl i geologia: ICGC.
@@ -14,4 +14,3 @@ App per saber quan anar a buscar ceps (*Boletus aereus*, *B. aestivalis*) i ous 
 
 ## Eines
 - `tools/build_obsol.py`: refà la capa d'obaga/solana.
-- `tools/encrypt_llocs.mjs <clau>`: xifra `tools/llocs.json` (no es puja) a `data/llocs.enc.json`.

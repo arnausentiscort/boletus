@@ -245,25 +245,10 @@ try{
   G={gw,gh,elev:take(Uint16Array,2),slope:take(Uint8Array,1),asp:take(Uint16Array,2),sec:take(Uint8Array,1),cov:take(Uint8Array,1),rock:take(Uint8Array,1),rdesc:take(Int16Array,2)};
 }catch(e){$('#s-llocs').innerHTML='<div class="card">No s\'han pogut carregar les dades. Torna a obrir l\'app amb connexió.</div>';return}
 
-/* ---------- Clau dels llocs: va dins l'enllaç (#k=...) i es guarda al mòbil ---------- */
-addEventListener('hashchange',()=>{if(/[#&]k=/.test(location.hash))location.reload()});
-const hk=new URLSearchParams(location.hash.slice(1)).get('k');
-if(hk){try{localStorage.setItem('cb-key',hk)}catch(e){}history.replaceState(null,'',location.pathname+location.search)}
-async function unlock(key){
-  const e=await j('data/llocs.enc.json'),u=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
-  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(key),'PBKDF2',false,['deriveKey']);
-  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:u(e.salt),iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
-  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u(e.iv)},k,u(e.data))))}
-let KEY=null;try{KEY=localStorage.getItem('cb-key')}catch(e){}
-try{if(KEY)PRIV=await unlock(KEY)}catch(e){PRIV=null}
-if(!PRIV){
-  document.querySelector('.tabs').hidden=true;$('#howbtn').hidden=true;
-  $('#s-llocs').innerHTML=`<div class="card"><strong style="font-family:var(--f-display);font-size:20px">Aquesta app és privada</strong>
-   <p>Obre-la amb l'enllaç que t'han passat. Si el tens copiat, enganxa'l aquí:</p>
-   <form id="keyf" class="sheet"><textarea id="keyin" rows="2" placeholder="Enganxa l'enllaç"></textarea><button class="btn">Entrar</button></form>
-   ${KEY?'<p class="small" style="color:#c55">Aquesta clau no és correcta.</p>':''}</div>`;
-  $('#keyf').onsubmit=ev=>{ev.preventDefault();const v=$('#keyin').value.trim();const m=v.match(/[#&]k=([\w-]+)/);try{localStorage.setItem('cb-key',m?m[1]:v)}catch(e){}location.reload()};
-  return}
+/* ---------- Llocs i sortides inicials ---------- */
+// (els enllaços antics amb #k=... continuen funcionant: la clau ja no cal)
+if(/[#&]k=/.test(location.hash))history.replaceState(null,'',location.pathname+location.search);
+try{PRIV=await j('data/llocs.json')}catch(e){$('#s-llocs').innerHTML="<div class='card'>No s'han pogut carregar els llocs. Torna a obrir l'app amb connexió.</div>";return}
 const [[S_,W_],[N_,E_]]=META.bounds;const mY=lat=>Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
 G.w=W_;G.e=E_;G.ny=mY(N_);G.sy=mY(S_);
 const forestSet=new Set(META.forest_ids);

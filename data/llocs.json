@@ -1,0 +1,46 @@
+{
+ "sites": [
+  {
+   "id": "a",
+   "name": "Mas d'Anguera",
+   "muni": "l'Aleixar",
+   "lat": 41.22465,
+   "lng": 1.076165
+  },
+  {
+   "id": "b",
+   "name": "Els Servians",
+   "muni": "Alforja",
+   "lat": 41.212257,
+   "lng": 1.005462
+  }
+ ],
+ "visits": [
+  {
+   "d": "2022-10-25",
+   "site": "a",
+   "n": 20,
+   "h": "",
+   "est": [],
+   "nota": "Ceps i ous de reig."
+  },
+  {
+   "d": "2026-10-17",
+   "site": "a",
+   "n": 8,
+   "h": "10:30",
+   "est": [
+    "Humit"
+   ],
+   "nota": "Hi vam arribar tard."
+  },
+  {
+   "d": "2026-10-17",
+   "site": "b",
+   "n": 0,
+   "h": "",
+   "est": [],
+   "nota": "Aquí encara no hi hem trobat mai bolets."
+  }
+ ]
+}
