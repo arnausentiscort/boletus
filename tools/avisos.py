@@ -53,6 +53,7 @@ def main():
         r = [v or 0 for v in d['daily']['precipitation_sum']]; t = d['daily']['temperature_2m_mean']
         rain_msgs = []  # un sol avís de pluja per lloc, amb totes les espècies
         for k, R in SPECIES.items():
+            if k not in s.get('sp', ['ceps']): continue  # cada lloc només avisa de les seves espècies
             last = -99
             for i in range(R['span'] - 1, len(days)):
                 if days[i] > yesterday: break  # només dies ja acabats

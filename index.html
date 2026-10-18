@@ -50,9 +50,23 @@ p{margin:0}
 .topbar{display:flex;align-items:center;gap:10px}
 .topbar h1{font-size:24px;font-weight:800;line-height:1;font-style:italic;letter-spacing:-.02em}
 .brand{display:flex;flex-direction:column;gap:3px}
-.spsw{display:flex;gap:4px;background:var(--surface2);border-radius:12px;padding:4px;margin:0 0 4px}
-.spsw button{flex:1;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:800;font-size:14px;padding:8px 6px;border-radius:9px;cursor:pointer}
-.spsw button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+:root{--acc:#8A5530;--acc-soft:rgba(138,85,48,.14)}
+:root[data-species="rov"]{--acc:#E2701F;--acc-soft:rgba(226,112,31,.16)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--acc:#D9A57E;--acc-soft:rgba(217,165,126,.13)}
+  :root:not([data-theme="light"])[data-species="rov"]{--acc:#F39A4C;--acc-soft:rgba(243,154,76,.15)}}
+body{background-image:radial-gradient(120% 60% at 50% -10%,var(--acc-soft),transparent 70%);background-repeat:no-repeat;background-attachment:fixed;transition:background-color .3s}
+.spsw{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:16px;padding:5px;margin:0 0 2px}
+.spsw button{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;border:0;background:transparent;color:var(--muted);font:800 14px var(--f-display);padding:7px 4px;border-radius:12px;cursor:pointer;transition:background .2s,color .2s,box-shadow .2s}
+.spsw button svg{flex:none;transition:transform .25s;filter:saturate(.35) opacity(.7)}
+.spsw button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.25),inset 0 -3px 0 var(--acc)}
+.spsw button[aria-pressed=true] svg{transform:scale(1.12) rotate(-4deg);filter:none}
+.logo-wrap{position:relative;width:44px;height:44px;flex:none}
+.logo-wrap .logo{position:absolute;inset:0;transition:opacity .35s,transform .35s}
+.logo-wrap .logo.off{opacity:0;transform:scale(.8) rotate(-8deg)}
+.brand .tag{color:var(--acc)!important;transition:color .3s}
+.empty{align-items:center;text-align:center;padding:26px 18px;gap:12px}
+.empty h3{font-size:22px}
+.empty svg{filter:drop-shadow(0 6px 10px rgba(0,0,0,.3))}
 .brand .tag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .logo{flex:none;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .spacer{flex:1}
@@ -69,11 +83,13 @@ button{font:inherit;color:inherit;cursor:pointer}
 .s-go{color:var(--go);background:var(--go-soft)} .s-soon{color:var(--soon);background:var(--soon-soft)} .s-wait{color:var(--wait);background:var(--wait-soft)}
 
 /* Sol */
-.sun{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
+.sun{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,rgba(240,181,74,.18),transparent 55%),var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
 .sun strong{font-family:var(--f-display);font-size:18px}
 
 /* Llista de llocs */
-.spot{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px;text-align:left;width:100%}
+.spot{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--acc-soft),transparent 38%),var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px;text-align:left;width:100%}
+.spot .mark{position:absolute;right:-10px;bottom:-12px;opacity:.07;pointer-events:none;transform:rotate(-12deg)}
+.spot>*{position:relative}
 .spot .name{font-family:var(--f-display);font-weight:800;font-size:21px}
 .spot .what{font-size:15.5px}
 .strip{display:grid;grid-template-columns:repeat(21,1fr);gap:2px;align-items:end;width:100%}
@@ -109,7 +125,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .day .drop{display:flex;flex-direction:column;align-items:center;margin-top:auto;margin-bottom:3px;line-height:1}
 .day .drop span{font-family:var(--f-data);font-size:10px;color:var(--rain);font-weight:500}
 .day .drop.f{opacity:.5}
-.day .c{position:absolute;top:2px;right:2px;font-size:9.5px;font-weight:800;color:#fff;background:var(--cep);border-radius:999px;min-width:15px;height:15px;line-height:15px;text-align:center;padding:0 2px}
+.day .c{position:absolute;top:-5px;right:-4px;z-index:1;box-shadow:0 0 0 2px var(--surface);font-size:9.5px;font-weight:800;color:#fff;background:var(--acc);border-radius:999px;min-width:15px;height:15px;line-height:15px;text-align:center;padding:0 2px}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .sw{width:13px;height:13px;border-radius:4px;display:inline-block;flex:none}
@@ -172,7 +188,7 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .slider input{grid-column:1/-1;width:100%;accent-color:var(--moss)}
 
 /* Pestanyes */
-.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:2000;
+.tabs{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--surface) 88%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--line);z-index:2000;
   padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
 .tabs nav{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr}
 .zone{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
@@ -212,7 +228,7 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 <body>
 <div class="app">
   <header class="topbar">
-    <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+    <span class="logo-wrap" id="logos">    <svg class="logo" data-logo="ceps" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22402A"/><stop offset="1" stop-color="#132417"/></linearGradient>
     <radialGradient id="sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#E8962E"/></radialGradient>
@@ -232,11 +248,11 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
     <path d="M10.5 37.5 H53.5 C52 39.5 50.5 40 48 40 H16 C13.5 40 12 39.5 10.5 37.5Z" fill="#D9C98F"/>
     <ellipse cx="23" cy="20" rx="9" ry="4.5" transform="rotate(-24 23 20)" fill="#fff" opacity=".18"/>
   </g>
-</svg>
+</svg></span>
     <div class="brand"><h1>Boletus</h1><span class="tag" id="sptag">radar de ceps</span></div><span class="spacer"></span>
     <button class="iconbtn" id="howbtn" aria-label="Com funciona"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
   </header>
-  <div class="spsw" role="group" aria-label="Quin bolet busquem"><button data-sp="ceps" aria-pressed="true">Ceps i ous de reig</button><button data-sp="rov" aria-pressed="false">Rovellons</button></div>
+  <div class="spsw" role="group" aria-label="Quin bolet busquem"><button data-sp="ceps" aria-pressed="true"><i data-ic="ceps"></i>Ceps i ous de reig</button><button data-sp="rov" aria-pressed="false"><i data-ic="rov"></i>Rovellons</button></div>
   <section class="screen" id="s-llocs"><p class="small">Carregant…</p></section>
   <section class="screen" id="s-fitxa" hidden></section>
   <section class="screen" id="s-mapa" hidden></section>
@@ -319,6 +335,8 @@ const dropSvg=(w,h)=>`<svg width="${w}" height="${h}" viewBox="0 0 20 25" aria-h
 
 /* ---------- Llocs ---------- */
 const SITES=PRIV.sites.concat(store.get('extra',[]));
+const spOf=s=>s.sp||['ceps']; // els llocs antics són de ceps
+const MINE=()=>SITES.filter(s=>spOf(s).includes(SP));
 let zones=store.get('zones',{});
 SITES.forEach(s=>{s.zone=zones[s.id]?{kind:'poly',st:polyStats(zones[s.id])}:{kind:'circle',st:circleStats(s.lat,s.lng,600)}});
 /* Pluja: l'històric ve amb l'app; els últims dies i la previsió es baixen cada dia */
@@ -408,7 +426,12 @@ const cepTxt=n=>{const[u1,u2]=SPECIES[SP].u;return n==null?'alguns '+u2:n===1?'1
 /* ---------- LLOCS ---------- */
 function renderLlocs(){
   const order={go:0,soon:1,wait:2};
-  const list=[...SITES].sort((a,b)=>order[a.state]-order[b.state]||((a.win&&b.win)?a.win.a-b.win.a:0));
+  const list=MINE().sort((a,b)=>order[a.state]-order[b.state]||((a.win&&b.win)?a.win.a-b.win.a:0));
+  if(!list.length){$('#s-llocs').innerHTML=`<div class="card empty">${spIcon(110,SP)}
+     <h3>Encara no teniu llocs de ${SPECIES[SP].nom.toLowerCase()}</h3>
+     <p class="small">Al Mapa hi ha els 10 millors pinars per provar-ho. Toca un número i després <strong>Afegir als meus llocs</strong>, o toca qualsevol punt del mapa per afegir-ne un de vostre.</p>
+     <button class="btn" data-gomap>Obrir el mapa</button></div>
+   <p class="small">${esc(wxInfo)}</p>`;return}
   const goDay=list[0].state==='soon'?list[0].win.a:TODAY+1;
   const st=sunTimes(goDay,SITES[0].lat,SITES[0].lng);
   $('#s-llocs').innerHTML=`
@@ -417,12 +440,12 @@ function renderLlocs(){
    ${list.map(s=>{const lv=visits.filter(v=>v.site===s.id&&ofSp(v)).sort((a,b)=>b.d.localeCompare(a.d))[0];
      let cells='';for(let d=TODAY-7;d<=TODAY+13;d++){const r=rainOn(s,d);const sz=r&&r>=2?Math.min(14,5+Math.sqrt(r)*1.6):0;
        cells+=`<i class="${s.peak(d)?'p':s.bolet(d)?'b':''} ${d===TODAY?'t':''}">${sz?`<u class="${d>TODAY?'f':''}" style="width:${sz}px;height:${sz}px"></u>`:''}</i>`}
-     return `<button class="spot" data-open="${s.id}">
+     return `<button class="spot" data-open="${s.id}"><span class="mark" aria-hidden="true">${spIcon(120)}</span>
        <span class="row" style="width:100%"><span class="name">${esc(s.name)}</span><span class="spacer"></span>${chip(s)}</span>
        <span class="what">${what(s)}</span>
        <span class="strip" aria-hidden="true">${cells}</span>
        <span class="striplab"><span>fa 1 setmana</span><span>avui</span><span>d'aquí a 2 setmanes</span></span>
-       ${lv?`<span class="last"><svg width="14" height="14" viewBox="0 0 34 34" aria-hidden="true"><path d="M4 16c0-7 6-12 13-12s13 5 13 12c0 2-2 3-4 3H8c-2 0-4-1-4-3z" fill="var(--cep)"/><path d="M12 19h10l1 9c0 2-2 3-6 3s-6-1-6-3z" fill="var(--cep)" opacity=".5"/></svg>Última sortida: ${dnum(lv.d)===TODAY?'avui':fmt(dnum(lv.d))}, ${cepTxt(lv.n)}${lv.h?' a les '+esc(lv.h):''}</span>`:''}
+       ${lv?`<span class="last">${spIcon(18)}Última sortida: ${dnum(lv.d)===TODAY?'avui':fmt(dnum(lv.d))}, ${cepTxt(lv.n)}${lv.h?' a les '+esc(lv.h):''}</span>`:''}
      </button>`}).join('')}
    <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span><i class="sw" style="background:var(--rain);border-radius:50%"></i>Pluja</span><span><i class="sw" style="background:var(--rain);opacity:.5;border-radius:50%"></i>Pluja prevista</span></div>
    <p class="small">${esc(wxInfo)} Per afegir un lloc, toca'l al Mapa.</p>
@@ -504,7 +527,7 @@ let map,L1={},pins={},tap=null,sim=null,drawing=null,drawPts=[],drawMarks=[],dra
 function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i>Terra àcida</span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i>Calcària (no)</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors spots</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors spots</span></div>
      <div class="layerbar">
        <button class="opt" data-lay="cares" aria-pressed="true">Cara nord / sud</button>
        <button class="opt" data-lay="acid" aria-pressed="true">Terra àcida</button>
@@ -543,7 +566,7 @@ function buildMap(){
     if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync()});
     L1.homeLayer=null;
   map.on('click',onMapClick)}
-function legendSync(){const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots')}
+function legendSync(){if($('#k-acid-t')){$('#k-acid-t').textContent=SP==='rov'?'Àcida: pinetell':'Terra àcida';$('#k-calc-t').textContent=SP==='rov'?'Calcària: rovelló':'Calcària (no)'}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots')}
 let TOP=[];
 // Els 10 millors spots de l'espècie triada (cada espècie té les seves zones i la seva puntuació)
 const SCORE={
@@ -554,7 +577,7 @@ function drawSpots(R){
   if(L1.spots)map.removeLayer(L1.spots);
   L1.spots=L.layerGroup();const H=R.home,kmH=z=>distKm(H.lat,H.lng,z.lat,z.lng),score=z=>SCORE[SP](z,kmH(z));
   const cand=R.zones.map((z,i)=>Object.assign({i},z)).filter(z=>z.ha>=15&&kmH(z)<=40).sort((a,b)=>score(b)-score(a));
-  TOP=[];for(const z of cand){if(SITES.some(t=>distKm(t.lat,t.lng,z.lat,z.lng)<1.5))continue;// els llocs propis ja els coneixeu
+  TOP=[];for(const z of cand){if(MINE().some(t=>distKm(t.lat,t.lng,z.lat,z.lng)<1.5))continue;// els llocs propis ja els coneixeu
     if(TOP.every(b=>distKm(b.lat,b.lng,z.lat,z.lng)>3))TOP.push(z);if(TOP.length===10)break}
   TOP.forEach((z,n)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#C9A21E';
     L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${col}">${n+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
@@ -598,6 +621,30 @@ const CEP_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true
  <g fill="none" stroke="#C9B48A" stroke-width=".8"><path d="M15 36 l3 2 3-2 3 2 3-2"/><path d="M14.5 40 l3.2 2 3.3-2 3.3 2 3.2-2"/></g>
  <ellipse cx="14.5" cy="18" rx="6" ry="2.8" transform="rotate(-28 14.5 18)" fill="#fff" opacity=".22"/>
 </svg>`;
+// Rovelló vist una mica des de dalt: barret taronja amb anells i el centre enfonsat, làmines, peu curt amb clotets i una taca verda
+function rovBody(id,stroke){const st=stroke?' stroke="#fff" stroke-width="1.4" paint-order="stroke" stroke-linejoin="round"':'';
+  return `<defs><radialGradient id="${id}c" cx=".5" cy=".42" r=".62"><stop offset="0" stop-color="#B9480F"/><stop offset=".3" stop-color="#EE8530"/><stop offset=".85" stop-color="#F29440"/><stop offset="1" stop-color="#D9661F"/></radialGradient>
+   <linearGradient id="${id}s" x1="0" x2="1"><stop offset="0" stop-color="#E38B42"/><stop offset=".5" stop-color="#F8BE7E"/><stop offset="1" stop-color="#D2762F"/></linearGradient></defs>
+   <g${st}><path d="M17 27 C16.5 34 16 39 17.5 43.5 C19.5 45.6 28.5 45.6 30.5 43.5 C32 39 31.5 34 31 27Z" fill="url(#${id}s)"/>
+   <path d="M3.6 21.5 C7.5 31 18 33.8 24 33.8 C30 33.8 40.5 31 44.4 21.5Z" fill="#F5A85C"/>
+   <ellipse cx="24" cy="21" rx="20.6" ry="8.6" fill="url(#${id}c)"/></g>
+   <g stroke="#D06E26" stroke-width=".75" opacity=".85"><path d="M9 26.5 L18.5 31.6 M14.5 29 L21.3 32.8 M39 26.5 L29.5 31.6 M33.5 29 L26.7 32.8 M24 30.4 V33.6"/></g>
+   <g fill="none" stroke="#9E3D0D" stroke-opacity=".5" stroke-width="1.15"><ellipse cx="24" cy="21.3" rx="15.6" ry="6.3"/><ellipse cx="24" cy="21.6" rx="10.4" ry="4.2"/></g>
+   <ellipse cx="24" cy="21.8" rx="5.2" ry="2.1" fill="#8E340A" opacity=".55"/>
+   <ellipse cx="34.5" cy="18.4" rx="3.3" ry="1.4" fill="#5E7F3A" opacity=".6"/>
+   <ellipse cx="14.5" cy="17.3" rx="5.8" ry="1.7" fill="#fff" opacity=".28"/>
+   <g fill="#C2621F" opacity=".75"><ellipse cx="21" cy="36.2" rx="1.4" ry="1.8"/><ellipse cx="27.2" cy="39.4" rx="1.2" ry="1.6"/><ellipse cx="22.6" cy="41.6" rx="1" ry="1.3"/></g>`}
+const ROV_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true">${rovBody('pr',true)}</svg>`;
+const rovIcon=(w,id)=>`<svg width="${w}" height="${w}" viewBox="2 8 44 40" aria-hidden="true">${rovBody(id||'ri'+w,false)}</svg>`;
+const cepIcon=w=>`<svg width="${w}" height="${w}" viewBox="0 6 48 42" aria-hidden="true">${CEP_SVG.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'').replace(/stroke="#fff" stroke-width="1.4"/,'stroke="none"')}</svg>`;
+const spIcon=(w,sp)=>(sp||SP)==='rov'?rovIcon(w):cepIcon(w);
+const ROV_LOGO=`<svg class="logo off" data-logo="rov" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+  <defs><linearGradient id="lrbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22402A"/><stop offset="1" stop-color="#132417"/></linearGradient>
+  <radialGradient id="lrsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#E8962E"/></radialGradient><clipPath id="lrr"><rect width="64" height="64" rx="14"/></clipPath></defs>
+  <g clip-path="url(#lrr)"><rect width="64" height="64" fill="url(#lrbg)"/><circle cx="48" cy="50" r="14" fill="url(#lrsun)" opacity=".9"/>
+  <g stroke="#2F5A35" stroke-width="1.6" stroke-linecap="round" opacity=".9"><path d="M8 50 l5 -9 M13 50 l-2 -11 M54 18 l-6 6"/></g>
+  <path d="M0 55 Q16 50 32 54 T64 52 V64 H0Z" fill="#0E1A10"/>
+  <g transform="translate(4.6 1.5) scale(1.15)">${rovBody('lr',false)}</g></g></svg>`;
 const COLS={nord:[52,104,200],sud:[232,132,48],eo:[214,186,64],pla:[150,150,140]};
 const faceOf=sec=>[7,0,1].includes(sec)?'nord':[3,4,5].includes(sec)?'sud':sec===8?'pla':'eo';
 const REGCOV=['ni bosc ni matolls','pinar','alzinar o suredes','roureda','matolls','avellaners'];
@@ -663,12 +710,13 @@ const siteImg={};
 function drawPins(){
   Object.values(pins).forEach(p=>map.removeLayer(p));Object.values(zoneLayers).forEach(p=>map.removeLayer(p));
   const col={go:'#2E8B4B',soon:'#C88A12',wait:'#7E857A'};
-  SITES.forEach(s=>{
+  Object.values(siteImg).forEach(p=>map.removeLayer(p));
+  MINE().forEach(s=>{
     zoneLayers[s.id]=zones[s.id]?L.polygon(zones[s.id],{color:'#1c2218',weight:2.5,fill:false,interactive:false}).addTo(map)
       :L.circle([s.lat,s.lng],{radius:600,color:'#fff',weight:2,dashArray:'5 6',fill:false,interactive:false}).addTo(map);
     if(!map.getPane('siteP'))map.createPane('siteP').style.zIndex=285;
     zoneDetail(s).then(D=>{if(!D)return;if(siteImg[s.id])map.removeLayer(siteImg[s.id]);siteImg[s.id]=L.imageOverlay(D.url,D.bounds,{pane:'siteP',opacity:.9,className:'siteimg'}).addTo(map)});
-    pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="pin">${CEP_SVG}<em><i style="background:${col[s.state]}"></i>${esc(s.name)}</em></div>`,iconSize:[140,70],iconAnchor:[70,44]})})
+    pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="pin">${SP==='rov'?ROV_SVG:CEP_SVG}<em><i style="background:${col[s.state]}"></i>${esc(s.name)}</em></div>`,iconSize:[140,70],iconAnchor:[70,44]})})
       .on('click',e=>{L.DomEvent.stopPropagation(e);pinCard(s)}).addTo(map)})}
 function pinCard(s){setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">${esc(s.name)}</strong><span class="spacer"></span>${chip(s)}</div>
@@ -809,12 +857,17 @@ function show(t){
 function setSpecies(k){
   if(!SPECIES[k])return;SP=k;store.set('sp',k);RULE=loadRule();SITES.forEach(evalSite);form=null;
   document.querySelectorAll('[data-sp]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sp===k));
-  $('#sptag').textContent=SPECIES[k].tag;
+  $('#sptag').textContent=SPECIES[k].tag;document.documentElement.dataset.species=k;
+  document.querySelectorAll('[data-logo]').forEach(l=>l.classList.toggle('off',l.dataset.logo!==k));
+  if(mapBuilt)drawPins();
   if(mapBuilt){if(tap){map.removeLayer(tap);tap=null}$('#mapcard').innerHTML=`<p class="small">Spots de ${SPECIES[k].nom.toLowerCase()}. Toca un número per veure'l.</p>`;region().then(drawSpots)}
   if(screen==='fitxa')renderFitxa();else show(screen)}
+$('#logos').insertAdjacentHTML('beforeend',ROV_LOGO);
+document.querySelectorAll('[data-ic]').forEach(i=>i.outerHTML=spIcon(24,i.dataset.ic));
 setSpecies(SP);
 document.addEventListener('click',e=>{
   const spb=e.target.closest('[data-sp]');if(spb){setSpecies(spb.dataset.sp);return}
+  if(e.target.closest('[data-gomap]')){show('mapa');return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
   if(e.target.closest('#howbtn')){show('com');return}
   const o=e.target.closest('[data-open]');if(o){openSite(o.dataset.open,o.dataset.from);return}
@@ -827,7 +880,7 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-showmap]')){const s=cur;L1.moved=true;show('mapa');setTimeout(()=>{map.invalidateSize();map.setView([s.lat,s.lng],15);pinCard(s)},60);return}
   const ah=e.target.closest('[data-addhere]');if(ah){const[la,lo]=ah.dataset.addhere.split(',').map(Number);
     $('#mapcard').innerHTML=`<strong>Lloc nou</strong><form id="addf" class="sheet"><div><label for="addn">Nom</label><input id="addn" maxlength="40" required style="font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px;width:100%;box-sizing:border-box"></div><button class="btn">Desa el lloc</button></form><p class="small">Es guarda en aquest mòbil.</p>`;
-    $('#addn').focus();$('#addf').onsubmit=ev=>{ev.preventDefault();const ex=store.get('extra',[]);ex.push({id:'x'+Date.now().toString(36),name:$('#addn').value.trim()||'Lloc nou',muni:'',lat:la,lng:lo});store.set('extra',ex);store.set('tab','llocs');location.reload()};return}
+    $('#addn').focus();$('#addf').onsubmit=ev=>{ev.preventDefault();const ex=store.get('extra',[]);ex.push({sp:[SP],id:'x'+Date.now().toString(36),name:$('#addn').value.trim()||'Lloc nou',muni:'',lat:la,lng:lo});store.set('extra',ex);store.set('tab','llocs');location.reload()};return}
   const dl=e.target.closest('[data-delsite]');if(dl){if(dl.dataset.sure){store.set('extra',store.get('extra',[]).filter(x=>x.id!==dl.dataset.delsite));location.reload()}else{dl.dataset.sure='1';dl.textContent='Toca un altre cop per esborrar-lo'}return}
   if(e.target.closest('[data-avisosobre]')){avisosObert=true;renderLlocs();$('#avisos').scrollIntoView({behavior:'smooth',block:'nearest'});return}
   if(e.target.closest('[data-avisosreset]')){store.set('avisosOk',false);avisosObert=true;show('llocs');return}
@@ -839,7 +892,7 @@ document.addEventListener('click',e=>{
     if(tap)map.removeLayer(tap);tap=L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
     $('#mapcard').innerHTML=`<strong>Zona de ${z.ha} ha</strong><p class="small">${Math.round(z.ob*100)}% obaga · ${Math.round(z.so*100)}% solana · ${z.arbre} · ${z.alt} m</p><div class="row"><a class="btn ghost" href="${gmDir(z.lat,z.lng)}" target="_blank" rel="noopener">Com arribar-hi</a><button class="btn ghost" data-zadd="${zm.dataset.zmap}">Afegir als meus llocs</button></div>`},80);return}
   const za=e.target.closest('[data-zadd]');if(za){const z=REG.zones[+za.dataset.zadd];const H=store.get('home',null)||REG.home;const ex=store.get('extra',[]);
-    ex.push({id:'x'+Date.now().toString(36),name:`Zona a ${distKm(H.lat,H.lng,z.lat,z.lng).toFixed(0)} km (${bearing(H.lat,H.lng,z.lat,z.lng)})`,muni:'',lat:z.lat,lng:z.lng});store.set('extra',ex);store.set('tab','llocs');location.reload();return}
+    ex.push({sp:[SP],id:'x'+Date.now().toString(36),name:`Zona a ${distKm(H.lat,H.lng,z.lat,z.lng).toFixed(0)} km (${bearing(H.lat,H.lng,z.lat,z.lng)})`,muni:'',lat:z.lat,lng:z.lng});store.set('extra',ex);store.set('tab','llocs');location.reload();return}
   const dr=e.target.closest('[data-draw]');if(dr){const s=SITES.find(x=>x.id===dr.dataset.draw);map.setView([s.lat,s.lng],15);startDraw(s.id);return}
 });
 show(['llocs','mapa'].includes(store.get('tab','llocs'))?store.get('tab','llocs'):'llocs');store.set('tab','llocs');

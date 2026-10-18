@@ -5,14 +5,20 @@
    "name": "Mas d'Anguera",
    "muni": "l'Aleixar",
    "lat": 41.22465,
-   "lng": 1.076165
+   "lng": 1.076165,
+   "sp": [
+    "ceps"
+   ]
   },
   {
    "id": "b",
    "name": "Els Servians",
    "muni": "Alforja",
    "lat": 41.212257,
-   "lng": 1.005462
+   "lng": 1.005462,
+   "sp": [
+    "ceps"
+   ]
   }
  ],
  "visits": [
