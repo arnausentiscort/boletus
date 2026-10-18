@@ -546,7 +546,7 @@ async function regInfo(lat,lng){
   if(!RINFO){RINFO=await new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);res({x,w:im.width,h:im.height})};im.onerror=()=>res(null);im.src='data/reg_info.png'})}
   if(!RINFO)return null;const[[s,w],[n,e]]=R.bounds;
   const px=Math.floor((lng-w)/(e-w)*RINFO.w),py=Math.floor((mY(n)-mY(lat))/(mY(n)-mY(s))*RINFO.h);
-  if(px<0||py<0||px>=RINFO.w||py>=RINFO.h)return null;const d=RINFO.x.getImageData(px,py,1,1).data;return{sec:d[0],rock:d[1],tree:d[2]}}
+  if(px<0||py<0||px>=RINFO.w||py>=RINFO.h)return null;const d=RINFO.x.getImageData(px,py,1,1).data;return{sec:Math.round(d[0]/28),rock:Math.round(d[1]/80),tree:Math.round(d[2]/40)}}
 function tagsHtml(sec,rock){
   const r=rock===1||rock===3?'<span class="tag2 t-acid">Terra àcida ✓</span>':rock===2?'<span class="tag2 t-calc">Terra calcària ✗</span>':'<span class="tag2 t-unk">Roca sense dades</span>';
   const f=[7,0,1].includes(sec)?'<span class="tag2 t-ob">Cara nord</span>':[3,4,5].includes(sec)?'<span class="tag2 t-so">Cara sud</span>':sec===8?'<span class="tag2 t-pla">Pla</span>':`<span class="tag2 t-pla">Mira a l'${DIRS[sec]}</span>`;
@@ -573,7 +573,20 @@ function srcLocal(){return{w:G.gw,h:G.gh,b:META.bounds,local:true,at(x,y){const 
 let SRCREG=null;
 async function srcReg(){if(SRCREG)return SRCREG;const R=await region();await regInfo(R.home.lat,R.home.lng);if(!RINFO)return null;
   const data=RINFO.x.getImageData(0,0,RINFO.w,RINFO.h).data;
-  SRCREG={w:RINFO.w,h:RINFO.h,b:R.bounds,local:false,at(x,y){const k=(y*this.w+x)*4;return{sec:data[k],rock:data[k+1],cov:REGCOV[data[k+2]]||'altres',rname:'',elev:null,slope:null}}};return SRCREG}
+  SRCREG={w:RINFO.w,h:RINFO.h,b:R.bounds,local:false,at(x,y){const k=(y*this.w+x)*4;return{sec:Math.round(data[k]/28),rock:Math.round(data[k+1]/80),cov:REGCOV[Math.round(data[k+2]/40)]||'altres',rname:'',elev:null,slope:null}}};return SRCREG}
+// Detall de 5 m (relleu de l'IGN) al voltant dels vostres llocs
+const DET5={};
+async function srcDet(id){
+  if(id in DET5)return DET5[id];
+  try{const m=await j(`data/det/${id}.json`);const im=await new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ko;i.src=`data/det/${id}.png`});
+    const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);
+    const data=x.getImageData(0,0,c.width,c.height).data;const R=await region();await regInfo(R.home.lat,R.home.lng);
+    DET5[id]={w:c.width,h:c.height,b:m.bounds,lin:true,local:true,det:true,
+      at(px,py,la,lo){const k=(py*this.w+px)*4;const ci=cellOf(la,lo);const ri=ci<0&&RINFO?null:null;
+        return{sec:Math.round(data[k]/28),slope:data[k+1],elev:data[k+2]+m.emin,
+          rock:ci>=0?G.rock[ci]:0,cov:ci>=0?coverName(G.cov[ci]):'',rname:ci>=0&&G.rdesc[ci]>=0?META.rock_names[G.rdesc[ci]]:''}}}}
+  catch(e){DET5[id]=null}
+  return DET5[id]}
 const DETCACHE={};
 async function zoneDetail(s){
   const key=s.id+JSON.stringify(zones[s.id]||0);if(DETCACHE[key])return DETCACHE[key];
@@ -582,19 +595,20 @@ async function zoneDetail(s){
   let la0,la1,lo0,lo1;
   if(poly){la0=Math.min(...poly.map(p=>p[0]));la1=Math.max(...poly.map(p=>p[0]));lo0=Math.min(...poly.map(p=>p[1]));lo1=Math.max(...poly.map(p=>p[1]))}
   else{const dl=600/111320,dn=600/(111320*k);la0=s.lat-dl;la1=s.lat+dl;lo0=s.lng-dn;lo1=s.lng+dn}
-  const src=(cellOf(la0,lo0)>=0&&cellOf(la1,lo1)>=0)?srcLocal():await srcReg();if(!src)return null;
-  const[[S,W],[N,E]]=src.b,X=x=>(x-W)/(E-W)*src.w,Y=y=>(mY(N)-mY(y))/(mY(N)-mY(S))*src.h;
-  const latOf=y=>(2*Math.atan(Math.exp(mY(N)-y/src.h*(mY(N)-mY(S))))-Math.PI/2)*180/Math.PI,lngOf=x=>W+x/src.w*(E-W);
+  const det=await srcDet(s.id);const inDet=det&&la0>=det.b[0][0]&&la1<=det.b[1][0]&&lo0>=det.b[0][1]&&lo1<=det.b[1][1];
+  const src=inDet?det:(cellOf(la0,lo0)>=0&&cellOf(la1,lo1)>=0)?srcLocal():await srcReg();if(!src)return null;
+  const[[S,W],[N,E]]=src.b,X=x=>(x-W)/(E-W)*src.w,Y=y=>src.lin?(N-y)/(N-S)*src.h:(mY(N)-mY(y))/(mY(N)-mY(S))*src.h;
+  const latOf=y=>src.lin?N-y/src.h*(N-S):(2*Math.atan(Math.exp(mY(N)-y/src.h*(mY(N)-mY(S))))-Math.PI/2)*180/Math.PI,lngOf=x=>W+x/src.w*(E-W);
   const x0=Math.max(0,Math.floor(X(lo0))),x1=Math.min(src.w-1,Math.ceil(X(lo1))),y0=Math.max(0,Math.floor(Y(la1))),y1=Math.min(src.h-1,Math.ceil(Y(la0)));
   if(x1<x0||y1<y0)return null;
   const cv=document.createElement('canvas');cv.width=x1-x0+1;cv.height=y1-y0+1;const cx=cv.getContext('2d');const im=cx.createImageData(cv.width,cv.height);
   const D={n:0,face:{nord:0,sud:0,eo:0,pla:0},cov:{},rk:[0,0,0,0],rock:{},emin:1e9,emax:-1e9,esum:0,ssum:0,local:src.local,poly:!!poly};
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-    if(!test([latOf(y+.5),lngOf(x+.5)]))continue;const c=src.at(x,y),f=faceOf(c.sec);
+    const pla=latOf(y+.5),plo=lngOf(x+.5);if(!test([pla,plo]))continue;const c=src.at(x,y,pla,plo),f=faceOf(c.sec);
     D.n++;D.face[f]++;D.cov[c.cov]=(D.cov[c.cov]||0)+1;D.rk[c.rock]++;if(c.rname)D.rock[c.rname]=(D.rock[c.rname]||0)+1;
     if(c.elev!=null){D.emin=Math.min(D.emin,c.elev);D.emax=Math.max(D.emax,c.elev);D.esum+=c.elev;D.ssum+=c.slope}
     im.data.set([...COLS[f],f==='pla'?70:190],((y-y0)*cv.width+(x-x0))*4)}
-  cx.putImageData(im,0,0);D.url=cv.toDataURL();D.bounds=[[latOf(y1+1),lngOf(x0)],[latOf(y0),lngOf(x1+1)]];
+  cx.putImageData(im,0,0);D.url=cv.toDataURL();D.bounds=[[latOf(y1+1),lngOf(x0)],[latOf(y0),lngOf(x1+1)]];D.det=!!src.det;
   return DETCACHE[key]=D}
 function detailHtml(D){
   if(!D||!D.n)return '<p class="small">No tinc dades d\'aquesta zona.</p>';
@@ -603,7 +617,8 @@ function detailHtml(D){
   const covs=Object.entries(D.cov).sort((a,b)=>b[1]-a[1]).filter(([,v])=>v/D.n>=.03).slice(0,5);
   const rocks=Object.entries(D.rock).sort((a,b)=>b[1]-a[1]).filter(([,v])=>v/D.n>=.05).slice(0,3);
   const acid=D.rk[1]+D.rk[3];
-  return `<p class="small">${D.poly?'La zona que heu marcat':'Cercle de 600 m al voltant del punt'}: tot el terreny, sigui bosc o no.</p>
+  delete D.cov[''];
+  return `<p class="small">${D.poly?'La zona que heu marcat':'Cercle de 600 m al voltant del punt'}: tot el terreny, sigui bosc o no.${D.det?' Relleu de l’IGN cada 5 m.':''}</p>
    <strong>Cares</strong>
    <div class="bars">${bar('Cara nord (humida)',D.face.nord,'var(--obaga)')}${bar('Cara sud (seca)',D.face.sud,'var(--solana)')}${bar('Est o oest',D.face.eo,'#D6BA40')}${bar('Pla',D.face.pla,'#969690')}</div>
    <strong>Què hi ha</strong>
@@ -640,7 +655,9 @@ function onMapClick(e){
     regInfo(e.latlng.lat,e.latlng.lng).then(ri=>{if(!ri){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de la zona estudiada (uns 50 km al voltant de Torredembarra): aquí no tinc roca ni cares, però la pluja sí que funciona.</p>${tools}`;return}
       const ar=['','pinar','alzinar o suredes','roureda','matolls','avellaners'][ri.tree]||'ni bosc ni matolls';
       $('#mapcard').innerHTML=`<strong>Aquí</strong>${tagsHtml(ri.sec,ri.rock)}<p>${ar}</p>${ri.tree&&(ri.rock===1||ri.rock===3)&&ri.tree!==1?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`});return}
-  const sec=G.sec[i],face=sec===8?'terreny pla':[7,0,1].includes(sec)?'<b style="color:var(--obaga)">obaga</b>':[3,4,5].includes(sec)?'<b style="color:var(--solana)">solana</b>':`mira a l'${DIRS[sec]}`;
+  // a prop dels vostres llocs, la cara surt del relleu de 5 m
+  let secD=null;for(const d of Object.values(DET5)){if(!d)continue;const[[S5,W5],[N5,E5]]=d.b;const la=e.latlng.lat,lo=e.latlng.lng;if(la>S5&&la<N5&&lo>W5&&lo<E5){const px=Math.floor((lo-W5)/(E5-W5)*d.w),py=Math.floor((N5-la)/(N5-S5)*d.h);secD=d.at(px,py,la,lo).sec;break}}
+  const sec=secD!=null?secD:G.sec[i],face=sec===8?'terreny pla':[7,0,1].includes(sec)?'<b style="color:var(--obaga)">obaga</b>':[3,4,5].includes(sec)?'<b style="color:var(--solana)">solana</b>':`mira a l'${DIRS[sec]}`;
   const rk=['sense dades','àcida','calcària','barrejada'][G.rock[i]];
   const fit=goodTree(G.cov[i])&&(G.rock[i]===1||G.rock[i]===3);
   const rdn=G.rdesc[i]>=0?META.rock_names[G.rdesc[i]]:'';
