@@ -4,12 +4,18 @@
 - Avís de bolets: demà és el millor dia, perquè fa 16 dies va ploure prou i des d'aleshores la temperatura
   mitjana ha passat de 12 °C. No importa la temperatura del dia de la pluja: el que compta és quan creixen.
 Així, pluja amb calor i després fred dona només el primer avís, i pluja freda i després calor, només el segon.
-La regla és la mateixa que la de l'app (index.html)."""
+La regla és la mateixa que la de l'app (index.html).
+
+Cada espècie té la seva regla. Els ceps no han canviat; els rovellons tenen temporada (de setembre a gener)
+i també s'aturen si fa massa calor. L'avís de pluja és un de sol per lloc, amb el millor dia de cada espècie."""
 import json, math, os, sys, urllib.request, datetime as dt
 
 TOPIC = os.environ.get('NTFY_TOPIC', 'boletus-ceps-x7q2')
 APP = 'https://arnausentiscort.github.io/boletus/'
-RULE = dict(mm=17, span=2, minT=12, wait=16, before=2, after=2, gap=5)
+SPECIES = {
+    'ceps': dict(nom='ceps', mm=17, span=2, minT=12, wait=16, before=2, after=2, gap=5),
+    'rov': dict(nom='rovellons', mm=25, span=5, minT=10, maxT=20, wait=12, before=4, after=6, gap=5, months=[9, 10, 11, 12, 1]),
+}
 DIES = ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg']
 MESOS = ['gen', 'febr', 'març', 'abr', 'maig', 'juny', 'jul', 'ag', 'set', 'oct', 'nov', 'des']
 def fmt(d): return f"{DIES[d.weekday()]} {d.day} {MESOS[d.month - 1]}"
@@ -45,22 +51,28 @@ def main():
     for s, d in zip(llocs, data):
         days = [dt.date.fromisoformat(x) for x in d['daily']['time']]
         r = [v or 0 for v in d['daily']['precipitation_sum']]; t = d['daily']['temperature_2m_mean']
-        last, trig = -99, []
-        for i in range(RULE['span'] - 1, len(days)):
-            if days[i] > yesterday: break  # només dies ja acabats
-            sm = sum(r[i - RULE['span'] + 1:i + 1]); tt = [x for x in t[i - RULE['span'] + 1:i + 1] if x is not None]
-            if sm >= RULE['mm']:
-                if i - last > RULE['gap']:
-                    g = [x for x in t[i + 1:i + RULE['wait'] - 1] if x is not None]  # dies en què creixen
-                    trig.append((days[i], sm, bool(tt) and max(tt) >= RULE['minT'], len(g) >= 3 and sum(g) / len(g) >= RULE['minT']))
+        rain_msgs = []  # un sol avís de pluja per lloc, amb totes les espècies
+        for k, R in SPECIES.items():
+            last = -99
+            for i in range(R['span'] - 1, len(days)):
+                if days[i] > yesterday: break  # només dies ja acabats
+                sm = sum(r[i - R['span'] + 1:i + 1]); tt = [x for x in t[i - R['span'] + 1:i + 1] if x is not None]
+                if sm < R['mm']: continue
+                if i - last > R['gap']:
+                    day = days[i]; peak = day + dt.timedelta(R['wait'])
+                    if 'months' in R and peak.month not in R['months']: last = i; continue  # fora de temporada
+                    a, b = peak - dt.timedelta(R['before']), peak + dt.timedelta(R['after'])
+                    g = [x for x in t[i + 1:i + R['wait'] - 1] if x is not None]  # dies en què creixen
+                    good_after = len(g) >= 3 and R['minT'] <= sum(g) / len(g) <= R.get('maxT', 99)
+                    # avís de pluja dels ceps: algun dels dies de pluja ha de passar de 12 °C
+                    warm_rain = k != 'ceps' or (bool(tt) and max(tt) >= R['minT'])
+                    if day == yesterday and warm_rain:
+                        rain_msgs.append((sm, f"{R['nom'].capitalize()}: millor dia {fmt(peak)} (del {a.day}{'' if a.month == b.month else ' ' + MESOS[a.month - 1]} al {b.day} {MESOS[b.month - 1]})"))
+                    if peak == tomorrow and good_after:
+                        send(f"Demà és el millor dia de {R['nom']} a {s['name']}", f"Surt el sol a les {sunrise(tomorrow, s['lat'], s['lng'])}. Com més d'hora, millor.", 'mushroom'); sent += 1
                 last = i
-        for day, mm, warm_rain, warm_after in trig:
-            peak = day + dt.timedelta(RULE['wait'])
-            a, b = peak - dt.timedelta(RULE['before']), peak + dt.timedelta(RULE['after'])
-            if day == yesterday and warm_rain:
-                send(f"Ha plogut a {s['name']}", f"{round(mm)} litres. Si no fa fred, el millor dia serà {fmt(peak)} (del {a.day} al {b.day} {MESOS[b.month - 1]}).", 'cloud_with_rain'); sent += 1
-            if peak == tomorrow and warm_after:
-                send(f"Demà és el millor dia a {s['name']}", f"Surt el sol a les {sunrise(tomorrow, s['lat'], s['lng'])}. Com més d'hora, més ceps.", 'mushroom'); sent += 1
+        if rain_msgs:
+            send(f"Ha plogut a {s['name']}", f"{round(max(m for m, _ in rain_msgs))} litres. Si després la temperatura acompanya:\n" + '\n'.join(x for _, x in rain_msgs), 'cloud_with_rain'); sent += 1
     if '--prova' in sys.argv:
         send('Boletus funciona', "Els avisos estan activats. Rebràs un missatge quan plogui prou als vostres boscos.", 'white_check_mark')
     print('avisos enviats:', sent)

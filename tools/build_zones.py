@@ -4,13 +4,18 @@ Una zona és un tros seguit de bosc, matollar o avellaners sobre terra àcida, e
 Les zones grans (les serres de Prades i dels voltants surten com un sol tros de milers d'hectàrees)
 es parteixen en quadres de 2,5 km, perquè cada tros tingui el seu punt i les seves dades.
 Per a cada zona: mida, cares, altura, arbre, terra i pendent (pend = mitjà en graus, emp = part amb més de 25°).
-S'ha d'executar després de build_region.py."""
-import io, json, math, os, subprocess, tempfile
+S'ha d'executar després de build_region.py.
+
+  python tools/build_zones.py        zones per a ceps i ous de reig (data/region.json)
+  python tools/build_zones.py rov    zones per a rovellons: pinars sobre qualsevol terra, de 100 a 1.200 m (data/region_rov.json)"""
+import io, json, math, os, subprocess, sys, tempfile
 import concurrent.futures as cf
 import numpy as np
 from PIL import Image
 from scipy import ndimage
 
+SP = sys.argv[1] if len(sys.argv) > 1 else 'ceps'
+OUT = 'data/region.json' if SP == 'ceps' else f'data/region_{SP}.json'
 R = json.load(open('data/region.json', encoding='utf-8'))
 (S, W), (N, E) = R['bounds']
 STEEP, CELL_KM, BIG_HA, MIN_HA = 25, 2.5, 600, 8
@@ -71,7 +76,8 @@ cell_m = 40075016.686 * math.cos(math.radians((S + N) / 2)) * (E - W) / 360 / gw
 cell_ha = cell_m ** 2 / 1e4
 
 # --- Zones: trossos seguits; els grans es parteixen en quadres de 2,5 km ---
-cand = (tree > 0) & ((rock == 1) | (rock == 3)) & (el >= 200) & (el <= 800)
+if SP == 'ceps': ALT = [200, 800]; cand = (tree > 0) & ((rock == 1) | (rock == 3)) & (el >= ALT[0]) & (el <= ALT[1])
+else: ALT = [100, 1200]; cand = (tree == 1) & (el >= ALT[0]) & (el <= ALT[1])  # rovellons: pinar, sigui la terra que sigui
 cand = ndimage.binary_opening(cand, iterations=1)
 lab, nl = ndimage.label(cand, structure=np.ones((3, 3)))
 area = ndimage.sum(np.ones_like(lab), lab, np.arange(1, nl + 1)) * cell_ha
@@ -104,8 +110,9 @@ for L, sl in enumerate(ndimage.find_objects(lab2), 1):
                       alt=int(np.median(e_)), arbre=TREES[int(tc[1:].argmax()) + 1],
                       bo=round(float((tc[2] + tc[3] + tc[5]) / ncell), 2), acida=round(float((r_ == 1).mean()), 2),
                       pend=int(round(float(sl_mean[sl][m].mean()))), emp=round(float(sl_steep[sl][m].mean()), 2)))
+    if SP != 'ceps': zones[-1].update(pinar=round(float((t_ == 1).mean()), 2), calc=round(float((r_ == 2).mean()), 2))
 zones.sort(key=lambda z: -z['ha'])
 R['zones'] = zones
-R['criteris'] = dict(alt=[200, 800], min_ha=MIN_HA, quadre_km=CELL_KM)
-json.dump(R, open('data/region.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+R['criteris'] = dict(alt=ALT, min_ha=MIN_HA, quadre_km=CELL_KM)
+json.dump(R, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print('zones', len(zones), 'la més gran', zones[0]['ha'], 'ha', 'pendent', np.percentile([z['pend'] for z in zones], [10, 50, 90]))

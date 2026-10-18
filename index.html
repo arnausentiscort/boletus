@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Boletus</title>
-<meta name="description" content="Quan anar a buscar ceps i ous de reig, amb la pluja de cada dia.">
+<meta name="description" content="Quan anar a buscar ceps, ous de reig i rovellons, amb la pluja de cada dia.">
 <meta name="theme-color" content="#132417">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/logo.svg" type="image/svg+xml">
@@ -50,6 +50,9 @@ p{margin:0}
 .topbar{display:flex;align-items:center;gap:10px}
 .topbar h1{font-size:24px;font-weight:800;line-height:1;font-style:italic;letter-spacing:-.02em}
 .brand{display:flex;flex-direction:column;gap:3px}
+.spsw{display:flex;gap:4px;background:var(--surface2);border-radius:12px;padding:4px;margin:0 0 4px}
+.spsw button{flex:1;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:800;font-size:14px;padding:8px 6px;border-radius:9px;cursor:pointer}
+.spsw button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .brand .tag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .logo{flex:none;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .spacer{flex:1}
@@ -230,9 +233,10 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
     <ellipse cx="23" cy="20" rx="9" ry="4.5" transform="rotate(-24 23 20)" fill="#fff" opacity=".18"/>
   </g>
 </svg>
-    <div class="brand"><h1>Boletus</h1><span class="tag">radar de ceps</span></div><span class="spacer"></span>
+    <div class="brand"><h1>Boletus</h1><span class="tag" id="sptag">radar de ceps</span></div><span class="spacer"></span>
     <button class="iconbtn" id="howbtn" aria-label="Com funciona"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
   </header>
+  <div class="spsw" role="group" aria-label="Quin bolet busquem"><button data-sp="ceps" aria-pressed="true">Ceps i ous de reig</button><button data-sp="rov" aria-pressed="false">Rovellons</button></div>
   <section class="screen" id="s-llocs"><p class="small">Carregant…</p></section>
   <section class="screen" id="s-fitxa" hidden></section>
   <section class="screen" id="s-mapa" hidden></section>
@@ -351,7 +355,17 @@ const wetTxt=(s,d)=>{const r=rainOn(s,d);return r!=null&&r>=1?`<div class="small
 
 /* ---------- Regla (d'exemple; es pot ajustar a "Com funciona") ---------- */
 const RULE0={mm:17,span:2,minT:12,wait:16,before:2,after:2,obagaBonus:1};
-let RULE=Object.assign({},RULE0,store.get('rule4',{}));
+/* ---------- Espècies: cada una té la seva regla, els seus spots i el seu diari. La dels ceps no canvia. ---------- */
+const SPECIES={
+  ceps:{nom:'Ceps',tag:'radar de ceps',u:['cep','ceps'],rule0:RULE0,key:'rule4',region:'data/region.json',vells:'Ceps vells',
+    nit:"Els ceps surten de nit: com més d'hora hi aneu, més en trobareu."},
+  // Rovellons (rovelló i pinetell): regla provisional a partir de guies i boletaires; s'ajustarà amb el diari
+  rov:{nom:'Rovellons',tag:'radar de rovellons',u:['rovelló','rovellons'],key:'rule-rov',region:'data/region_rov.json',vells:'Rovellons vells',
+    rule0:{mm:25,span:5,minT:10,maxT:20,wait:12,before:4,after:6,obagaBonus:2,months:[9,10,11,12,1]},
+    nit:"Com més d'hora hi aneu, menys gent hi haurà passat abans."}};
+let SP=SPECIES[store.get('sp','ceps')]?store.get('sp','ceps'):'ceps';
+const loadRule=()=>Object.assign({},SPECIES[SP].rule0,store.get(SPECIES[SP].key,{}));
+let RULE=loadRule();
 function evalSite(s){
   const R=RULE,ser=s.ser,out=[],cold=[],bonus=s.zone.st.obaga>=.5?R.obagaBonus:0;
   // només amb pluja que ja ha caigut: la previsió serveix per saber si et mullaràs, no per predir bolets
@@ -361,11 +375,13 @@ function evalSite(s){
   for(let i=R.span-1;i<=lastReal;i++){let sm=0,tt=0,c=0;
     for(let k=0;k<R.span;k++){const v=ser.r[i-k];if(v!=null)sm+=v;const t=ser.t[i-k];if(t!=null){tt+=t;c++}}
     if(sm<R.mm)continue;
-    if(i-last>5){const t1=ser.start+i,w={t0:t1-R.span+1,t1,peak:t1+R.wait,a:t1+R.wait-R.before,b:t1+R.wait+R.after+bonus,mm:sm};
+    // fora de temporada (si l'espècie en té) la pluja no compta
+    if(i-last>5&&!(R.months&&!R.months.includes(D(ser.start+i+R.wait).getUTCMonth()+1))){const t1=ser.start+i,w={t0:t1-R.span+1,t1,peak:t1+R.wait,a:t1+R.wait-R.before,b:t1+R.wait+R.after+bonus,mm:sm};
       // els bolets creixen els dies DESPRÉS de la pluja: si aquells dies fa fred, no surten (encara que plogués amb calor)
       const g=[];for(let k=i+1;k<=i+R.wait-2;k++){const v=ser.t[k];if(v!=null)g.push(v)}
       w.tg=g.length?g.reduce((a,b)=>a+b)/g.length:null;w.prov=g.length<R.wait-2;
-      if(g.length>=3&&w.tg<R.minT)cold.push(w);else out.push(w)}
+      w.hot=R.maxT!=null&&g.length>=3&&w.tg>R.maxT; // algunes espècies (rovellons) no surten si fa massa calor
+      if(g.length>=3&&(w.tg<R.minT||w.hot))cold.push(w);else out.push(w)}
     last=i}
   s.wins=out;s.cold=cold.find(w=>w.b>=TODAY&&w.t1>=TODAY-20)||null;
   const cur=out.find(w=>w.a<=TODAY&&TODAY<=w.b),next=out.find(w=>w.a>TODAY);
@@ -373,19 +389,21 @@ function evalSite(s){
   s.bolet=d=>out.some(w=>d>=w.a&&d<=w.b);
   s.peak=d=>out.some(w=>w.peak===d)}
 SITES.forEach(evalSite);
+window.__boletus={SITES,evalSite}; // per revisar des de la consola
 const STATE={go:['s-go','Vés-hi'],soon:['s-soon','Aviat'],wait:['s-wait','Falta aigua']};
 const chip=s=>`<span class="chip ${STATE[s.state][0]}">${STATE[s.state][1]}</span>`;
 function what(s){
   if(s.state==='go')return s.win.peak>=TODAY?`Millor dia: <strong>${s.win.peak===TODAY?'avui':wdn(s.win.peak)+' '+fmt(s.win.peak)}</strong> · bolets fins al ${fmt(s.win.b)}`:`Bolets fins al <strong>${wdn(s.win.b)} ${fmt(s.win.b)}</strong>`;
-  if(s.state==='soon')return `Millor dia: <strong>${wdn(s.win.peak)} ${fmt(s.win.peak)}</strong> · del ${fmt(s.win.a)} al ${fmt(s.win.b)}${s.win.prov?' · si no fa fred':''}`;
-  if(s.cold)return `Va ploure el ${fmt(s.cold.t1)}, però després ha fet fred (${s.cold.tg.toFixed(0)} °C de mitjana): no surten`;
+  if(s.state==='soon')return `Millor dia: <strong>${wdn(s.win.peak)} ${fmt(s.win.peak)}</strong> · del ${fmt(s.win.a)} al ${fmt(s.win.b)}${s.win.prov?(RULE.maxT!=null?' · si no fa fred ni calor':' · si no fa fred'):''}`;
+  if(s.cold)return `Va ploure el ${fmt(s.cold.t1)}, però després ha fet ${s.cold.hot?'massa calor':'fred'} (${s.cold.tg.toFixed(0)} °C de mitjana): no surten`;
   let t=0;for(let d=TODAY-9;d<=TODAY;d++)t+=rainOn(s,d)||0;return `Només ${Math.round(t)} litres els últims 10 dies`}
 
 /* ---------- Diari ---------- */
 let visits=store.get('visits',PRIV.visits||[]);
 const saveVisits=()=>store.set('visits',visits);
-const visitsOn=(s,d)=>visits.filter(v=>v.site===s.id&&dnum(v.d)===d);
-const cepTxt=n=>n==null?'alguns ceps':n===1?'1 cep':`${n} ceps`;
+const ofSp=v=>(v.sp||'ceps')===SP; // les sortides antigues són de ceps
+const visitsOn=(s,d)=>visits.filter(v=>v.site===s.id&&ofSp(v)&&dnum(v.d)===d);
+const cepTxt=n=>{const[u1,u2]=SPECIES[SP].u;return n==null?'alguns '+u2:n===1?'1 '+u1:`${n} ${u2}`};
 
 /* ---------- LLOCS ---------- */
 function renderLlocs(){
@@ -395,8 +413,8 @@ function renderLlocs(){
   const st=sunTimes(goDay,SITES[0].lat,SITES[0].lng);
   $('#s-llocs').innerHTML=`
    <div class="sun">${sunIcon}
-     <div><strong>${goDay===TODAY+1?'Demà':wdn(goDay)+' '+fmt(goDay)} surt el sol a les ${st.sol}</strong><div class="small">Els ceps surten de nit: com més d'hora hi aneu, més en trobareu.</div>${wetTxt(list[0],goDay)}</div></div>
-   ${list.map(s=>{const lv=visits.filter(v=>v.site===s.id).sort((a,b)=>b.d.localeCompare(a.d))[0];
+     <div><strong>${goDay===TODAY+1?'Demà':wdn(goDay)+' '+fmt(goDay)} surt el sol a les ${st.sol}</strong><div class="small">${SPECIES[SP].nit}</div>${wetTxt(list[0],goDay)}</div></div>
+   ${list.map(s=>{const lv=visits.filter(v=>v.site===s.id&&ofSp(v)).sort((a,b)=>b.d.localeCompare(a.d))[0];
      let cells='';for(let d=TODAY-7;d<=TODAY+13;d++){const r=rainOn(s,d);const sz=r&&r>=2?Math.min(14,5+Math.sqrt(r)*1.6):0;
        cells+=`<i class="${s.peak(d)?'p':s.bolet(d)?'b':''} ${d===TODAY?'t':''}">${sz?`<u class="${d>TODAY?'f':''}" style="width:${sz}px;height:${sz}px"></u>`:''}</i>`}
      return `<button class="spot" data-open="${s.id}">
@@ -447,14 +465,14 @@ function calendar(s){
 function renderFitxa(){
   const s=cur,st=s.zone.st;
   const nextGo=s.state==='go'?TODAY+1:s.state==='soon'?s.win.a:null;const sun=nextGo?sunTimes(nextGo,s.lat,s.lng):null;
-  const mine=visits.filter(v=>v.site===s.id).sort((a,b)=>b.d.localeCompare(a.d));
+  const mine=visits.filter(v=>v.site===s.id&&ofSp(v)).sort((a,b)=>b.d.localeCompare(a.d));
   $('#s-fitxa').innerHTML=`
    <button class="back" data-back>‹ ${s.from==='mapa'?'Mapa':'Llocs'}</button>
    <div class="row"><div style="min-width:0"><span class="small">${esc(s.muni)}</span><h2 class="big">${esc(s.name)}</h2></div><span class="spacer"></span>${chip(s)}</div>
    <p style="font-size:17px">${what(s)}</p>
    ${sun?`<div class="sun">${sunIcon}<div><strong>${nextGo===TODAY+1?'Demà':wdn(nextGo)+' '+fmt(nextGo)} surt el sol a les ${sun.sol}</strong>${wetTxt(s,nextGo)}</div></div>`:''}
    <div class="card">${calendar(s)}
-     <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>Ceps trobats</span></div>
+     <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>${SPECIES[SP].nom} trobats</span></div>
      <div class="daynote" id="daynote">${dayNote(s,selDay)}</div>
    </div>
    <div class="card">
@@ -471,9 +489,9 @@ function formHtml(){
   return `<div class="card sheet">
    <strong style="font-family:var(--f-display);font-size:19px">Hi hem anat!</strong>
    <div><label for="fdate">Dia</label><input type="date" id="fdate" value="${form.d}" max="${dstr(TODAY)}"></div>
-   <div><label>Quants ceps?</label><div class="stepper"><button type="button" data-step="-1" aria-label="Menys">−</button><output id="fn">${form.n}</output><button type="button" data-step="1" aria-label="Més">+</button></div></div>
+   <div><label>Quants ${SPECIES[SP].u[1]}?</label><div class="stepper"><button type="button" data-step="-1" aria-label="Menys">−</button><output id="fn">${form.n}</output><button type="button" data-step="1" aria-label="Més">+</button></div></div>
    <div><label for="fh">A quina hora hi heu arribat?</label><input type="time" id="fh" value="${form.h}"></div>
-   <div><label>Com estava el bosc?</label><div class="chips">${['Sec','Humit','Molt mullat','Ja hi havia gent','Ceps vells'].map(e=>`<button type="button" class="opt" data-est="${e}" aria-pressed="${form.est.includes(e)}">${e}</button>`).join('')}</div></div>
+   <div><label>Com estava el bosc?</label><div class="chips">${['Sec','Humit','Molt mullat','Ja hi havia gent',SPECIES[SP].vells].map(e=>`<button type="button" class="opt" data-est="${e}" aria-pressed="${form.est.includes(e)}">${e}</button>`).join('')}</div></div>
    <div><label for="fnota">Nota</label><textarea id="fnota" rows="2">${esc(form.nota)}</textarea></div>
    <div class="row"><button class="btn" data-save style="flex:1">Desa</button><button class="btn ghost" data-cancel>Cancel·la</button></div></div>`}
 function bindForm(){
@@ -507,16 +525,7 @@ function buildMap(){
   const BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
   region().then(R=>{const o={minZoom:9,maxZoom:18,maxNativeZoom:12,bounds:R.bounds,errorTileUrl:BLANK,keepBuffer:4};
     L1.cares=L.tileLayer('tiles/cares/{z}/{x}/{y}.png',Object.assign({pane:'obsolP',opacity:.85},o));L1.acid=L.tileLayer('tiles/acid/{z}/{x}/{y}.png',Object.assign({pane:'acidP'},o));
-    // Només els 10 millors possibles spots (puntuació: roure/alzina, terra àcida, cara nord, altura, mida, pendent i distància)
-    L1.spots=L.layerGroup();const H=R.home;
-    const kmH=z=>distKm(H.lat,H.lng,z.lat,z.lng);
-    const score=z=>3*z.bo+z.acida+Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-450)/350)+(z.ob>=.3?.8:0)-(z.arbre==='avellaners'?1:0)-kmH(z)/20-2*(z.emp||0)-Math.max(0,(z.pend||0)-18)/7;
-    const cand=R.zones.map((z,i)=>Object.assign({i},z)).filter(z=>z.ha>=15&&kmH(z)<=40).sort((a,b)=>score(b)-score(a));
-    TOP=[];for(const z of cand){if(SITES.some(t=>distKm(t.lat,t.lng,z.lat,z.lng)<1.5))continue;// els llocs propis ja els coneixeu
-      if(TOP.every(b=>distKm(b.lat,b.lng,z.lat,z.lng)>3))TOP.push(z);if(TOP.length===10)break}
-    TOP.forEach((z,n)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#C9A21E';
-      L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${col}">${n+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
-       .on('click',ev=>{L.DomEvent.stopPropagation(ev);spotCard(z.i,n+1)}).addTo(L1.spots)});
+    drawSpots(R);
     // Pobles de referència i les dues cases
     const TOWNS=[['Torredembarra',41.1462,1.3960,2,'del Berni'],['Reus',41.1561,1.1069,2,"de l'Arnau"],['Tarragona',41.1189,1.2445,1],['Valls',41.2861,1.2497,0],['Cambrils',41.0667,1.0597,0],['Montblanc',41.3759,1.1626,0],['Falset',41.1450,0.8197,0],['El Vendrell',41.2188,1.5349,0],['Alforja',41.2100,0.9751,0],['Prades',41.3093,0.9887,0]];
     if(!map.getPane('labels')){const lp=map.createPane('labels');lp.style.zIndex=590;lp.style.pointerEvents='none'}
@@ -536,12 +545,27 @@ function buildMap(){
   map.on('click',onMapClick)}
 function legendSync(){const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots')}
 let TOP=[];
+// Els 10 millors spots de l'espècie triada (cada espècie té les seves zones i la seva puntuació)
+const SCORE={
+  ceps:(z,km)=>3*z.bo+z.acida+Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-450)/350)+(z.ob>=.3?.8:0)-(z.arbre==='avellaners'?1:0)-km/20-2*(z.emp||0)-Math.max(0,(z.pend||0)-18)/7,
+  rov:(z,km)=>Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-600)/500)+(z.ob>=.3?.8:0)-km/20-2*(z.emp||0)-Math.max(0,(z.pend||0)-18)/7};
+function drawSpots(R){
+  const on=L1.spots?!!L1.spots._map:store.get('capes',{cares:true,acid:true,spots:true}).spots;
+  if(L1.spots)map.removeLayer(L1.spots);
+  L1.spots=L.layerGroup();const H=R.home,kmH=z=>distKm(H.lat,H.lng,z.lat,z.lng),score=z=>SCORE[SP](z,kmH(z));
+  const cand=R.zones.map((z,i)=>Object.assign({i},z)).filter(z=>z.ha>=15&&kmH(z)<=40).sort((a,b)=>score(b)-score(a));
+  TOP=[];for(const z of cand){if(SITES.some(t=>distKm(t.lat,t.lng,z.lat,z.lng)<1.5))continue;// els llocs propis ja els coneixeu
+    if(TOP.every(b=>distKm(b.lat,b.lng,z.lat,z.lng)>3))TOP.push(z);if(TOP.length===10)break}
+  TOP.forEach((z,n)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#C9A21E';
+    L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${col}">${n+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
+     .on('click',ev=>{L.DomEvent.stopPropagation(ev);spotCard(z.i,n+1)}).addTo(L1.spots)});
+  if(on)L1.spots.addTo(map);if(typeof legendSync==='function'&&$('#k-spots'))legendSync()}
 function spotCard(i,n){const z=REG.zones[i],H=REG.home,km=distKm(H.lat,H.lng,z.lat,z.lng);
-  const why=[z.acida>=.9?'terra àcida':'terra àcida en part',z.bo>=.3?`${Math.round(z.bo*100)}% roure, alzina o avellaner`:`bosc de ${z.arbre}`,z.ob>=.3?`${Math.round(z.ob*100)}% cara nord, que guarda la humitat`:`poca cara nord: s'asseca abans`,Math.abs(z.alt-450)<150?`${z.alt} m, semblant al Mas d'Anguera`:`${z.alt} m d'altura`];
+  const why=SP==='rov'?[`pinar de ${z.ha} ha`,z.calc>=.5?'terra calcària, on va bé el rovelló':z.acida>=.5?'terra àcida, més aviat de pinetell':'terra barrejada',z.ob>=.3?`${Math.round(z.ob*100)}% cara nord, que guarda la humitat`:`poca cara nord: s'asseca abans`,`${z.alt} m d'altura`]:[z.acida>=.9?'terra àcida':'terra àcida en part',z.bo>=.3?`${Math.round(z.bo*100)}% roure, alzina o avellaner`:`bosc de ${z.arbre}`,z.ob>=.3?`${Math.round(z.ob*100)}% cara nord, que guarda la humitat`:`poca cara nord: s'asseca abans`,Math.abs(z.alt-450)<150?`${z.alt} m, semblant al Mas d'Anguera`:`${z.alt} m d'altura`];
   if(z.pend!=null)why.push(z.emp>=.25?`força costerut (${Math.round(z.emp*100)}% amb més de 25°)`:z.pend<=12?"terreny suau, s'hi camina bé":'pendent normal');
   if(tap)map.removeLayer(tap);tap=L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
   $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">Possible spot ${n?'nº '+n:''}</strong><span class="spacer"></span><span class="small">a ${km.toFixed(0)} km de ${esc(H.nom)}</span></div>
-   ${tagsHtml(z.ob>=.45?0:z.so>=.45?4:8,z.acida>=.5?1:3)}
+   ${tagsHtml(z.ob>=.45?0:z.so>=.45?4:8,SP==='rov'?(z.calc>=.5?2:z.acida>=.5?1:3):z.acida>=.5?1:3)}
    <p>${z.ha} ha de ${z.arbre} · <span class="mono">${z.alt} m</span> · ${Math.round(z.ob*100)}% cara nord, ${Math.round(z.so*100)}% cara sud</p>
    ${z.pend!=null?`<p><strong>Pendent</strong> mitjà <span class="mono">${z.pend}°</span>${z.emp>=.05?` · <span class="mono">${Math.round(z.emp*100)}%</span> massa costerut (més de 25°)`:' · gairebé res massa costerut'}</p>`:''}
    <p class="small">Per què surt: ${why.join(' · ')}. És un lloc per provar, no un lloc segur.</p>
@@ -556,7 +580,7 @@ async function regInfo(lat,lng){
   const px=Math.floor((lng-w)/(e-w)*RINFO.w),py=Math.floor((mY(n)-mY(lat))/(mY(n)-mY(s))*RINFO.h);
   if(px<0||py<0||px>=RINFO.w||py>=RINFO.h)return null;const d=RINFO.x.getImageData(px,py,1,1).data;return{sec:Math.round(d[0]/28),rock:Math.round(d[1]/80),tree:Math.round(d[2]/40)}}
 function tagsHtml(sec,rock){
-  const r=rock===1||rock===3?'<span class="tag2 t-acid">Terra àcida ✓</span>':rock===2?'<span class="tag2 t-calc">Terra calcària ✗</span>':'<span class="tag2 t-unk">Roca sense dades</span>';
+  const r=SP==='rov'?(rock===2?'<span class="tag2 t-unk">Terra calcària</span>':rock===1?'<span class="tag2 t-unk">Terra àcida</span>':rock===3?'<span class="tag2 t-unk">Terra barrejada</span>':''):rock===1||rock===3?'<span class="tag2 t-acid">Terra àcida ✓</span>':rock===2?'<span class="tag2 t-calc">Terra calcària ✗</span>':'<span class="tag2 t-unk">Roca sense dades</span>';
   const f=[7,0,1].includes(sec)?'<span class="tag2 t-ob">Cara nord</span>':[3,4,5].includes(sec)?'<span class="tag2 t-so">Cara sud</span>':sec===8?'<span class="tag2 t-pla">Pla</span>':`<span class="tag2 t-pla">Mira a l'${DIRS[sec]}</span>`;
   return `<div class="tags">${r}${f}</div>`}
 const CEP_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true">
@@ -662,14 +686,14 @@ function onMapClick(e){
   if(i<0){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Mirant…</p>${tools}`;
     regInfo(e.latlng.lat,e.latlng.lng).then(ri=>{if(!ri){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de la zona estudiada (uns 50 km al voltant de Torredembarra): aquí no tinc roca ni cares, però la pluja sí que funciona.</p>${tools}`;return}
       const ar=['','pinar','alzinar o suredes','roureda','matolls','avellaners'][ri.tree]||'ni bosc ni matolls';
-      $('#mapcard').innerHTML=`<strong>Aquí</strong>${tagsHtml(ri.sec,ri.rock)}<p>${ar}</p>${ri.tree&&(ri.rock===1||ri.rock===3)&&ri.tree!==1?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`});return}
+      $('#mapcard').innerHTML=`<strong>Aquí</strong>${tagsHtml(ri.sec,ri.rock)}<p>${ar}</p>${SP==='rov'?(ri.tree===1?'<p class="small" style="color:var(--go);font-weight:700">Pinar: bon lloc per a rovellons.</p>':''):ri.tree&&(ri.rock===1||ri.rock===3)&&ri.tree!==1?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`});return}
   // a prop dels vostres llocs, la cara surt del relleu de 5 m
   let secD=null;for(const d of Object.values(DET5)){if(!d)continue;const[[S5,W5],[N5,E5]]=d.b;const la=e.latlng.lat,lo=e.latlng.lng;if(la>S5&&la<N5&&lo>W5&&lo<E5){const px=Math.floor((lo-W5)/(E5-W5)*d.w),py=Math.floor((N5-la)/(N5-S5)*d.h);secD=d.at(px,py,la,lo).sec;break}}
   const sec=secD!=null?secD:G.sec[i],face=sec===8?'terreny pla':[7,0,1].includes(sec)?'<b style="color:var(--obaga)">obaga</b>':[3,4,5].includes(sec)?'<b style="color:var(--solana)">solana</b>':`mira a l'${DIRS[sec]}`;
   const rk=['sense dades','àcida','calcària','barrejada'][G.rock[i]];
   const fit=goodTree(G.cov[i])&&(G.rock[i]===1||G.rock[i]===3);
   const rdn=G.rdesc[i]>=0?META.rock_names[G.rdesc[i]]:'';
-  $('#mapcard').innerHTML=`<strong>Aquí</strong>${tagsHtml(sec,G.rock[i])}<p>${coverName(G.cov[i])} · <span class="mono">${G.elev[i]} m</span></p>${rdn?`<p class="small">Roca: ${esc(rdn)}</p>`:''}${fit?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`}
+  $('#mapcard').innerHTML=`<strong>Aquí</strong>${tagsHtml(sec,G.rock[i])}<p>${coverName(G.cov[i])} · <span class="mono">${G.elev[i]} m</span></p>${rdn?`<p class="small">Roca: ${esc(rdn)}</p>`:''}${SP==='rov'?(coverName(G.cov[i])==='pinar'?'<p class="small" style="color:var(--go);font-weight:700">Pinar: bon lloc per a rovellons.</p>':''):fit?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`}
 function startDraw(id){
   drawing=id;drawPts=[];if(tap){map.removeLayer(tap);tap=null}
   $('#mapcard').innerHTML=`<strong>Marca on busqueu a ${esc(SITES.find(s=>s.id===id).name)}</strong><p class="small">Toca el mapa al voltant de la zona (mínim 3 punts).</p>
@@ -678,8 +702,8 @@ function startDraw(id){
   $('#dcan').onclick=()=>{end();$('#mapcard').innerHTML='<p class="small">Toca una agulla per obrir el lloc.</p>'};
   $('#dfin').onclick=()=>{const s=SITES.find(x=>x.id===drawing);zones[s.id]=drawPts.slice();store.set('zones',zones);end();
     s.zone={kind:'poly',st:polyStats(zones[s.id])};evalSite(s);drawPins();pinCard(s)}}
-let REG=null;
-async function region(){if(!REG){try{REG=await j('data/region.json')}catch(e){REG={zones:[],bounds:META.bounds,home:{nom:'Torredembarra',lat:41.14616,lng:1.39595}}}}return REG}
+let REG=null;const REGS={};
+async function region(){const k=SP;if(!REGS[k]){try{REGS[k]=await j(SPECIES[k].region)}catch(e){REGS[k]={zones:[],bounds:META.bounds,home:{nom:'Torredembarra',lat:41.14616,lng:1.39595}}}}return REG=REGS[k]}
 async function toggleSim(btn,on){
   const want=on===undefined?!sim:on;
   if(!want){if(sim){map.removeLayer(sim);sim=null}btn&&btn.setAttribute('aria-pressed','false');$('#simkey').hidden=true;return}
@@ -724,16 +748,30 @@ async function renderBuscar(){
   $('#bkm').onchange=e=>{BQ.km=+e.target.value;store.set('buscar',BQ);renderBuscar()}}
 
 /* ---------- COM FUNCIONA ---------- */
+const ROV_QUE=`<div class="card how"><h3>Què busquem</h3>
+     <ul><li><strong>Rovelló</strong> (<em>Lactarius sanguifluus</em> i <em>L. vinosus</em>): làtex vermell vinós.</li><li><strong>Pinetell</strong> (<em>Lactarius deliciosus</em>): làtex taronja.</li></ul>
+     <p>Viuen sempre amb pins: sense pins no n'hi ha. El rovelló prefereix terra calcària i el pinetell, terra àcida, però tots dos surten en molts terrenys. Per això el mapa busca pinars, sigui quina sigui la roca.</p></div>`;
+function rovRecerca(){return `<div class="card how"><h3>Què diu la recerca</h3>
+     <p><strong>Quanta pluja?</strong> Una pluja seguida, no una tempesta sola sobre terra seca: uns <strong>20–30 litres en pocs dies</strong>.</p>
+     <p><strong>Quina temperatura?</strong> Són de tardor i volen temperatures suaus: de <strong>10 a 20 °C</strong>, millor cap als 12–15 °C. Si la tardor ve massa calorosa, s'aturen encara que hagi plogut, i després de la primera setmana de glaçades la collita cau.</p>
+     <p><strong>Quants dies tarden?</strong> Els primers, <strong>8–15 dies</strong> després de la pluja. Cada tanda dura unes dues setmanes, i si torna a ploure sense glaçar, en surt una altra.</p>
+     <p><strong>Quan?</strong> De setembre a desembre, sobretot d'octubre a novembre. Les obagues comencen abans.</p>
+     <p class="small">Xifres de guies i de boletaires; estudis amb números exactes n'hi ha pocs. Aquesta regla encara no està provada amb sortides vostres: apunteu-les al diari.</p></div>
+   <div class="card how"><h3>Dies de rovellons</h3>
+     <ul><li>Si en ${RULE.span} dies seguits cauen ${RULE.mm} litres o més, de ${['','gen','febr','març','abr','maig','juny','jul','ag','set','oct','nov','des'][RULE.months[0]]} a ${['','gen','febr','març','abr','maig','juny','jul','ag','set','oct','nov','des'][RULE.months[RULE.months.length-1]]}…</li>
+     <li>…i els dies després de la pluja la mitjana està entre ${RULE.minT} i ${RULE.maxT} °C…</li>
+     <li>…el <strong>millor dia</strong> és ${RULE.wait} dies després, i hi ha rovellons del dia ${RULE.wait-RULE.before} al ${RULE.wait+RULE.after}.</li>
+     <li>Si el bosc és sobretot obaga, ${RULE.obagaBonus} dies més al final.</li></ul></div>`}
 function renderCom(){
   $('#s-com').innerHTML=`
    <button class="back" data-back>‹ Tornar</button>
-   <div class="card how"><h3>Què busquem</h3>
+   ${SP==='ceps'?`   <div class="card how"><h3>Què busquem</h3>
      <ul><li><strong>Cep negre</strong> (<em>Boletus aereus</em>)</li><li><strong>Cep d'estiu</strong> (<em>Boletus aestivalis</em>)</li><li><strong>Ou de reig</strong> (<em>Amanita caesarea</em>)</li></ul>
-     <p>Són espècies termòfiles, de calor. Surten en terrenys àcids (granit, pissarra, gresos), amb roures, alzines, alzines sureres i avellaners. Per això el mapa mira la roca i el tipus d'arbre.</p></div>
+     <p>Són espècies termòfiles, de calor. Surten en terrenys àcids (granit, pissarra, gresos), amb roures, alzines, alzines sureres i avellaners. Per això el mapa mira la roca i el tipus d'arbre.</p></div>`:ROV_QUE}
    <div class="card how"><h3>Avisos</h3><p>Cada matí, a les 8, es mira la pluja dels vostres boscos i s'envia un avís a l'app <strong>ntfy</strong> (tema <span class="mono">${AVIS_TEMA}</span>) quan ha plogut prou i el dia abans del millor dia.</p><button class="btn ghost" data-avisosreset style="align-self:flex-start">Torna a veure com activar-los</button></div>
    <div class="card how"><h3>Obaga i solana</h3>
      <p>A partir d'un model del relleu, per a cada punt miro cap a on baixa el terreny. Si baixa cap al nord (nord, nord-est o nord-oest) és <b style="color:var(--obaga)">obaga</b>, i si baixa cap al sud, <b style="color:var(--solana)">solana</b>. Només ho pinto on el mapa de l'ICGC diu que hi ha bosc.</p></div>
-   <div class="card how"><h3>Què diu la recerca</h3>
+   ${SP==='ceps'?`   <div class="card how"><h3>Què diu la recerca</h3>
      <p><strong>Quanta pluja?</strong> Perquè es "moguin" calen uns <strong>15–25 litres en 2–5 dies</strong>. Millor si el terra ja estava humit d'una pluja anterior: per amarar-lo bé, 40–100 litres en una o dues setmanes. Una ruixada d'estiu sola no n'hi ha prou.</p>
      <p><strong>Quina temperatura?</strong> Són espècies de calor. Surten després d'un període càlid, sovint quan una tempesta freda cau sobre terra calenta. Ideal: nits per sobre de 10–12 °C i dies entre 18 i 24 °C. Amb màximes de més de 28–30 °C s'aturen, i amb màximes de menys de 10 °C no creixen. Les vostres dues sortides bones (2022 i 2026) van tenir una mitjana d'uns 18 °C.</p>
      <p><strong>Quants dies tarden a sortir?</strong></p>
@@ -746,16 +784,16 @@ function renderCom(){
      <li>…i els dies <strong>després</strong> de la pluja la temperatura mitjana passa de ${RULE.minT} °C (és quan creixen: si fa fred, no surten, encara que plogués amb calor)…</li>
      <li>…el <strong>millor dia</strong> és ${RULE.wait} dies després del primer dia que es passa el llindar, i hi ha bolets del dia ${RULE.wait-RULE.before} al ${RULE.wait+RULE.after}.</li>
      <li>Si el bosc és sobretot obaga, ${RULE.obagaBonus} dia més al final.</li></ul>
-     <p><strong>Per què 5 dies i no 10?</strong> Les dues bones sortides que coneixem, totes dues al mateix lloc, van ser 15 dies (2026) i 17 dies (2022) després de la primera pluja forta. La mitjana és 16. La recerca diu el mateix: els ceps surten sobretot 13–15 dies després de la pluja més forta, i cada cep és bo pocs dies abans de fer-se malbé. Per això la finestra és 16 ± 2 dies: cobreix tot el que hem vist amb un dia de marge per banda i passa d'uns 40 dies possibles per temporada a uns 18.</p></div>
+     <p><strong>Per què 5 dies i no 10?</strong> Les dues bones sortides que coneixem, totes dues al mateix lloc, van ser 15 dies (2026) i 17 dies (2022) després de la primera pluja forta. La mitjana és 16. La recerca diu el mateix: els ceps surten sobretot 13–15 dies després de la pluja més forta, i cada cep és bo pocs dies abans de fer-se malbé. Per això la finestra és 16 ± 2 dies: cobreix tot el que hem vist amb un dia de marge per banda i passa d'uns 40 dies possibles per temporada a uns 18.</p></div>`:rovRecerca()}
    <div class="card how"><h3>D'on surt la pluja</h3>
      <p>Pluja estimada per a cada lloc, de models d'alta resolució (d'1 a 3 km), via Open-Meteo. Cada cop que obres l'app es baixen els últims dies i la previsió de 7 dies; sense connexió es fa servir l'última que tenies. Al calendari de cada lloc pots tirar enrere fins al 2016 per veure si la regla hauria encertat.</p></div>
    <div class="card how"><h3>Ajustar la regla</h3>
-     <p class="small">Mou els números i mira als calendaris si els dies verds coincideixen amb els dies que vau trobar ceps.</p>
-     ${[['mm','Pluja mínima','l',10,80],['span','En quants dies','dies',1,7],['minT','Temperatura mínima després de la pluja','°C',5,22],['wait','Millor dia (dies després de la pluja)','dies',5,30],['before','Marge abans','dies',0,7],['after','Marge després','dies',0,10],['obagaBonus','Dies extra si és obaga','dies',0,6]]
+     <p class="small">Mou els números i mira als calendaris si els dies verds coincideixen amb els dies que vau trobar ${SPECIES[SP].u[1]}.</p>
+     ${[['mm','Pluja mínima','l',10,80],['span','En quants dies','dies',1,7],['minT','Temperatura mínima després de la pluja','°C',5,22],...(RULE.maxT!=null?[['maxT','Temperatura màxima després de la pluja','°C',14,28]]:[]),['wait','Millor dia (dies després de la pluja)','dies',5,30],['before','Marge abans','dies',0,7],['after','Marge després','dies',0,10],['obagaBonus','Dies extra si és obaga','dies',0,6]]
        .map(([k,l,u,a,b])=>`<div class="slider"><label for="r-${k}">${l}</label><output id="o-${k}">${RULE[k]} ${u}</output><input type="range" id="r-${k}" data-k="${k}" data-u="${u}" min="${a}" max="${b}" value="${RULE[k]}"></div>`).join('')}
      <button class="btn ghost" id="rreset" style="align-self:flex-start">Tornar a la regla provisional</button></div>`;
-  $('#s-com').querySelectorAll('input[data-k]').forEach(inp=>inp.oninput=()=>{RULE[inp.dataset.k]=+inp.value;$('#o-'+inp.dataset.k).textContent=inp.value+' '+inp.dataset.u;store.set('rule4',RULE);SITES.forEach(evalSite)});
-  $('#rreset').onclick=()=>{RULE=Object.assign({},RULE0);store.set('rule4',{});SITES.forEach(evalSite);renderCom()}}
+  $('#s-com').querySelectorAll('input[data-k]').forEach(inp=>inp.oninput=()=>{RULE[inp.dataset.k]=+inp.value;$('#o-'+inp.dataset.k).textContent=inp.value+' '+inp.dataset.u;store.set(SPECIES[SP].key,RULE);SITES.forEach(evalSite)});
+  $('#rreset').onclick=()=>{store.set(SPECIES[SP].key,{});RULE=loadRule();SITES.forEach(evalSite);renderCom()}}
 
 /* ---------- Navegació ---------- */
 let mapBuilt=false,lastTab='llocs',screen='llocs';
@@ -768,7 +806,15 @@ function show(t){
   if(t==='com')renderCom();
   if(t==='buscar')renderBuscar();
   window.scrollTo(0,0)}
+function setSpecies(k){
+  if(!SPECIES[k])return;SP=k;store.set('sp',k);RULE=loadRule();SITES.forEach(evalSite);form=null;
+  document.querySelectorAll('[data-sp]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sp===k));
+  $('#sptag').textContent=SPECIES[k].tag;
+  if(mapBuilt){if(tap){map.removeLayer(tap);tap=null}$('#mapcard').innerHTML=`<p class="small">Spots de ${SPECIES[k].nom.toLowerCase()}. Toca un número per veure'l.</p>`;region().then(drawSpots)}
+  if(screen==='fitxa')renderFitxa();else show(screen)}
+setSpecies(SP);
 document.addEventListener('click',e=>{
+  const spb=e.target.closest('[data-sp]');if(spb){setSpecies(spb.dataset.sp);return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
   if(e.target.closest('#howbtn')){show('com');return}
   const o=e.target.closest('[data-open]');if(o){openSite(o.dataset.open,o.dataset.from);return}
@@ -777,7 +823,7 @@ document.addEventListener('click',e=>{
   const cb=e.target.closest('[data-cal]');if(cb&&!cb.disabled){calOff=Math.min(0,calOff+ +cb.dataset.cal);renderFitxa();return}
   if(e.target.closest('[data-newvisit]')){const now=new Date();form={d:dstr(TODAY),n:0,h:`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,est:[],nota:''};renderFitxa();return}
   if(e.target.closest('[data-cancel]')){form=null;renderFitxa();return}
-  if(e.target.closest('[data-save]')){visits.push({d:$('#fdate').value||dstr(TODAY),site:cur.id,n:form.n,h:$('#fh').value,est:form.est,nota:$('#fnota').value.trim()});saveVisits();form=null;renderFitxa();return}
+  if(e.target.closest('[data-save]')){visits.push({d:$('#fdate').value||dstr(TODAY),site:cur.id,sp:SP,n:form.n,h:$('#fh').value,est:form.est,nota:$('#fnota').value.trim()});saveVisits();form=null;renderFitxa();return}
   if(e.target.closest('[data-showmap]')){const s=cur;L1.moved=true;show('mapa');setTimeout(()=>{map.invalidateSize();map.setView([s.lat,s.lng],15);pinCard(s)},60);return}
   const ah=e.target.closest('[data-addhere]');if(ah){const[la,lo]=ah.dataset.addhere.split(',').map(Number);
     $('#mapcard').innerHTML=`<strong>Lloc nou</strong><form id="addf" class="sheet"><div><label for="addn">Nom</label><input id="addn" maxlength="40" required style="font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px;width:100%;box-sizing:border-box"></div><button class="btn">Desa el lloc</button></form><p class="small">Es guarda en aquest mòbil.</p>`;
