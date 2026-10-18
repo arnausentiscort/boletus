@@ -147,6 +147,10 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .pin svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
 .pin em{font-style:normal;font-weight:800;font-size:12px;background:#fff;color:#1c2218;border-radius:6px;padding:1px 7px 1px 5px;margin-top:2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);display:flex;align-items:center;gap:5px}
 .pin em i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bars div{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:14px}
+.bars i{grid-column:1/-1;height:7px;border-radius:4px;background:var(--surface2);overflow:hidden;display:block}
+.bars i b{display:block;height:100%;border-radius:4px}
 .spotn{width:28px;height:28px;border-radius:50%;border:2.5px solid #fff;color:#fff;font:800 14px/23px var(--f-display);text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.6);box-sizing:border-box}
 .tapmark{width:14px;height:14px;border-radius:50%;border:3px solid #fff;background:#7A2E8E;box-shadow:0 0 0 2px #7A2E8E}
 .vtx{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #7A2E8E}
@@ -446,16 +450,15 @@ function renderFitxa(){
      <div class="daynote" id="daynote">${dayNote(s,selDay)}</div>
    </div>
    <div class="card">
-     <div class="row"><strong>Com és el bosc</strong><span class="spacer"></span><button class="btn ghost" data-showmap>Veure al mapa</button></div>
+     <div class="row"><strong style="font-family:var(--f-display);font-size:19px">Com és la zona</strong><span class="spacer"></span><button class="btn ghost" data-showmap>Veure al mapa</button></div>
      <div class="row"><span class="coords">${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmDir(s.lat,s.lng)}" target="_blank" rel="noopener">Com arribar-hi</a></div>
-     <div class="facebar" aria-hidden="true"><i style="width:${st.obaga*100}%;background:var(--obaga)"></i><i style="width:${Math.max(0,1-st.obaga-st.solana)*100}%;background:var(--surface2)"></i><i style="width:${st.solana*100}%;background:var(--solana)"></i></div>
-     <div class="row"><b style="color:var(--obaga)">${Math.round(st.obaga*100)}% obaga</b><span class="spacer"></span><b style="color:var(--solana)">${Math.round(st.solana*100)}% solana</b></div>
-     <p class="small">${s.zone.kind==='poly'?'Calculat amb la zona que heu marcat.':'Calculat amb el bosc a menys de 600 m de l\'aparcament. Marqueu on busqueu de veritat des del Mapa.'}${st.obaga>=.5?` Com que és sobretot obaga, guarda l'aigua ${RULE.obagaBonus} dies més.`:''}</p>
+     <div id="zonadet" style="display:flex;flex-direction:column;gap:10px"><p class="small">Analitzant la zona…</p></div>
+     ${s.zone.kind==='circle'?'<p class="small">Si busqueu en una zona concreta, marqueu-la des del Mapa ("Marcar on busquem") i l\'anàlisi es farà només amb aquella zona.</p>':''}
    </div>
    ${form?formHtml():`<button class="btn" data-newvisit>Hi hem anat!</button>`}
    ${s.id.startsWith('x')?`<button class="btn ghost" data-delsite="${s.id}" style="align-self:flex-start">Esborrar aquest lloc</button>`:''}
    ${mine.length?`<div class="card"><strong>Sortides</strong>${mine.map(v=>`<div class="visit"><span class="mono">${D(dnum(v.d)).toLocaleDateString('ca-ES',{day:'2-digit',month:'2-digit',year:'2-digit',timeZone:'UTC'})}</span><span><strong>${cepTxt(v.n)}</strong>${v.h?' · '+esc(v.h):''}${v.est&&v.est.length?' · '+v.est.map(esc).join(', '):''}${v.nota?'<br><span class="small">'+esc(v.nota)+'</span>':''}</span></div>`).join('')}</div>`:''}`;
-  bindForm()}
+  bindForm();zoneDetail(s).then(D=>{const el=$('#zonadet');if(el)el.innerHTML=detailHtml(D)})}
 function formHtml(){
   return `<div class="card sheet">
    <strong style="font-family:var(--f-display);font-size:19px">Hi hem anat!</strong>
@@ -547,12 +550,61 @@ const CEP_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true
  <g fill="none" stroke="#C9B48A" stroke-width=".8"><path d="M15 36 l3 2 3-2 3 2 3-2"/><path d="M14.5 40 l3.2 2 3.3-2 3.3 2 3.2-2"/></g>
  <ellipse cx="14.5" cy="18" rx="6" ry="2.8" transform="rotate(-28 14.5 18)" fill="#fff" opacity=".22"/>
 </svg>`;
+const COLS={nord:[52,104,200],sud:[232,132,48],eo:[214,186,64],pla:[150,150,140]};
+const faceOf=sec=>[7,0,1].includes(sec)?'nord':[3,4,5].includes(sec)?'sud':sec===8?'pla':'eo';
+const REGCOV=['ni bosc ni matolls','pinar','alzinar o suredes','roureda','matolls','avellaners'];
+function srcLocal(){return{w:G.gw,h:G.gh,b:META.bounds,local:true,at(x,y){const i=y*G.gw+x;return{sec:G.sec[i],rock:G.rock[i],cov:coverName(G.cov[i]),rname:G.rdesc[i]>=0?META.rock_names[G.rdesc[i]]:'',elev:G.elev[i],slope:G.slope[i]}}}}
+let SRCREG=null;
+async function srcReg(){if(SRCREG)return SRCREG;const R=await region();await regInfo(R.home.lat,R.home.lng);if(!RINFO)return null;
+  const data=RINFO.x.getImageData(0,0,RINFO.w,RINFO.h).data;
+  SRCREG={w:RINFO.w,h:RINFO.h,b:R.bounds,local:false,at(x,y){const k=(y*this.w+x)*4;return{sec:data[k],rock:data[k+1],cov:REGCOV[data[k+2]]||'altres',rname:'',elev:null,slope:null}}};return SRCREG}
+const DETCACHE={};
+async function zoneDetail(s){
+  const key=s.id+JSON.stringify(zones[s.id]||0);if(DETCACHE[key])return DETCACHE[key];
+  const poly=zones[s.id],k=Math.cos(s.lat*Math.PI/180);
+  const test=poly?(p=>pip(p,poly)):(([a,b])=>((a-s.lat)*111320)**2+((b-s.lng)*111320*k)**2<=600*600);
+  let la0,la1,lo0,lo1;
+  if(poly){la0=Math.min(...poly.map(p=>p[0]));la1=Math.max(...poly.map(p=>p[0]));lo0=Math.min(...poly.map(p=>p[1]));lo1=Math.max(...poly.map(p=>p[1]))}
+  else{const dl=600/111320,dn=600/(111320*k);la0=s.lat-dl;la1=s.lat+dl;lo0=s.lng-dn;lo1=s.lng+dn}
+  const src=(cellOf(la0,lo0)>=0&&cellOf(la1,lo1)>=0)?srcLocal():await srcReg();if(!src)return null;
+  const[[S,W],[N,E]]=src.b,X=x=>(x-W)/(E-W)*src.w,Y=y=>(mY(N)-mY(y))/(mY(N)-mY(S))*src.h;
+  const latOf=y=>(2*Math.atan(Math.exp(mY(N)-y/src.h*(mY(N)-mY(S))))-Math.PI/2)*180/Math.PI,lngOf=x=>W+x/src.w*(E-W);
+  const x0=Math.max(0,Math.floor(X(lo0))),x1=Math.min(src.w-1,Math.ceil(X(lo1))),y0=Math.max(0,Math.floor(Y(la1))),y1=Math.min(src.h-1,Math.ceil(Y(la0)));
+  if(x1<x0||y1<y0)return null;
+  const cv=document.createElement('canvas');cv.width=x1-x0+1;cv.height=y1-y0+1;const cx=cv.getContext('2d');const im=cx.createImageData(cv.width,cv.height);
+  const D={n:0,face:{nord:0,sud:0,eo:0,pla:0},cov:{},rk:[0,0,0,0],rock:{},emin:1e9,emax:-1e9,esum:0,ssum:0,local:src.local,poly:!!poly};
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    if(!test([latOf(y+.5),lngOf(x+.5)]))continue;const c=src.at(x,y),f=faceOf(c.sec);
+    D.n++;D.face[f]++;D.cov[c.cov]=(D.cov[c.cov]||0)+1;D.rk[c.rock]++;if(c.rname)D.rock[c.rname]=(D.rock[c.rname]||0)+1;
+    if(c.elev!=null){D.emin=Math.min(D.emin,c.elev);D.emax=Math.max(D.emax,c.elev);D.esum+=c.elev;D.ssum+=c.slope}
+    im.data.set([...COLS[f],f==='pla'?70:190],((y-y0)*cv.width+(x-x0))*4)}
+  cx.putImageData(im,0,0);D.url=cv.toDataURL();D.bounds=[[latOf(y1+1),lngOf(x0)],[latOf(y0),lngOf(x1+1)]];
+  return DETCACHE[key]=D}
+function detailHtml(D){
+  if(!D||!D.n)return '<p class="small">No tinc dades d\'aquesta zona.</p>';
+  const pc=v=>Math.round(v/D.n*100);
+  const bar=(l,v,c)=>`<div><span>${l}</span><span class="mono">${pc(v)}%</span><i><b style="width:${pc(v)}%;background:${c}"></b></i></div>`;
+  const covs=Object.entries(D.cov).sort((a,b)=>b[1]-a[1]).filter(([,v])=>v/D.n>=.03).slice(0,5);
+  const rocks=Object.entries(D.rock).sort((a,b)=>b[1]-a[1]).filter(([,v])=>v/D.n>=.05).slice(0,3);
+  const acid=D.rk[1]+D.rk[3];
+  return `<p class="small">${D.poly?'La zona que heu marcat':'Cercle de 600 m al voltant del punt'}: tot el terreny, sigui bosc o no.</p>
+   <strong>Cares</strong>
+   <div class="bars">${bar('Cara nord (humida)',D.face.nord,'var(--obaga)')}${bar('Cara sud (seca)',D.face.sud,'var(--solana)')}${bar('Est o oest',D.face.eo,'#D6BA40')}${bar('Pla',D.face.pla,'#969690')}</div>
+   <strong>Què hi ha</strong>
+   <div class="bars">${covs.map(([n,v])=>bar(n.charAt(0).toUpperCase()+n.slice(1),v,'var(--moss)')).join('')}</div>
+   <strong>Terra</strong>
+   <div class="tags">${acid?`<span class="tag2 t-acid">Àcida ${pc(acid)}%</span>`:''}${D.rk[2]?`<span class="tag2 t-calc">Calcària ${pc(D.rk[2])}%</span>`:''}${D.rk[0]&&pc(D.rk[0])>=5?`<span class="tag2 t-unk">Sense dades ${pc(D.rk[0])}%</span>`:''}</div>
+   ${rocks.length?`<p class="small">Roca: ${rocks.map(([n,v])=>`${esc(n)} (${pc(v)}%)`).join(' · ')}</p>`:''}
+   ${D.local&&D.emax>0?`<p><strong>Altura</strong> de <span class="mono">${D.emin}</span> a <span class="mono">${D.emax}</span> m (mitjana <span class="mono">${Math.round(D.esum/D.n)}</span> m) · pendent mitjà <span class="mono">${Math.round(D.ssum/D.n)}°</span></p>`:''}`}
+const siteImg={};
 function drawPins(){
   Object.values(pins).forEach(p=>map.removeLayer(p));Object.values(zoneLayers).forEach(p=>map.removeLayer(p));
   const col={go:'#2E8B4B',soon:'#C88A12',wait:'#7E857A'};
   SITES.forEach(s=>{
     zoneLayers[s.id]=zones[s.id]?L.polygon(zones[s.id],{color:'#1c2218',weight:2.5,fill:false,interactive:false}).addTo(map)
-      :L.circle([s.lat,s.lng],{radius:600,color:'#1c2218',weight:1.5,dashArray:'5 6',fill:false,interactive:false}).addTo(map);
+      :L.circle([s.lat,s.lng],{radius:600,color:'#fff',weight:2,dashArray:'5 6',fill:false,interactive:false}).addTo(map);
+    if(!map.getPane('siteP'))map.createPane('siteP').style.zIndex=285;
+    zoneDetail(s).then(D=>{if(!D)return;if(siteImg[s.id])map.removeLayer(siteImg[s.id]);siteImg[s.id]=L.imageOverlay(D.url,D.bounds,{pane:'siteP',opacity:.9,className:'siteimg'}).addTo(map)});
     pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="pin">${CEP_SVG}<em><i style="background:${col[s.state]}"></i>${esc(s.name)}</em></div>`,iconSize:[140,70],iconAnchor:[70,44]})})
       .on('click',e=>{L.DomEvent.stopPropagation(e);pinCard(s)}).addTo(map)})}
 function pinCard(s){setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);

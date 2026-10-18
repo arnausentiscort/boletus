@@ -1,7 +1,7 @@
 // Boletus: funciona sense cobertura al bosc.
 // L'app i les dades: primer la xarxa (per tenir sempre l'última versió), si no, la còpia guardada.
 // Mapes i fonts: la còpia guardada, i s'actualitza de fons.
-const APP = 'cb-app-v7', MAPS = 'cb-maps-v1';
+const APP = 'cb-app-v8', MAPS = 'cb-maps-v1';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'vendor/leaflet.js', 'vendor/leaflet.css',
   'icons/logo.svg', 'icons/icon-192.png', 'icons/apple-touch-icon.png',
   'data/meta.json', 'data/grid.bin', 'data/hist.json', 'data/now.json', 'data/llocs.json', 'data/obsol.png', 'data/region.json', 'data/reg_cares.png', 'data/reg_acid.png', 'data/reg_info.png'];
