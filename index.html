@@ -135,6 +135,11 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .layerbar .opt[aria-pressed="true"]{background:#A3C982;color:#14190F;border-color:#A3C982}
 .mapkey{position:absolute;top:8px;right:8px;z-index:1000;background:rgba(25,32,21,.85);color:#E5EADD;border-radius:10px;padding:6px 9px;font-size:12px;display:flex;flex-direction:column;gap:3px;pointer-events:none}
 .mapkey span{display:flex;align-items:center;gap:6px}
+.sw-acid{background:repeating-linear-gradient(45deg,#7B3FA0 0 2px,rgba(123,63,160,.25) 2px 5px);outline:1.5px solid #60288A}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag2{display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:6px 10px;font-weight:800;font-size:15px}
+.t-acid{background:#EBDDF5;color:#5B2580}.t-calc{background:#F3E2DC;color:#8A3B22}.t-unk{background:var(--surface2);color:var(--muted)}
+.t-ob{background:#DCE6FA;color:#244E9C}.t-so{background:#FBE5D2;color:#9A4A0E}.t-pla{background:var(--surface2);color:var(--muted)}
 .pin{display:flex;flex-direction:column;align-items:center}
 .pin b{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:block;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
 .pin em{font-style:normal;font-weight:800;font-size:12px;background:#fff;color:#1c2218;border-radius:6px;padding:1px 6px;margin-top:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)}
@@ -154,7 +159,7 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 /* Pestanyes */
 .tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:2000;
   padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
-.tabs nav{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr}
+.tabs nav{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr}
 .zone{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
 .zone:first-of-type{border-top:0}
 .zone .km{font-family:var(--f-display);font-weight:800;font-size:22px}
@@ -225,7 +230,6 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 <div class="tabs"><nav role="tablist">
   <button role="tab" data-t="llocs" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Llocs</button>
   <button role="tab" data-t="mapa" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Mapa</button>
-  <button role="tab" data-t="buscar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Buscar</button>
 </nav></div>
 
 <script src="vendor/leaflet.js"></script>
@@ -466,28 +470,55 @@ let map,L1={},pins={},tap=null,sim=null,drawing=null,drawPts=[],drawMarks=[],dra
 function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span><i class="sw" style="background:var(--obaga)"></i>Obaga (nord)</span><span><i class="sw" style="background:var(--solana)"></i>Solana (sud)</span><span id="simkey" hidden><i class="sw" style="background:#ECCE46"></i>Pla</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i>Terra àcida</span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i>Calcària (no)</span><span id="k-spots"><i class="sw" style="background:#fff;border-radius:50%;box-shadow:inset 0 0 0 3px #2E8B4B"></i>Possible spot</span></div>
      <div class="layerbar">
-       <button class="opt" data-lay="obsol" aria-pressed="true">Obaga i solana</button>
+       <button class="opt" data-lay="cares" aria-pressed="true">Cara nord / sud</button>
+       <button class="opt" data-lay="acid" aria-pressed="true">Terra àcida</button>
        <button class="opt" data-lay="orto" aria-pressed="true">Foto</button>
-       <button class="opt" data-sim aria-pressed="false">Boscos semblants</button>
+       <button class="opt" data-lay="spots" aria-pressed="true">Possibles spots</button>
      </div></div>
-   <div class="card" id="mapcard"><p class="small">Toca una agulla per obrir el lloc, o qualsevol punt per saber com és.</p></div>`;
+   <div class="card" id="mapcard"><p class="small">Toca una agulla per obrir un lloc teu, un punt de color per veure un possible spot, o qualsevol lloc del mapa per saber si la terra és àcida i quina cara té.</p></div>`;
   map=L.map('map',{zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false,minZoom:9,maxZoom:18,maxBounds:[[40.45,0.1],[42.9,3.4]],maxBoundsViscosity:1});
   map.attributionControl.setPrefix(false).addAttribution('ICGC · Terrain Tiles · Open-Meteo');
   // Fons en directe de l'ICGC (tota Catalunya, nítid a qualsevol zoom) + obaga/solana calculada
   map.createPane('obsolP').style.zIndex=250;const tp=map.createPane('topoP');tp.style.zIndex=300;tp.style.mixBlendMode='multiply';tp.style.pointerEvents='none';
   const ICGC='https://geoserveis.icgc.cat/icc_mapesmultibase/noutm/wmts/';
   L1.orto=L.tileLayer(ICGC+'orto/GRID3857/{z}/{x}/{y}.jpeg',{maxZoom:18,className:'gris'}).addTo(map);
-  L1.obsol=L.imageOverlay('data/obsol.png',META.bounds,{opacity:.8,pane:'obsolP'}).addTo(map);
+  map.createPane('acidP').style.zIndex=270;
+  region().then(R=>{L1.cares=L.imageOverlay('data/reg_cares.png',R.bounds,{opacity:.85,pane:'obsolP'});L1.acid=L.imageOverlay('data/reg_acid.png',R.bounds,{pane:'acidP'});
+    L1.spots=L.layerGroup();const rend=L.canvas({padding:.5});const H=R.home;
+    R.zones.forEach((z,i)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#D9B526';
+      L.circleMarker([z.lat,z.lng],{renderer:rend,radius:Math.min(12,4+Math.sqrt(z.ha)/2.2),color:'#fff',weight:2,fillColor:col,fillOpacity:.95})
+       .on('click',ev=>{L.DomEvent.stopPropagation(ev);spotCard(i)}).addTo(L1.spots)});
+    const on=store.get('capes',{cares:true,acid:true,spots:true});['cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()})});
   L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP'}).addTo(map);
   L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng])),{padding:[80,70],maxZoom:15});L1.fit();
   drawPins();
   $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
-    on?L1[k].addTo(map):map.removeLayer(L1[k])});
-  $('#s-mapa').querySelector('[data-sim]').onclick=e=>toggleSim(e.currentTarget);
-  L1.homeLayer=null;
+    if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync()});
+    L1.homeLayer=null;
   map.on('click',onMapClick)}
+function legendSync(){const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots')}
+function spotCard(i){const z=REG.zones[i],H=REG.home,km=distKm(H.lat,H.lng,z.lat,z.lng);
+  if(tap)map.removeLayer(tap);tap=L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
+  $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">Possible spot</strong><span class="spacer"></span><span class="small">a ${km.toFixed(0)} km de ${esc(H.nom)}</span></div>
+   ${tagsHtml(z.ob>=.45?0:z.so>=.45?4:8,z.acida>=.5?1:3)}
+   <p>${z.ha} ha de ${z.arbre} · <span class="mono">${z.alt} m</span> · ${Math.round(z.ob*100)}% cara nord, ${Math.round(z.so*100)}% cara sud</p>
+   <p class="small">Bosc, matollar o avellaners sobre terra àcida. És un lloc per provar, no un lloc segur.</p>
+   <div class="row"><a class="btn ghost" href="${gmDir(z.lat,z.lng)}" target="_blank" rel="noopener">Com arribar-hi</a><button class="btn ghost" data-zadd="${i}">Afegir als meus llocs</button></div>`;
+  setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50)}
+// Dades de tota la zona per al punt tocat: R = cara, G = roca, B = arbre
+let RINFO=null;
+async function regInfo(lat,lng){
+  const R=await region();
+  if(!RINFO){RINFO=await new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);res({x,w:im.width,h:im.height})};im.onerror=()=>res(null);im.src='data/reg_info.png'})}
+  if(!RINFO)return null;const[[s,w],[n,e]]=R.bounds;
+  const px=Math.floor((lng-w)/(e-w)*RINFO.w),py=Math.floor((mY(n)-mY(lat))/(mY(n)-mY(s))*RINFO.h);
+  if(px<0||py<0||px>=RINFO.w||py>=RINFO.h)return null;const d=RINFO.x.getImageData(px,py,1,1).data;return{sec:d[0],rock:d[1],tree:d[2]}}
+function tagsHtml(sec,rock){
+  const r=rock===1||rock===3?'<span class="tag2 t-acid">Terra àcida ✓</span>':rock===2?'<span class="tag2 t-calc">Terra calcària ✗</span>':'<span class="tag2 t-unk">Roca sense dades</span>';
+  const f=[7,0,1].includes(sec)?'<span class="tag2 t-ob">Cara nord</span>':[3,4,5].includes(sec)?'<span class="tag2 t-so">Cara sud</span>':sec===8?'<span class="tag2 t-pla">Pla</span>':`<span class="tag2 t-pla">Mira a l'${DIRS[sec]}</span>`;
+  return `<div class="tags">${r}${f}</div>`}
 function drawPins(){
   Object.values(pins).forEach(p=>map.removeLayer(p));Object.values(zoneLayers).forEach(p=>map.removeLayer(p));
   const col={go:'#2E8B4B',soon:'#C88A12',wait:'#7E857A'};
@@ -509,11 +540,15 @@ function onMapClick(e){
   const i=cellOf(e.latlng.lat,e.latlng.lng);setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   if(tap)map.removeLayer(tap);tap=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
   const tools=`<div class="row"><span class="coords">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmPt(e.latlng.lat,e.latlng.lng)}" target="_blank" rel="noopener">Google Maps</a><button class="btn ghost" data-addhere="${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}">Afegir lloc</button></div>`;
-  if(i<0){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de la zona estudiada: aquí no tinc obaga, solana ni roca, però la pluja sí que funciona.</p>${tools}`;return}
+  if(i<0){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Mirant…</p>${tools}`;
+    regInfo(e.latlng.lat,e.latlng.lng).then(ri=>{if(!ri){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de la zona estudiada (uns 50 km al voltant de Torredembarra): aquí no tinc roca ni cares, però la pluja sí que funciona.</p>${tools}`;return}
+      const ar=['','pinar','alzinar o suredes','roureda','matolls','avellaners'][ri.tree]||'ni bosc ni matolls';
+      $('#mapcard').innerHTML=`<strong>Aquí</strong>${tagsHtml(ri.sec,ri.rock)}<p>${ar}</p>${ri.tree&&(ri.rock===1||ri.rock===3)&&ri.tree!==1?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`});return}
   const sec=G.sec[i],face=sec===8?'terreny pla':[7,0,1].includes(sec)?'<b style="color:var(--obaga)">obaga</b>':[3,4,5].includes(sec)?'<b style="color:var(--solana)">solana</b>':`mira a l'${DIRS[sec]}`;
   const rk=['sense dades','àcida','calcària','barrejada'][G.rock[i]];
   const fit=goodTree(G.cov[i])&&(G.rock[i]===1||G.rock[i]===3);
-  $('#mapcard').innerHTML=`<strong>Aquí</strong><p>${face} · ${coverName(G.cov[i])} · <span class="mono">${G.elev[i]} m</span> · roca ${rk}</p>${fit?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`}
+  const rdn=G.rdesc[i]>=0?META.rock_names[G.rdesc[i]]:'';
+  $('#mapcard').innerHTML=`<strong>Aquí</strong>${tagsHtml(sec,G.rock[i])}<p>${coverName(G.cov[i])} · <span class="mono">${G.elev[i]} m</span></p>${rdn?`<p class="small">Roca: ${esc(rdn)}</p>`:''}${fit?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`}
 function startDraw(id){
   drawing=id;drawPts=[];if(tap){map.removeLayer(tap);tap=null}
   $('#mapcard').innerHTML=`<strong>Marca on busqueu a ${esc(SITES.find(s=>s.id===id).name)}</strong><p class="small">Toca el mapa al voltant de la zona (mínim 3 punts).</p>
@@ -605,7 +640,7 @@ let mapBuilt=false,lastTab='llocs',screen='llocs';
 function show(t){
   screen=t;
   document.querySelectorAll('.screen').forEach(s=>s.hidden=s.id!=='s-'+t);
-  if(t==='llocs'||t==='mapa'||t==='buscar'){lastTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t))}
+  if(t==='llocs'||t==='mapa'){lastTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t))}
   if(t==='llocs')renderLlocs();
   if(t==='mapa'){const first=!mapBuilt;if(!mapBuilt){buildMap();mapBuilt=true}else drawPins();setTimeout(()=>{map.invalidateSize();if(first&&!L1.moved)L1.fit()},30)}
   if(t==='com')renderCom();

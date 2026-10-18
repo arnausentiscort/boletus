@@ -159,3 +159,28 @@ img.save(f'{OUT}/region.png', optimize=True, transparency=bytes([0, 200, 190, 17
 json.dump(dict(bounds=bounds, home=dict(nom='Torredembarra', lat=LAT, lng=LON), criteris=dict(alt=[200, 800], min_ha=8),
                zones=zones), open(f'{OUT}/region.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print('fet:', len(zones), 'zones', flush=True)
+
+# --- Capes per a tot el mapa: cares (on hi ha vegetació) i terra àcida ---
+from PIL import ImageFilter
+veg = tree > 0
+def soft(mask, blur=1.2):
+    return np.asarray(Image.fromarray((mask * 255).astype(np.uint8), 'L').filter(ImageFilter.GaussianBlur(blur)))
+a = soft(veg & np.isin(sec, [7, 0, 1])); b = soft(veg & np.isin(sec, [3, 4, 5]))
+rgba = np.zeros((Hp, Wp, 4), np.uint8)
+rgba[(a > 127) & (a >= b)] = [52, 104, 200, 150]
+rgba[(b > 127) & (b > a)] = [232, 132, 48, 135]
+Image.fromarray(rgba, 'RGBA').save(f'{OUT}/reg_cares.png', optimize=True)
+# Terra àcida: ratllat lila amb vora, perquè es vegi a sobre de les cares
+acid = ndimage.binary_opening((rock == 1) | (rock == 3), iterations=1)
+yy, xx = np.mgrid[0:Hp, 0:Wp]
+edge = acid & ~ndimage.binary_erosion(acid, iterations=2)
+hatch = acid & (((xx + yy) % 7) < 2)
+rgba = np.zeros((Hp, Wp, 4), np.uint8)
+rgba[acid] = [123, 63, 160, 38]
+rgba[hatch] = [123, 63, 160, 150]
+rgba[edge] = [96, 40, 130, 235]
+Image.fromarray(rgba, 'RGBA').save(f'{OUT}/reg_acid.png', optimize=True)
+# Dades per tocar el mapa (a mitja resolució): R = cara (0-8), G = roca (0-3), B = arbre (0-5)
+info = np.stack([sec.astype(np.uint8), rock, tree], -1)[::2, ::2]
+Image.fromarray(np.ascontiguousarray(info), 'RGB').save(f'{OUT}/reg_info.png', optimize=True)
+print('capes fetes', flush=True)
