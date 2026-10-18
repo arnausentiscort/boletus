@@ -505,9 +505,10 @@ function buildMap(){
     // Només els 10 millors possibles spots (puntuació: roure/alzina, terra àcida, cara nord, altura, mida, pendent i distància)
     L1.spots=L.layerGroup();const H=R.home;
     const kmH=z=>distKm(H.lat,H.lng,z.lat,z.lng);
-    const score=z=>3*z.bo+z.acida+Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-450)/350)+(z.ob>=.3?.8:0)-(z.arbre==='avellaners'?1:0)-kmH(z)/12-2*(z.emp||0)-Math.max(0,(z.pend||0)-18)/7;
+    const score=z=>3*z.bo+z.acida+Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-450)/350)+(z.ob>=.3?.8:0)-(z.arbre==='avellaners'?1:0)-kmH(z)/20-2*(z.emp||0)-Math.max(0,(z.pend||0)-18)/7;
     const cand=R.zones.map((z,i)=>Object.assign({i},z)).filter(z=>z.ha>=15&&kmH(z)<=40).sort((a,b)=>score(b)-score(a));
-    TOP=[];for(const z of cand){if(TOP.every(b=>distKm(b.lat,b.lng,z.lat,z.lng)>3))TOP.push(z);if(TOP.length===10)break}
+    TOP=[];for(const z of cand){if(SITES.some(t=>distKm(t.lat,t.lng,z.lat,z.lng)<1.5))continue;// els llocs propis ja els coneixeu
+      if(TOP.every(b=>distKm(b.lat,b.lng,z.lat,z.lng)>3))TOP.push(z);if(TOP.length===10)break}
     TOP.forEach((z,n)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#C9A21E';
       L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${col}">${n+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
        .on('click',ev=>{L.DomEvent.stopPropagation(ev);spotCard(z.i,n+1)}).addTo(L1.spots)});
