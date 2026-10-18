@@ -132,7 +132,7 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 #map{width:100%;height:62vh;min-height:400px;max-height:700px;background:#9DA6AA}
 .town{font:800 13px var(--f-body);color:#fff;text-shadow:0 0 3px #000,0 0 6px #000,0 1px 2px #000;white-space:nowrap;text-align:center;letter-spacing:.02em}
 .town.big{font-size:16px;text-transform:uppercase;letter-spacing:.08em}
-.casa{display:inline-flex;align-items:center;gap:6px;background:#6E4C33;color:#fff;border:2px solid #fff;border-radius:999px;padding:3px 10px 3px 6px;box-shadow:0 1px 5px rgba(0,0,0,.55);white-space:nowrap}
+.casa{width:20px;height:20px;display:grid;place-items:center;background:#6E4C33;border:1.5px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.5);box-sizing:border-box}
 .casa span{display:flex;flex-direction:column;line-height:1.05}
 .casa b{font:800 13px var(--f-display)}
 .casa small{font:700 10px var(--f-body);opacity:.85}
@@ -515,10 +515,10 @@ function buildMap(){
     const TOWNS=[['Torredembarra',41.1462,1.3960,2,'del Berni'],['Reus',41.1561,1.1069,2,"de l'Arnau"],['Tarragona',41.1189,1.2445,1],['Valls',41.2861,1.2497,0],['Cambrils',41.0667,1.0597,0],['Montblanc',41.3759,1.1626,0],['Falset',41.1450,0.8197,0],['El Vendrell',41.2188,1.5349,0],['Alforja',41.2100,0.9751,0],['Prades',41.3093,0.9887,0]];
     if(!map.getPane('labels')){const lp=map.createPane('labels');lp.style.zIndex=590;lp.style.pointerEvents='none'}
     L1.towns=L.layerGroup().addTo(map);
-    const homeSvg='<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="#fff"/></svg>';
+    const homeSvg='<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="#fff"/></svg>';
     const drawTowns=()=>{L1.towns.clearLayers();const zm=map.getZoom();TOWNS.forEach(([n,la,lo,lv,qui])=>{if(lv===0&&zm<11||lv===1&&zm<10)return;
-      const html=lv===2?`<div class="casa">${homeSvg}<span><b>${n}</b><small>casa ${qui}</small></span></div>`:`<div class="town ${lv?'big':''}">${n}</div>`;
-      L.marker([la,lo],{pane:'labels',interactive:false,keyboard:false,icon:L.divIcon({className:'',html,iconSize:lv===2?[150,40]:[160,22],iconAnchor:lv===2?[16,20]:[80,11]})}).addTo(L1.towns)})};
+      const html=lv===2?`<div class="casa" title="${n}">${homeSvg}</div>`:`<div class="town ${lv?'big':''}">${n}</div>`;
+      L.marker([la,lo],{pane:'labels',interactive:false,keyboard:false,icon:L.divIcon({className:'',html,iconSize:lv===2?[20,20]:[160,22],iconAnchor:lv===2?[10,10]:[80,11]})}).addTo(L1.towns)})};
     drawTowns();map.on('zoomend',drawTowns);
     const on=store.get('capes',{cares:true,acid:true,spots:true});['cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()})});
   L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP',keepBuffer:4,updateWhenZooming:false}).addTo(map);
