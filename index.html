@@ -502,10 +502,10 @@ function buildMap(){
   const BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
   region().then(R=>{const o={minZoom:9,maxZoom:18,maxNativeZoom:12,bounds:R.bounds,errorTileUrl:BLANK,keepBuffer:4};
     L1.cares=L.tileLayer('tiles/cares/{z}/{x}/{y}.png',Object.assign({pane:'obsolP',opacity:.85},o));L1.acid=L.tileLayer('tiles/acid/{z}/{x}/{y}.png',Object.assign({pane:'acidP'},o));
-    // Només els 10 millors possibles spots (puntuació: roure/alzina, terra àcida, sol, altura, mida i distància)
+    // Només els 10 millors possibles spots (puntuació: roure/alzina, terra àcida, cara nord, altura, mida, pendent i distància)
     L1.spots=L.layerGroup();const H=R.home;
     const kmH=z=>distKm(H.lat,H.lng,z.lat,z.lng);
-    const score=z=>3*z.bo+z.acida+Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-450)/350)+(z.ob>=.3?.8:0)-(z.arbre==='avellaners'?1:0)-kmH(z)/12;
+    const score=z=>3*z.bo+z.acida+Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-450)/350)+(z.ob>=.3?.8:0)-(z.arbre==='avellaners'?1:0)-kmH(z)/12-2*(z.emp||0)-Math.max(0,(z.pend||0)-18)/7;
     const cand=R.zones.map((z,i)=>Object.assign({i},z)).filter(z=>z.ha>=15&&kmH(z)<=40).sort((a,b)=>score(b)-score(a));
     TOP=[];for(const z of cand){if(TOP.every(b=>distKm(b.lat,b.lng,z.lat,z.lng)>3))TOP.push(z);if(TOP.length===10)break}
     TOP.forEach((z,n)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#C9A21E';
@@ -532,10 +532,12 @@ function legendSync(){const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-c
 let TOP=[];
 function spotCard(i,n){const z=REG.zones[i],H=REG.home,km=distKm(H.lat,H.lng,z.lat,z.lng);
   const why=[z.acida>=.9?'terra àcida':'terra àcida en part',z.bo>=.3?`${Math.round(z.bo*100)}% roure, alzina o avellaner`:`bosc de ${z.arbre}`,z.ob>=.3?`${Math.round(z.ob*100)}% cara nord, que guarda la humitat`:`poca cara nord: s'asseca abans`,Math.abs(z.alt-450)<150?`${z.alt} m, semblant al Mas d'Anguera`:`${z.alt} m d'altura`];
+  if(z.pend!=null)why.push(z.emp>=.25?`força costerut (${Math.round(z.emp*100)}% amb més de 25°)`:z.pend<=12?"terreny suau, s'hi camina bé":'pendent normal');
   if(tap)map.removeLayer(tap);tap=L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
   $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">Possible spot ${n?'nº '+n:''}</strong><span class="spacer"></span><span class="small">a ${km.toFixed(0)} km de ${esc(H.nom)}</span></div>
    ${tagsHtml(z.ob>=.45?0:z.so>=.45?4:8,z.acida>=.5?1:3)}
    <p>${z.ha} ha de ${z.arbre} · <span class="mono">${z.alt} m</span> · ${Math.round(z.ob*100)}% cara nord, ${Math.round(z.so*100)}% cara sud</p>
+   ${z.pend!=null?`<p><strong>Pendent</strong> mitjà <span class="mono">${z.pend}°</span>${z.emp>=.05?` · <span class="mono">${Math.round(z.emp*100)}%</span> massa costerut (més de 25°)`:' · gairebé res massa costerut'}</p>`:''}
    <p class="small">Per què surt: ${why.join(' · ')}. És un lloc per provar, no un lloc segur.</p>
    <div class="row"><a class="btn ghost" href="${gmDir(z.lat,z.lng)}" target="_blank" rel="noopener">Com arribar-hi</a><button class="btn ghost" data-zadd="${i}">Afegir als meus llocs</button></div>`;
   setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50)}
