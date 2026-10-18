@@ -141,8 +141,9 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .t-acid{background:#EBDDF5;color:#5B2580}.t-calc{background:#F3E2DC;color:#8A3B22}.t-unk{background:var(--surface2);color:var(--muted)}
 .t-ob{background:#DCE6FA;color:#244E9C}.t-so{background:#FBE5D2;color:#9A4A0E}.t-pla{background:var(--surface2);color:var(--muted)}
 .pin{display:flex;flex-direction:column;align-items:center}
-.pin b{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:block;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
-.pin em{font-style:normal;font-weight:800;font-size:12px;background:#fff;color:#1c2218;border-radius:6px;padding:1px 6px;margin-top:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.pin svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
+.pin em{font-style:normal;font-weight:800;font-size:12px;background:#fff;color:#1c2218;border-radius:6px;padding:1px 7px 1px 5px;margin-top:2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);display:flex;align-items:center;gap:5px}
+.pin em i{width:9px;height:9px;border-radius:50%;display:inline-block}
 .tapmark{width:14px;height:14px;border-radius:50%;border:3px solid #fff;background:#7A2E8E;box-shadow:0 0 0 2px #7A2E8E}
 .vtx{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #7A2E8E}
 .leaflet-container .gris img,.leaflet-container img.gris{filter:grayscale(1) contrast(.75) brightness(1.18)}
@@ -519,13 +520,28 @@ function tagsHtml(sec,rock){
   const r=rock===1||rock===3?'<span class="tag2 t-acid">Terra àcida ✓</span>':rock===2?'<span class="tag2 t-calc">Terra calcària ✗</span>':'<span class="tag2 t-unk">Roca sense dades</span>';
   const f=[7,0,1].includes(sec)?'<span class="tag2 t-ob">Cara nord</span>':[3,4,5].includes(sec)?'<span class="tag2 t-so">Cara sud</span>':sec===8?'<span class="tag2 t-pla">Pla</span>':`<span class="tag2 t-pla">Mira a l'${DIRS[sec]}</span>`;
   return `<div class="tags">${r}${f}</div>`}
+const CEP_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true">
+ <defs><linearGradient id="pcap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A5530"/><stop offset=".6" stop-color="#5A3219"/><stop offset="1" stop-color="#3A1F10"/></linearGradient>
+ <linearGradient id="pstem" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E6D8B8"/><stop offset=".5" stop-color="#FBF5E8"/><stop offset="1" stop-color="#D9C79F"/></linearGradient>
+ <linearGradient id="pama" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F26B3A"/><stop offset="1" stop-color="#C9381C"/></linearGradient></defs>
+ <g stroke="#fff" stroke-width="1.4" paint-order="stroke" stroke-linejoin="round">
+  <path d="M34.5 30.5 h4.5 l.8 12 h-6.1z" fill="#F0D44A"/>
+  <ellipse cx="36.8" cy="43.2" rx="5" ry="2.4" fill="#fff"/>
+  <path d="M29.5 31.5 C29.5 24.5 44.5 24.5 44.5 31.5 C44.5 32.6 43.6 33 42.5 33 H31.5 C30.4 33 29.5 32.6 29.5 31.5Z" fill="url(#pama)"/>
+  <path d="M13.5 31 C11.5 37 11.5 42 14 45 C17 47.3 25.5 47.3 28.5 45 C31 42 31 37 29 31Z" fill="url(#pstem)"/>
+  <path d="M3.5 29.5 C3.5 18 12.5 10.5 21 10.5 C29.5 10.5 38.5 18 38.5 29.5 C38.5 31.8 36.8 33 34.5 33 H7.5 C5.2 33 3.5 31.8 3.5 29.5Z" fill="url(#pcap)"/>
+ </g>
+ <path d="M5.5 31.2 H36.5 C35.6 32.5 34.8 33 33.5 33 H8.5 C7.2 33 6.4 32.5 5.5 31.2Z" fill="#D9C98F"/>
+ <g fill="none" stroke="#C9B48A" stroke-width=".8"><path d="M15 36 l3 2 3-2 3 2 3-2"/><path d="M14.5 40 l3.2 2 3.3-2 3.3 2 3.2-2"/></g>
+ <ellipse cx="14.5" cy="18" rx="6" ry="2.8" transform="rotate(-28 14.5 18)" fill="#fff" opacity=".22"/>
+</svg>`;
 function drawPins(){
   Object.values(pins).forEach(p=>map.removeLayer(p));Object.values(zoneLayers).forEach(p=>map.removeLayer(p));
   const col={go:'#2E8B4B',soon:'#C88A12',wait:'#7E857A'};
   SITES.forEach(s=>{
     zoneLayers[s.id]=zones[s.id]?L.polygon(zones[s.id],{color:'#1c2218',weight:2.5,fill:false,interactive:false}).addTo(map)
       :L.circle([s.lat,s.lng],{radius:600,color:'#1c2218',weight:1.5,dashArray:'5 6',fill:false,interactive:false}).addTo(map);
-    pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="pin"><b style="background:${col[s.state]}"></b><em>${esc(s.name)}</em></div>`,iconSize:[130,56],iconAnchor:[65,30]})})
+    pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="pin">${CEP_SVG}<em><i style="background:${col[s.state]}"></i>${esc(s.name)}</em></div>`,iconSize:[140,70],iconAnchor:[70,44]})})
       .on('click',e=>{L.DomEvent.stopPropagation(e);pinCard(s)}).addTo(map)})}
 function pinCard(s){setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">${esc(s.name)}</strong><span class="spacer"></span>${chip(s)}</div>
