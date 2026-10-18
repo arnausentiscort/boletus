@@ -353,17 +353,21 @@ const wetTxt=(s,d)=>{const r=rainOn(s,d);return r!=null&&r>=1?`<div class="small
 const RULE0={mm:17,span:2,minT:12,wait:16,before:2,after:2,obagaBonus:1};
 let RULE=Object.assign({},RULE0,store.get('rule4',{}));
 function evalSite(s){
-  const R=RULE,ser=s.ser,out=[],bonus=s.zone.st.obaga>=.5?R.obagaBonus:0;
+  const R=RULE,ser=s.ser,out=[],cold=[],bonus=s.zone.st.obaga>=.5?R.obagaBonus:0;
   // només amb pluja que ja ha caigut: la previsió serveix per saber si et mullaràs, no per predir bolets
   const lastReal=Math.min(ser.r.length-1,TODAY-ser.start);
   // cada episodi de pluja compta des del primer dia que passa el llindar; els dies plujosos seguits no l'allarguen
   let last=-99;
   for(let i=R.span-1;i<=lastReal;i++){let sm=0,tt=0,c=0;
     for(let k=0;k<R.span;k++){const v=ser.r[i-k];if(v!=null)sm+=v;const t=ser.t[i-k];if(t!=null){tt+=t;c++}}
-    if(!(sm>=R.mm&&c&&tt/c>=R.minT))continue;
-    if(i-last>5){const t1=ser.start+i;out.push({t0:t1-R.span+1,t1,peak:t1+R.wait,a:t1+R.wait-R.before,b:t1+R.wait+R.after+bonus,mm:sm})}
+    if(sm<R.mm)continue;
+    if(i-last>5){const t1=ser.start+i,w={t0:t1-R.span+1,t1,peak:t1+R.wait,a:t1+R.wait-R.before,b:t1+R.wait+R.after+bonus,mm:sm};
+      // els bolets creixen els dies DESPRÉS de la pluja: si aquells dies fa fred, no surten (encara que plogués amb calor)
+      const g=[];for(let k=i+1;k<=i+R.wait-2;k++){const v=ser.t[k];if(v!=null)g.push(v)}
+      w.tg=g.length?g.reduce((a,b)=>a+b)/g.length:null;w.prov=g.length<R.wait-2;
+      if(g.length>=3&&w.tg<R.minT)cold.push(w);else out.push(w)}
     last=i}
-  s.wins=out;
+  s.wins=out;s.cold=cold.find(w=>w.b>=TODAY&&w.t1>=TODAY-20)||null;
   const cur=out.find(w=>w.a<=TODAY&&TODAY<=w.b),next=out.find(w=>w.a>TODAY);
   s.state=cur?'go':next?'soon':'wait';s.win=cur||next||null;
   s.bolet=d=>out.some(w=>d>=w.a&&d<=w.b);
@@ -373,7 +377,8 @@ const STATE={go:['s-go','Vés-hi'],soon:['s-soon','Aviat'],wait:['s-wait','Falta
 const chip=s=>`<span class="chip ${STATE[s.state][0]}">${STATE[s.state][1]}</span>`;
 function what(s){
   if(s.state==='go')return s.win.peak>=TODAY?`Millor dia: <strong>${s.win.peak===TODAY?'avui':wdn(s.win.peak)+' '+fmt(s.win.peak)}</strong> · bolets fins al ${fmt(s.win.b)}`:`Bolets fins al <strong>${wdn(s.win.b)} ${fmt(s.win.b)}</strong>`;
-  if(s.state==='soon')return `Millor dia: <strong>${wdn(s.win.peak)} ${fmt(s.win.peak)}</strong> · del ${fmt(s.win.a)} al ${fmt(s.win.b)}`;
+  if(s.state==='soon')return `Millor dia: <strong>${wdn(s.win.peak)} ${fmt(s.win.peak)}</strong> · del ${fmt(s.win.a)} al ${fmt(s.win.b)}${s.win.prov?' · si no fa fred':''}`;
+  if(s.cold)return `Va ploure el ${fmt(s.cold.t1)}, però després ha fet fred (${s.cold.tg.toFixed(0)} °C de mitjana): no surten`;
   let t=0;for(let d=TODAY-9;d<=TODAY;d++)t+=rainOn(s,d)||0;return `Només ${Math.round(t)} litres els últims 10 dies`}
 
 /* ---------- Diari ---------- */
@@ -737,7 +742,8 @@ function renderCom(){
      <p class="small">La majoria d'aquestes xifres són de boletaires experts i de guies italianes i espanyoles. Estudis científics amb números exactes per a aquestes espècies n'hi ha molt pocs. Per això el vostre diari és tan important.</p></div>
    <div class="card how"><h3>Dies de bolets</h3>
      <p>Regla provisional, ajustada perquè encerti les dues sortides bones que coneixem (25 d'octubre de 2022 i 17 d'octubre de 2026):</p>
-     <ul><li>Si en ${RULE.span} dies seguits cauen ${RULE.mm} litres o més, amb una temperatura mitjana de més de ${RULE.minT} °C…</li>
+     <ul><li>Si en ${RULE.span} dies seguits cauen ${RULE.mm} litres o més…</li>
+     <li>…i els dies <strong>després</strong> de la pluja la temperatura mitjana passa de ${RULE.minT} °C (és quan creixen: si fa fred, no surten, encara que plogués amb calor)…</li>
      <li>…el <strong>millor dia</strong> és ${RULE.wait} dies després del primer dia que es passa el llindar, i hi ha bolets del dia ${RULE.wait-RULE.before} al ${RULE.wait+RULE.after}.</li>
      <li>Si el bosc és sobretot obaga, ${RULE.obagaBonus} dia més al final.</li></ul>
      <p><strong>Per què 5 dies i no 10?</strong> Les dues bones sortides que coneixem, totes dues al mateix lloc, van ser 15 dies (2026) i 17 dies (2022) després de la primera pluja forta. La mitjana és 16. La recerca diu el mateix: els ceps surten sobretot 13–15 dies després de la pluja més forta, i cada cep és bo pocs dies abans de fer-se malbé. Per això la finestra és 16 ± 2 dies: cobreix tot el que hem vist amb un dia de marge per banda i passa d'uns 40 dies possibles per temporada a uns 18.</p></div>
@@ -745,7 +751,7 @@ function renderCom(){
      <p>Pluja estimada per a cada lloc, de models d'alta resolució (d'1 a 3 km), via Open-Meteo. Cada cop que obres l'app es baixen els últims dies i la previsió de 7 dies; sense connexió es fa servir l'última que tenies. Al calendari de cada lloc pots tirar enrere fins al 2016 per veure si la regla hauria encertat.</p></div>
    <div class="card how"><h3>Ajustar la regla</h3>
      <p class="small">Mou els números i mira als calendaris si els dies verds coincideixen amb els dies que vau trobar ceps.</p>
-     ${[['mm','Pluja mínima','l',10,80],['span','En quants dies','dies',1,7],['minT','Temperatura mínima','°C',5,22],['wait','Millor dia (dies després de la pluja)','dies',5,30],['before','Marge abans','dies',0,7],['after','Marge després','dies',0,10],['obagaBonus','Dies extra si és obaga','dies',0,6]]
+     ${[['mm','Pluja mínima','l',10,80],['span','En quants dies','dies',1,7],['minT','Temperatura mínima després de la pluja','°C',5,22],['wait','Millor dia (dies després de la pluja)','dies',5,30],['before','Marge abans','dies',0,7],['after','Marge després','dies',0,10],['obagaBonus','Dies extra si és obaga','dies',0,6]]
        .map(([k,l,u,a,b])=>`<div class="slider"><label for="r-${k}">${l}</label><output id="o-${k}">${RULE[k]} ${u}</output><input type="range" id="r-${k}" data-k="${k}" data-u="${u}" min="${a}" max="${b}" value="${RULE[k]}"></div>`).join('')}
      <button class="btn ghost" id="rreset" style="align-self:flex-start">Tornar a la regla provisional</button></div>`;
   $('#s-com').querySelectorAll('input[data-k]').forEach(inp=>inp.oninput=()=>{RULE[inp.dataset.k]=+inp.value;$('#o-'+inp.dataset.k).textContent=inp.value+' '+inp.dataset.u;store.set('rule4',RULE);SITES.forEach(evalSite)});

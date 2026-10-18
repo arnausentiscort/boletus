@@ -1,7 +1,9 @@
 """Avisos al mòbil (ntfy). S'executa cada matí amb GitHub Actions.
 
-- Quan ahir es va passar el llindar de pluja en un lloc: avisa del millor dia.
-- Quan demà és el millor dia d'un lloc: ho recorda, amb l'hora en què surt el sol.
+- Avís de pluja: ahir es va passar el llindar de pluja i algun dels dies de pluja va fer més de 12 °C.
+- Avís de bolets: demà és el millor dia, perquè fa 16 dies va ploure prou i des d'aleshores la temperatura
+  mitjana ha passat de 12 °C. No importa la temperatura del dia de la pluja: el que compta és quan creixen.
+Així, pluja amb calor i després fred dona només el primer avís, i pluja freda i després calor, només el segon.
 La regla és la mateixa que la de l'app (index.html)."""
 import json, math, os, sys, urllib.request, datetime as dt
 
@@ -47,15 +49,17 @@ def main():
         for i in range(RULE['span'] - 1, len(days)):
             if days[i] > yesterday: break  # només dies ja acabats
             sm = sum(r[i - RULE['span'] + 1:i + 1]); tt = [x for x in t[i - RULE['span'] + 1:i + 1] if x is not None]
-            if sm >= RULE['mm'] and tt and sum(tt) / len(tt) >= RULE['minT']:
-                if i - last > RULE['gap']: trig.append((days[i], sm))
+            if sm >= RULE['mm']:
+                if i - last > RULE['gap']:
+                    g = [x for x in t[i + 1:i + RULE['wait'] - 1] if x is not None]  # dies en què creixen
+                    trig.append((days[i], sm, bool(tt) and max(tt) >= RULE['minT'], len(g) >= 3 and sum(g) / len(g) >= RULE['minT']))
                 last = i
-        for day, mm in trig:
+        for day, mm, warm_rain, warm_after in trig:
             peak = day + dt.timedelta(RULE['wait'])
             a, b = peak - dt.timedelta(RULE['before']), peak + dt.timedelta(RULE['after'])
-            if day == yesterday:
-                send(f"Ha plogut a {s['name']}", f"{round(mm)} litres. Millor dia per anar-hi: {fmt(peak)} (del {a.day} al {b.day} {MESOS[b.month - 1]}).", 'cloud_with_rain'); sent += 1
-            if peak == tomorrow:
+            if day == yesterday and warm_rain:
+                send(f"Ha plogut a {s['name']}", f"{round(mm)} litres. Si no fa fred, el millor dia serà {fmt(peak)} (del {a.day} al {b.day} {MESOS[b.month - 1]}).", 'cloud_with_rain'); sent += 1
+            if peak == tomorrow and warm_after:
                 send(f"Demà és el millor dia a {s['name']}", f"Surt el sol a les {sunrise(tomorrow, s['lat'], s['lng'])}. Com més d'hora, més ceps.", 'mushroom'); sent += 1
     if '--prova' in sys.argv:
         send('Boletus funciona', "Els avisos estan activats. Rebràs un missatge quan plogui prou als vostres boscos.", 'white_check_mark')
