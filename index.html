@@ -228,27 +228,7 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 <body>
 <div class="app">
   <header class="topbar">
-    <span class="logo-wrap" id="logos">    <svg class="logo" data-logo="ceps" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22402A"/><stop offset="1" stop-color="#132417"/></linearGradient>
-    <radialGradient id="sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#E8962E"/></radialGradient>
-    <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A5530"/><stop offset=".55" stop-color="#5A3219"/><stop offset="1" stop-color="#3A1F10"/></linearGradient>
-    <linearGradient id="stem" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E9DDC2"/><stop offset=".5" stop-color="#FBF5E8"/><stop offset="1" stop-color="#DCCDAA"/></linearGradient>
-    <clipPath id="r"><rect width="64" height="64" rx="14"/></clipPath>
-  </defs>
-  <g clip-path="url(#r)">
-    <rect width="64" height="64" fill="url(#bg)"/>
-    <circle cx="46" cy="52" r="15" fill="url(#sun)" opacity=".95"/>
-    <path d="M0 55 Q16 50 32 54 T64 52 V64 H0Z" fill="#0E1A10"/>
-    <path d="M22 37 C20.5 45 20 52 23 57 C26.5 60.5 37.5 60.5 41 57 C44 52 43.5 45 42 37 Z" fill="url(#stem)"/>
-    <g fill="none" stroke="#C2AE84" stroke-width=".9" opacity=".9">
-      <path d="M24 41 l4 3 4-3 4 3 4-3"/><path d="M23.5 46 l4.2 3 4.3-3 4.3 3 4.2-3"/><path d="M23.6 51 l4.2 3 4.2-3 4.2 3 4.2-3"/>
-    </g>
-    <path d="M7 34 C7 19 19 9 32 9 C45 9 57 19 57 34 C57 37.5 54 39 50 39 H14 C10 39 7 37.5 7 34 Z" fill="url(#cap)"/>
-    <path d="M10.5 37.5 H53.5 C52 39.5 50.5 40 48 40 H16 C13.5 40 12 39.5 10.5 37.5Z" fill="#D9C98F"/>
-    <ellipse cx="23" cy="20" rx="9" ry="4.5" transform="rotate(-24 23 20)" fill="#fff" opacity=".18"/>
-  </g>
-</svg></span>
+    <img class="logo" src="icons/logo.svg" width="44" height="44" alt="">
     <div class="brand"><h1>Boletus</h1><span class="tag" id="sptag">radar de ceps</span></div><span class="spacer"></span>
     <button class="iconbtn" id="howbtn" aria-label="Com funciona"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
   </header>
@@ -609,17 +589,18 @@ function tagsHtml(sec,rock){
 const CEP_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true">
  <defs><linearGradient id="pcap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A5530"/><stop offset=".6" stop-color="#5A3219"/><stop offset="1" stop-color="#3A1F10"/></linearGradient>
  <linearGradient id="pstem" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E6D8B8"/><stop offset=".5" stop-color="#FBF5E8"/><stop offset="1" stop-color="#D9C79F"/></linearGradient>
- <linearGradient id="pama" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F26B3A"/><stop offset="1" stop-color="#C9381C"/></linearGradient></defs>
+ <linearGradient id="pama" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F57A3C"/><stop offset="1" stop-color="#D2401C"/></linearGradient>
+ <linearGradient id="pegg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E7E1D3"/><stop offset=".45" stop-color="#FFFDF8"/><stop offset="1" stop-color="#D9D1BF"/></linearGradient></defs>
  <g stroke="#fff" stroke-width="1.4" paint-order="stroke" stroke-linejoin="round">
-  <path d="M34.5 30.5 h4.5 l.8 12 h-6.1z" fill="#F0D44A"/>
-  <ellipse cx="36.8" cy="43.2" rx="5" ry="2.4" fill="#fff"/>
-  <path d="M29.5 31.5 C29.5 24.5 44.5 24.5 44.5 31.5 C44.5 32.6 43.6 33 42.5 33 H31.5 C30.4 33 29.5 32.6 29.5 31.5Z" fill="url(#pama)"/>
+  <path d="M33.4 39 C33.4 30.6 46.6 30.6 46.6 39Z" fill="url(#pama)"/>
+  <path d="M33.1 38.4 C32.8 44 35.6 47.4 40 47.4 C44.4 47.4 47.2 44 46.9 38.4 L45.2 40.2 L43.6 38.2 L41.8 40.4 L40 38.3 L38.2 40.4 L36.4 38.2 L34.8 40.2 Z" fill="url(#pegg)"/>
   <path d="M13.5 31 C11.5 37 11.5 42 14 45 C17 47.3 25.5 47.3 28.5 45 C31 42 31 37 29 31Z" fill="url(#pstem)"/>
   <path d="M3.5 29.5 C3.5 18 12.5 10.5 21 10.5 C29.5 10.5 38.5 18 38.5 29.5 C38.5 31.8 36.8 33 34.5 33 H7.5 C5.2 33 3.5 31.8 3.5 29.5Z" fill="url(#pcap)"/>
  </g>
  <path d="M5.5 31.2 H36.5 C35.6 32.5 34.8 33 33.5 33 H8.5 C7.2 33 6.4 32.5 5.5 31.2Z" fill="#D9C98F"/>
  <g fill="none" stroke="#C9B48A" stroke-width=".8"><path d="M15 36 l3 2 3-2 3 2 3-2"/><path d="M14.5 40 l3.2 2 3.3-2 3.3 2 3.2-2"/></g>
  <ellipse cx="14.5" cy="18" rx="6" ry="2.8" transform="rotate(-28 14.5 18)" fill="#fff" opacity=".22"/>
+ <ellipse cx="43.4" cy="34.2" rx="2" ry=".9" transform="rotate(25 43.4 34.2)" fill="#fff" opacity=".35"/>
 </svg>`;
 // Rovelló vist una mica des de dalt: barret taronja amb anells i el centre enfonsat, làmines, peu curt amb clotets i una taca verda
 function rovBody(id,stroke){const st=stroke?' stroke="#fff" stroke-width="1.4" paint-order="stroke" stroke-linejoin="round"':'';
@@ -638,13 +619,6 @@ const ROV_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true
 const rovIcon=(w,id)=>`<svg width="${w}" height="${w}" viewBox="2 8 44 40" aria-hidden="true">${rovBody(id||'ri'+w,false)}</svg>`;
 const cepIcon=w=>`<svg width="${w}" height="${w}" viewBox="0 6 48 42" aria-hidden="true">${CEP_SVG.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'').replace(/stroke="#fff" stroke-width="1.4"/,'stroke="none"')}</svg>`;
 const spIcon=(w,sp)=>(sp||SP)==='rov'?rovIcon(w):cepIcon(w);
-const ROV_LOGO=`<svg class="logo off" data-logo="rov" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
-  <defs><linearGradient id="lrbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22402A"/><stop offset="1" stop-color="#132417"/></linearGradient>
-  <radialGradient id="lrsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#E8962E"/></radialGradient><clipPath id="lrr"><rect width="64" height="64" rx="14"/></clipPath></defs>
-  <g clip-path="url(#lrr)"><rect width="64" height="64" fill="url(#lrbg)"/><circle cx="48" cy="50" r="14" fill="url(#lrsun)" opacity=".9"/>
-  <g stroke="#2F5A35" stroke-width="1.6" stroke-linecap="round" opacity=".9"><path d="M8 50 l5 -9 M13 50 l-2 -11 M54 18 l-6 6"/></g>
-  <path d="M0 55 Q16 50 32 54 T64 52 V64 H0Z" fill="#0E1A10"/>
-  <g transform="translate(4.6 1.5) scale(1.15)">${rovBody('lr',false)}</g></g></svg>`;
 const COLS={nord:[52,104,200],sud:[232,132,48],eo:[214,186,64],pla:[150,150,140]};
 const faceOf=sec=>[7,0,1].includes(sec)?'nord':[3,4,5].includes(sec)?'sud':sec===8?'pla':'eo';
 const REGCOV=['ni bosc ni matolls','pinar','alzinar o suredes','roureda','matolls','avellaners'];
@@ -858,11 +832,9 @@ function setSpecies(k){
   if(!SPECIES[k])return;SP=k;store.set('sp',k);RULE=loadRule();SITES.forEach(evalSite);form=null;
   document.querySelectorAll('[data-sp]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sp===k));
   $('#sptag').textContent=SPECIES[k].tag;document.documentElement.dataset.species=k;
-  document.querySelectorAll('[data-logo]').forEach(l=>l.classList.toggle('off',l.dataset.logo!==k));
   if(mapBuilt)drawPins();
   if(mapBuilt){if(tap){map.removeLayer(tap);tap=null}$('#mapcard').innerHTML=`<p class="small">Spots de ${SPECIES[k].nom.toLowerCase()}. Toca un número per veure'l.</p>`;region().then(drawSpots)}
   if(screen==='fitxa')renderFitxa();else show(screen)}
-$('#logos').insertAdjacentHTML('beforeend',ROV_LOGO);
 document.querySelectorAll('[data-ic]').forEach(i=>i.outerHTML=spIcon(24,i.dataset.ic));
 setSpecies(SP);
 document.addEventListener('click',e=>{

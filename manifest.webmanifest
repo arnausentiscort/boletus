@@ -1,7 +1,7 @@
 {
   "name": "Boletus",
   "short_name": "Boletus",
-  "description": "Quan anar a buscar ceps i ous de reig, amb la pluja de cada dia.",
+  "description": "Quan anar a buscar ceps, ous de reig i rovellons, amb la pluja de cada dia.",
   "lang": "ca",
   "start_url": "./",
   "scope": "./",
