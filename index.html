@@ -147,6 +147,7 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .pin svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
 .pin em{font-style:normal;font-weight:800;font-size:12px;background:#fff;color:#1c2218;border-radius:6px;padding:1px 7px 1px 5px;margin-top:2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);display:flex;align-items:center;gap:5px}
 .pin em i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.spotn{width:28px;height:28px;border-radius:50%;border:2.5px solid #fff;color:#fff;font:800 14px/23px var(--f-display);text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.6);box-sizing:border-box}
 .tapmark{width:14px;height:14px;border-radius:50%;border:3px solid #fff;background:#7A2E8E;box-shadow:0 0 0 2px #7A2E8E}
 .vtx{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #7A2E8E}
 .leaflet-container .gris img,.leaflet-container img.gris{filter:grayscale(1) contrast(.75) brightness(1.18)}
@@ -474,12 +475,12 @@ let map,L1={},pins={},tap=null,sim=null,drawing=null,drawPts=[],drawMarks=[],dra
 function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i>Terra àcida</span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i>Calcària (no)</span><span id="k-spots"><i class="sw" style="background:#fff;border-radius:50%;box-shadow:inset 0 0 0 3px #2E8B4B"></i>Possible spot</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i>Terra àcida</span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i>Calcària (no)</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors spots</span></div>
      <div class="layerbar">
        <button class="opt" data-lay="cares" aria-pressed="true">Cara nord / sud</button>
        <button class="opt" data-lay="acid" aria-pressed="true">Terra àcida</button>
        <button class="opt" data-lay="orto" aria-pressed="true">Foto</button>
-       <button class="opt" data-lay="spots" aria-pressed="true">Possibles spots</button>
+       <button class="opt" data-lay="spots" aria-pressed="true">10 millors spots</button>
      </div></div>
    <div class="card" id="mapcard"><p class="small">Toca una agulla per obrir un lloc teu, un punt de color per veure un possible spot, o qualsevol lloc del mapa per saber si la terra és àcida i quina cara té.</p></div>`;
   map=L.map('map',{zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false,minZoom:9,maxZoom:18,maxBounds:[[40.45,0.1],[42.9,3.4]],maxBoundsViscosity:1});
@@ -491,34 +492,32 @@ function buildMap(){
   L1.orto=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,className:'gris'}).addTo(map);
   map.createPane('acidP').style.zIndex=270;
   region().then(R=>{L1.cares=L.imageOverlay('data/reg_cares.png',R.bounds,{opacity:.85,pane:'obsolP'});L1.acid=L.imageOverlay('data/reg_acid.png',R.bounds,{pane:'acidP'});
-    L1.spots=L.layerGroup();const rend=L.canvas({padding:.5});const H=R.home;
-    const TOWNS=[['Torredembarra',41.1462,1.3960,2],['Reus',41.1561,1.1069,1],['Tarragona',41.1189,1.2445,1],['Valls',41.2861,1.2497,0],['Cambrils',41.0667,1.0597,0],['Montblanc',41.3759,1.1626,0],['Falset',41.1450,0.8197,0],['El Vendrell',41.2188,1.5349,0],['Alforja',41.2100,0.9751,0],['Prades',41.3093,0.9887,0]];
-    const lp=map.createPane('labels');lp.style.zIndex=590;lp.style.pointerEvents='none';L1.towns=L.layerGroup().addTo(map);
-    const homeSvg='<svg class="home" width="16" height="16" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg>';
-    const drawTowns=()=>{L1.towns.clearLayers();const zm=map.getZoom();TOWNS.forEach(([n,la,lo,lv])=>{if(lv===0&&zm<11)return;L.marker([la,lo],{pane:'labels',interactive:false,keyboard:false,icon:L.divIcon({className:'',html:`<div class="town ${lv?'big':''}">${lv===2?homeSvg:''}${n}</div>`,iconSize:[160,22],iconAnchor:[80,11]})}).addTo(L1.towns)})};
-    drawTowns();map.on('zoomend',drawTowns);
-    // de lluny només els spots grans, i més petits
-    const spotR=z=>{const zm=map.getZoom();return Math.max(3,Math.min(12,(zm-8)*1.1+Math.sqrt(z.ha)/3))};
-    const spotOk=z=>{const zm=map.getZoom();return zm>=13||z.ha>=(zm>=12?20:zm>=11?60:150)};
-    R.zones.forEach((z,i)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#D9B526';
-      const m=L.circleMarker([z.lat,z.lng],{renderer:rend,radius:spotR(z),color:'#fff',weight:2,fillColor:col,fillOpacity:.95})
-       .on('click',ev=>{L.DomEvent.stopPropagation(ev);spotCard(i)});m._z=z;if(spotOk(z))m.addTo(L1.spots);(L1.allSpots=L1.allSpots||[]).push(m)});
-    map.on('zoomend',()=>L1.allSpots.forEach(m=>{const ok=spotOk(m._z);m.setRadius(spotR(m._z));if(ok&&!L1.spots.hasLayer(m))m.addTo(L1.spots);if(!ok&&L1.spots.hasLayer(m))L1.spots.removeLayer(m)}));
+    // Només els 10 millors possibles spots (puntuació: roure/alzina, terra àcida, sol, altura, mida i distància)
+    L1.spots=L.layerGroup();const H=R.home;
+    const kmH=z=>distKm(H.lat,H.lng,z.lat,z.lng);
+    const score=z=>3*z.bo+z.acida+Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-450)/350)+(z.so>=.3?.8:0)-(z.ob>=.7?.8:0)-(z.arbre==='avellaners'?1:0)-kmH(z)/12;
+    const cand=R.zones.map((z,i)=>Object.assign({i},z)).filter(z=>z.ha>=15&&kmH(z)<=40).sort((a,b)=>score(b)-score(a));
+    TOP=[];for(const z of cand){if(TOP.every(b=>distKm(b.lat,b.lng,z.lat,z.lng)>3))TOP.push(z);if(TOP.length===10)break}
+    TOP.forEach((z,n)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#C9A21E';
+      L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${col}">${n+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
+       .on('click',ev=>{L.DomEvent.stopPropagation(ev);spotCard(z.i,n+1)}).addTo(L1.spots)});
     const on=store.get('capes',{cares:true,acid:true,spots:true});['cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()})});
   L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP'}).addTo(map);
-  L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng]).concat([[41.1462,1.3960]])),{padding:[40,40],maxZoom:15});L1.fit();
+  L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng]).concat([[41.1561,1.1069]])),{padding:[50,60],maxZoom:15});L1.fit();
   drawPins();
   $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
     if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync()});
     L1.homeLayer=null;
   map.on('click',onMapClick)}
 function legendSync(){const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots')}
-function spotCard(i){const z=REG.zones[i],H=REG.home,km=distKm(H.lat,H.lng,z.lat,z.lng);
+let TOP=[];
+function spotCard(i,n){const z=REG.zones[i],H=REG.home,km=distKm(H.lat,H.lng,z.lat,z.lng);
+  const why=[z.acida>=.9?'terra àcida':'terra àcida en part',z.bo>=.3?`${Math.round(z.bo*100)}% roure, alzina o avellaner`:`bosc de ${z.arbre}`,z.so>=.3?'té cara sud, que agrada al cep negre':'sobretot cara nord, més humida',Math.abs(z.alt-450)<150?`${z.alt} m, semblant al Mas d'Anguera`:`${z.alt} m d'altura`];
   if(tap)map.removeLayer(tap);tap=L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
-  $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">Possible spot</strong><span class="spacer"></span><span class="small">a ${km.toFixed(0)} km de ${esc(H.nom)}</span></div>
+  $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">Possible spot ${n?'nº '+n:''}</strong><span class="spacer"></span><span class="small">a ${km.toFixed(0)} km de ${esc(H.nom)}</span></div>
    ${tagsHtml(z.ob>=.45?0:z.so>=.45?4:8,z.acida>=.5?1:3)}
    <p>${z.ha} ha de ${z.arbre} · <span class="mono">${z.alt} m</span> · ${Math.round(z.ob*100)}% cara nord, ${Math.round(z.so*100)}% cara sud</p>
-   <p class="small">Bosc, matollar o avellaners sobre terra àcida. És un lloc per provar, no un lloc segur.</p>
+   <p class="small">Per què surt: ${why.join(' · ')}. És un lloc per provar, no un lloc segur.</p>
    <div class="row"><a class="btn ghost" href="${gmDir(z.lat,z.lng)}" target="_blank" rel="noopener">Com arribar-hi</a><button class="btn ghost" data-zadd="${i}">Afegir als meus llocs</button></div>`;
   setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50)}
 // Dades de tota la zona per al punt tocat: R = cara, G = roca, B = arbre
