@@ -1,0 +1,19 @@
+name: Avisos de pluja
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # cada dia a les 7 (hivern) o les 8 (estiu)
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: 'Envia també un missatge de prova'
+        type: boolean
+        default: false
+
+jobs:
+  avisos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mira la pluja i avisa
+        run: python3 tools/avisos.py ${{ inputs.prova && '--prova' || '' }}

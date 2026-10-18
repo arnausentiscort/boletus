@@ -154,7 +154,12 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 /* Pestanyes */
 .tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:2000;
   padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
-.tabs nav{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr}
+.tabs nav{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr}
+.zone{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
+.zone:first-of-type{border-top:0}
+.zone .km{font-family:var(--f-display);font-weight:800;font-size:22px}
+.zone .meta{font-size:14px;color:var(--muted)}
+.seg3{display:flex;gap:6px;flex-wrap:wrap}
 .tabs button{background:none;border:0;padding:10px 0 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:13px;font-weight:800;color:var(--muted)}
 .tabs button[aria-selected="true"]{color:var(--moss)}
 .tabs svg{width:24px;height:24px}
@@ -215,10 +220,12 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
   <section class="screen" id="s-fitxa" hidden></section>
   <section class="screen" id="s-mapa" hidden></section>
   <section class="screen" id="s-com" hidden></section>
+  <section class="screen" id="s-buscar" hidden></section>
 </div>
 <div class="tabs"><nav role="tablist">
   <button role="tab" data-t="llocs" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Llocs</button>
   <button role="tab" data-t="mapa" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Mapa</button>
+  <button role="tab" data-t="buscar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Buscar</button>
 </nav></div>
 
 <script src="vendor/leaflet.js"></script>
@@ -379,8 +386,19 @@ function renderLlocs(){
        ${lv?`<span class="last"><svg width="14" height="14" viewBox="0 0 34 34" aria-hidden="true"><path d="M4 16c0-7 6-12 13-12s13 5 13 12c0 2-2 3-4 3H8c-2 0-4-1-4-3z" fill="var(--cep)"/><path d="M12 19h10l1 9c0 2-2 3-6 3s-6-1-6-3z" fill="var(--cep)" opacity=".5"/></svg>Última sortida: ${dnum(lv.d)===TODAY?'avui':fmt(dnum(lv.d))}, ${cepTxt(lv.n)}${lv.h?' a les '+esc(lv.h):''}</span>`:''}
      </button>`}).join('')}
    <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span><i class="sw" style="background:var(--rain);border-radius:50%"></i>Pluja</span><span><i class="sw" style="background:var(--rain);opacity:.5;border-radius:50%"></i>Pluja prevista</span></div>
-   <p class="small">${esc(wxInfo)} Per afegir un lloc, toca'l al Mapa.</p>`}
+   <p class="small">${esc(wxInfo)} Per afegir un lloc, toca'l al Mapa.</p>
+   ${store.get('avisosOk',false)?'':`<div class="card" id="avisos">
+     ${avisosObert?`<strong style="font-family:var(--f-display);font-size:19px">Avisos quan plou</strong>
+       <p class="small">Cada matí es mira la pluja dels vostres boscos. Rebràs un avís quan plogui prou (amb el millor dia per anar-hi) i un altre el dia abans del millor dia.</p>
+       <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+         <li>Instal·la l'app gratuïta <strong>ntfy</strong>: <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">Android</a> · <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener">iPhone</a></li>
+         <li>Obre-la, toca <strong>+</strong> i escriu aquest tema: <span class="mono" style="color:var(--ink);font-weight:500">${AVIS_TEMA}</span> <button class="btn ghost" data-copytema style="padding:4px 10px;font-size:13px">Copia</button></li>
+         <li>Toca <strong>Subscriu-te</strong> i deixa que t'enviï notificacions.</li>
+       </ol>
+       <div class="row"><button class="btn" data-avisosok style="flex:1">Fet</button></div>`
+     :`<button class="btn ghost" data-avisosobre style="width:100%">Activa els avisos quan plou</button>`}</div>`}`}
 
+const AVIS_TEMA='boletus-ceps-x7q2';let avisosObert=false;
 /* ---------- FITXA ---------- */
 let cur=null,calOff=0,selDay=null,form=null;
 function openSite(id,from){cur=SITES.find(s=>s.id===id);calOff=0;selDay=TODAY;form=null;cur.from=from||'llocs';renderFitxa();show('fitxa')}
@@ -448,7 +466,7 @@ let map,L1={},pins={},tap=null,sim=null,drawing=null,drawPts=[],drawMarks=[],dra
 function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span><i class="sw" style="background:var(--obaga)"></i>Obaga (nord)</span><span><i class="sw" style="background:var(--solana)"></i>Solana (sud)</span><span id="simkey" hidden><i class="sw" style="background:#FFE040"></i>Semblant</span></div>
+     <div class="mapkey" aria-hidden="true"><span><i class="sw" style="background:var(--obaga)"></i>Obaga (nord)</span><span><i class="sw" style="background:var(--solana)"></i>Solana (sud)</span><span id="simkey" hidden><i class="sw" style="background:#ECCE46"></i>Pla</span></div>
      <div class="layerbar">
        <button class="opt" data-lay="obsol" aria-pressed="true">Obaga i solana</button>
        <button class="opt" data-lay="orto" aria-pressed="true">Foto</button>
@@ -468,6 +486,7 @@ function buildMap(){
   $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
     on?L1[k].addTo(map):map.removeLayer(L1[k])});
   $('#s-mapa').querySelector('[data-sim]').onclick=e=>toggleSim(e.currentTarget);
+  L1.homeLayer=null;
   map.on('click',onMapClick)}
 function drawPins(){
   Object.values(pins).forEach(p=>map.removeLayer(p));Object.values(zoneLayers).forEach(p=>map.removeLayer(p));
@@ -503,19 +522,50 @@ function startDraw(id){
   $('#dcan').onclick=()=>{end();$('#mapcard').innerHTML='<p class="small">Toca una agulla per obrir el lloc.</p>'};
   $('#dfin').onclick=()=>{const s=SITES.find(x=>x.id===drawing);zones[s.id]=drawPts.slice();store.set('zones',zones);end();
     s.zone={kind:'poly',st:polyStats(zones[s.id])};evalSite(s);drawPins();pinCard(s)}}
-function toggleSim(btn){
-  if(sim){map.removeLayer(sim);sim=null;btn.setAttribute('aria-pressed','false');$('#simkey').hidden=true;return}
-  // perfil de referència: tots els vostres llocs junts
-  const ref={sec:Array(9).fill(0),elev:[],acid:0,calc:0};
-  SITES.forEach(s=>{s.zone.st.sec.forEach((v,k)=>ref.sec[k]+=v);ref.elev.push(s.zone.st.elev);ref.acid+=s.zone.st.rock[1]+s.zone.st.rock[3];ref.calc+=s.zone.st.rock[2]});
-  const tot=ref.sec.reduce((a,b)=>a+b,0);const order=ref.sec.map((v,k)=>[v/tot,k]).sort((a,b)=>b[0]-a[0]);let acc=0;const ok=new Set();
-  for(const[p,k]of order){ok.add(k);acc+=p;if(acc>=.6)break}
-  const lo=Math.min(...ref.elev)-120,hi=Math.max(...ref.elev)+120,acid=ref.acid>=ref.calc;
-  const cv=document.createElement('canvas');cv.width=G.gw;cv.height=G.gh;const cx=cv.getContext('2d');const im=cx.createImageData(G.gw,G.gh);
-  for(let i=0;i<G.gw*G.gh;i++){if(!(forestSet.has(G.cov[i])||G.cov[i]===hazelId)||!ok.has(G.sec[i])||G.elev[i]<lo||G.elev[i]>hi)continue;if(acid&&!(G.rock[i]===1||G.rock[i]===3))continue;im.data.set([255,224,64,230],i*4)}
-  cx.putImageData(im,0,0);if(!map.getPane('sim'))map.createPane('sim').style.zIndex=260;sim=L.imageOverlay(cv.toDataURL(),META.bounds,{pane:'sim',opacity:.85}).addTo(map);
-  btn.setAttribute('aria-pressed','true');$('#simkey').hidden=false;
-  $('#mapcard').innerHTML=`<strong>Boscos semblants</strong><p class="small">En groc, bosc o avellaners amb les mateixes cares que els vostres llocs, a una altura de ${lo} a ${hi} m${acid?' i sobre roca àcida':''}. Són llocs per explorar, no llocs segurs.</p>`}
+let REG=null;
+async function region(){if(!REG){try{REG=await j('data/region.json')}catch(e){REG={zones:[],bounds:META.bounds,home:{nom:'Torredembarra',lat:41.14616,lng:1.39595}}}}return REG}
+async function toggleSim(btn,on){
+  const want=on===undefined?!sim:on;
+  if(!want){if(sim){map.removeLayer(sim);sim=null}btn&&btn.setAttribute('aria-pressed','false');$('#simkey').hidden=true;return}
+  const R=await region();
+  if(!sim){if(!map.getPane('sim'))map.createPane('sim').style.zIndex=260;sim=L.imageOverlay('data/region.png',R.bounds,{pane:'sim',opacity:.85}).addTo(map)}
+  const b=btn||document.querySelector('[data-sim]');b&&b.setAttribute('aria-pressed','true');$('#simkey').hidden=false;
+  if(btn)$('#mapcard').innerHTML=`<strong>Boscos per explorar</strong><p class="small">Pintats en color: bosc, matollar o avellaners sobre roca àcida, entre ${R.criteris?R.criteris.alt[0]:200} i ${R.criteris?R.criteris.alt[1]:800} m, en uns 50 km al voltant de ${esc(R.home.nom)}. Blau = obaga, taronja = solana, groc = pla. A la pestanya Buscar els tens en llista per distància.</p>`}
+
+/* ---------- BUSCAR ---------- */
+let BQ=Object.assign({km:25,cara:'totes',arbre:'tots',ordre:'prop'},store.get('buscar',{}));
+const DIR8=['N','NE','E','SE','S','SO','O','NO'];
+function distKm(a,b,c,d){const R=6371,t=x=>x*Math.PI/180,dl=t(c-a),dn=t(d-b);const h=Math.sin(dl/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function bearing(a,b,c,d){const t=x=>x*Math.PI/180;const y=Math.sin(t(d-b))*Math.cos(t(c)),x=Math.cos(t(a))*Math.sin(t(c))-Math.sin(t(a))*Math.cos(t(c))*Math.cos(t(d-b));return DIR8[Math.round(((Math.atan2(y,x)*180/Math.PI)+360)%360/45)%8]}
+async function renderBuscar(){
+  const R=await region();const H=store.get('home',null)||R.home;
+  let zs=R.zones.map((z,i)=>Object.assign({i,km:distKm(H.lat,H.lng,z.lat,z.lng),dir:bearing(H.lat,H.lng,z.lat,z.lng)},z)).filter(z=>z.km<=BQ.km);
+  if(BQ.cara==='obaga')zs=zs.filter(z=>z.ob>=.45);if(BQ.cara==='solana')zs=zs.filter(z=>z.so>=.45);
+  if(BQ.arbre==='bo')zs=zs.filter(z=>z.bo>=.4);
+  zs.sort(BQ.ordre==='prop'?(a,b)=>a.km-b.km:(a,b)=>b.ha-a.ha);
+  const total=zs.length;zs=zs.slice(0,40);
+  const ch=(k,v,l)=>`<button class="opt" data-bq="${k}" data-v="${v}" aria-pressed="${BQ[k]===v}">${l}</button>`;
+  $('#s-buscar').innerHTML=`
+   <div class="card">
+     <strong style="font-family:var(--f-display);font-size:20px">Boscos per explorar</strong>
+     <p class="small">Bosc, matollar o avellaners sobre roca àcida, com els que volen el cep negre, el cep d'estiu i l'ou de reig. Són llocs per provar, no llocs segurs.</p>
+     <div class="row"><span>Des de <strong>${esc(H.nom)}</strong></span><span class="spacer"></span><button class="btn ghost" data-home="geo">On sóc ara</button>${store.get('home',null)?`<button class="btn ghost" data-home="reset">Torredembarra</button>`:''}</div>
+     <div class="slider"><label for="bkm">Com a màxim a</label><output id="bkmo">${BQ.km} km</output><input type="range" id="bkm" min="5" max="60" step="5" value="${BQ.km}"></div>
+     <div class="seg3">${ch('cara','totes','Totes les cares')}${ch('cara','obaga','Obaga')}${ch('cara','solana','Solana')}</div>
+     <div class="seg3">${ch('arbre','tots','Tots els arbres')}${ch('arbre','bo','Roure, alzina, avellaner')}</div>
+     <div class="seg3">${ch('ordre','prop','Més a prop')}${ch('ordre','gran','Més grans')}</div>
+   </div>
+   <div class="card">
+     <div class="row"><strong>${total} zones</strong><span class="spacer"></span><span class="small">${total>40?'es mostren les 40 primeres':''}</span></div>
+     ${zs.map(z=>`<div class="zone">
+       <div class="row"><span class="km">${z.km.toFixed(0)} km</span><span class="meta">cap al ${z.dir} · ${z.ha} ha · ${z.alt} m · ${z.arbre}</span></div>
+       <div class="facebar" aria-hidden="true"><i style="width:${z.ob*100}%;background:var(--obaga)"></i><i style="width:${Math.max(0,1-z.ob-z.so)*100}%;background:var(--surface2)"></i><i style="width:${z.so*100}%;background:var(--solana)"></i></div>
+       <div class="row small"><b style="color:var(--obaga)">${Math.round(z.ob*100)}% obaga</b><span class="spacer"></span><b style="color:var(--solana)">${Math.round(z.so*100)}% solana</b></div>
+       <div class="row"><button class="btn ghost" data-zmap="${z.i}">Veure al mapa</button><a class="btn ghost" href="${gmDir(z.lat,z.lng)}" target="_blank" rel="noopener">Com arribar-hi</a><button class="btn ghost" data-zadd="${z.i}">Afegir</button></div>
+     </div>`).join('')||'<p class="small">Cap zona amb aquests filtres. Prova d\'augmentar la distància.</p>'}
+   </div>`;
+  $('#bkm').oninput=e=>{$('#bkmo').textContent=e.target.value+' km'};
+  $('#bkm').onchange=e=>{BQ.km=+e.target.value;store.set('buscar',BQ);renderBuscar()}}
 
 /* ---------- COM FUNCIONA ---------- */
 function renderCom(){
@@ -524,6 +574,7 @@ function renderCom(){
    <div class="card how"><h3>Què busquem</h3>
      <ul><li><strong>Cep negre</strong> (<em>Boletus aereus</em>)</li><li><strong>Cep d'estiu</strong> (<em>Boletus aestivalis</em>)</li><li><strong>Ou de reig</strong> (<em>Amanita caesarea</em>)</li></ul>
      <p>Són espècies termòfiles, de calor. Surten en terrenys àcids (granit, pissarra, gresos), amb roures, alzines, alzines sureres i avellaners. Per això el mapa mira la roca i el tipus d'arbre.</p></div>
+   <div class="card how"><h3>Avisos</h3><p>Cada matí, a les 8, es mira la pluja dels vostres boscos i s'envia un avís a l'app <strong>ntfy</strong> (tema <span class="mono">${AVIS_TEMA}</span>) quan ha plogut prou i el dia abans del millor dia.</p><button class="btn ghost" data-avisosreset style="align-self:flex-start">Torna a veure com activar-los</button></div>
    <div class="card how"><h3>Obaga i solana</h3>
      <p>A partir d'un model del relleu, per a cada punt miro cap a on baixa el terreny. Si baixa cap al nord (nord, nord-est o nord-oest) és <b style="color:var(--obaga)">obaga</b>, i si baixa cap al sud, <b style="color:var(--solana)">solana</b>. Només ho pinto on el mapa de l'ICGC diu que hi ha bosc.</p></div>
    <div class="card how"><h3>Què diu la recerca</h3>
@@ -554,10 +605,11 @@ let mapBuilt=false,lastTab='llocs',screen='llocs';
 function show(t){
   screen=t;
   document.querySelectorAll('.screen').forEach(s=>s.hidden=s.id!=='s-'+t);
-  if(t==='llocs'||t==='mapa'){lastTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t))}
+  if(t==='llocs'||t==='mapa'||t==='buscar'){lastTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t))}
   if(t==='llocs')renderLlocs();
   if(t==='mapa'){const first=!mapBuilt;if(!mapBuilt){buildMap();mapBuilt=true}else drawPins();setTimeout(()=>{map.invalidateSize();if(first&&!L1.moved)L1.fit()},30)}
   if(t==='com')renderCom();
+  if(t==='buscar')renderBuscar();
   window.scrollTo(0,0)}
 document.addEventListener('click',e=>{
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
@@ -574,6 +626,17 @@ document.addEventListener('click',e=>{
     $('#mapcard').innerHTML=`<strong>Lloc nou</strong><form id="addf" class="sheet"><div><label for="addn">Nom</label><input id="addn" maxlength="40" required style="font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px;width:100%;box-sizing:border-box"></div><button class="btn">Desa el lloc</button></form><p class="small">Es guarda en aquest mòbil.</p>`;
     $('#addn').focus();$('#addf').onsubmit=ev=>{ev.preventDefault();const ex=store.get('extra',[]);ex.push({id:'x'+Date.now().toString(36),name:$('#addn').value.trim()||'Lloc nou',muni:'',lat:la,lng:lo});store.set('extra',ex);store.set('tab','llocs');location.reload()};return}
   const dl=e.target.closest('[data-delsite]');if(dl){if(dl.dataset.sure){store.set('extra',store.get('extra',[]).filter(x=>x.id!==dl.dataset.delsite));location.reload()}else{dl.dataset.sure='1';dl.textContent='Toca un altre cop per esborrar-lo'}return}
+  if(e.target.closest('[data-avisosobre]')){avisosObert=true;renderLlocs();$('#avisos').scrollIntoView({behavior:'smooth',block:'nearest'});return}
+  if(e.target.closest('[data-avisosreset]')){store.set('avisosOk',false);avisosObert=true;show('llocs');return}
+  if(e.target.closest('[data-avisosok]')){store.set('avisosOk',true);renderLlocs();return}
+  const ct=e.target.closest('[data-copytema]');if(ct){(navigator.clipboard?navigator.clipboard.writeText(AVIS_TEMA):Promise.reject()).then(()=>{ct.textContent='Copiat'}).catch(()=>{ct.textContent=AVIS_TEMA});return}
+  const bq=e.target.closest('[data-bq]');if(bq){BQ[bq.dataset.bq]=bq.dataset.v;store.set('buscar',BQ);renderBuscar();return}
+  const hm=e.target.closest('[data-home]');if(hm){if(hm.dataset.home==='reset'){store.set('home',null);renderBuscar()}else if(navigator.geolocation){hm.textContent='Buscant…';navigator.geolocation.getCurrentPosition(p=>{store.set('home',{nom:'on ets ara',lat:p.coords.latitude,lng:p.coords.longitude});renderBuscar()},()=>{hm.textContent='No s\'ha pogut'},{timeout:15000})}return}
+  const zm=e.target.closest('[data-zmap]');if(zm){const z=REG.zones[+zm.dataset.zmap];L1.moved=true;show('mapa');setTimeout(async()=>{map.invalidateSize();map.setView([z.lat,z.lng],15);await toggleSim(null,true);
+    if(tap)map.removeLayer(tap);tap=L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
+    $('#mapcard').innerHTML=`<strong>Zona de ${z.ha} ha</strong><p class="small">${Math.round(z.ob*100)}% obaga · ${Math.round(z.so*100)}% solana · ${z.arbre} · ${z.alt} m</p><div class="row"><a class="btn ghost" href="${gmDir(z.lat,z.lng)}" target="_blank" rel="noopener">Com arribar-hi</a><button class="btn ghost" data-zadd="${zm.dataset.zmap}">Afegir als meus llocs</button></div>`},80);return}
+  const za=e.target.closest('[data-zadd]');if(za){const z=REG.zones[+za.dataset.zadd];const H=store.get('home',null)||REG.home;const ex=store.get('extra',[]);
+    ex.push({id:'x'+Date.now().toString(36),name:`Zona a ${distKm(H.lat,H.lng,z.lat,z.lng).toFixed(0)} km (${bearing(H.lat,H.lng,z.lat,z.lng)})`,muni:'',lat:z.lat,lng:z.lng});store.set('extra',ex);store.set('tab','llocs');location.reload();return}
   const dr=e.target.closest('[data-draw]');if(dr){const s=SITES.find(x=>x.id===dr.dataset.draw);map.setView([s.lat,s.lng],15);startDraw(s.id);return}
 });
 show(['llocs','mapa'].includes(store.get('tab','llocs'))?store.get('tab','llocs'):'llocs');store.set('tab','llocs');
