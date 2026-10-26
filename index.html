@@ -111,7 +111,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .cal-head button:disabled{opacity:.35}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal .wd{font-size:11px;color:var(--muted);text-align:center;font-weight:700}
-.day{position:relative;aspect-ratio:1/1.15;border-radius:10px;background:var(--surface2);border:0;padding:3px 0 0;display:flex;flex-direction:column;align-items:center;font-size:12px;min-width:0}
+.day{position:relative;aspect-ratio:1/1.34;border-radius:10px;background:var(--surface2);border:0;padding:3px 0 0;display:flex;flex-direction:column;align-items:center;font-size:12px;min-width:0}
+.day .tm{font:500 10px/1.15 var(--f-data);color:var(--muted)}
+.day .tm.cold{color:#5B9BE0;font-weight:700}.day .tm.hot{color:#E8843A;font-weight:700}.day .tm.f{opacity:.6}
+.day.top .tm{color:#fff;opacity:.9}
+.day.cx{box-shadow:inset 0 0 0 1.5px #5B9BE0;background-image:repeating-linear-gradient(135deg,rgba(91,155,224,.16) 0 4px,transparent 4px 8px)}
 .day .n{font-weight:700;line-height:1.1}
 .day.bol{background:var(--go-soft)}
 .day.bol .n{color:var(--go)}
@@ -349,6 +353,7 @@ function buildSeries(s){
   s.ser={start,r,t,end:start+r.length-1}}
 SITES.forEach(buildSeries);
 const rainOn=(s,d)=>{const v=s.ser.r[d-s.ser.start];return v==null?null:v};
+const tempOn=(s,d)=>{const v=s.ser.t[d-s.ser.start];return v==null?null:v};
 const wetTxt=(s,d)=>{const r=rainOn(s,d);return r!=null&&r>=1?`<div class="small" style="color:var(--rain);font-weight:700;margin-top:2px">Es preveuen ${Math.round(r)} litres de pluja: porta impermeable.</div>`:(d<=s.ser.end?'<div class="small" style="margin-top:2px">No es preveu pluja.</div>':'')};
 
 /* ---------- Regla (d'exemple; es pot ajustar a "Com funciona") ---------- */
@@ -381,7 +386,7 @@ function evalSite(s){
       w.hot=R.maxT!=null&&g.length>=3&&w.tg>R.maxT; // algunes espècies (rovellons) no surten si fa massa calor
       if(g.length>=3&&(w.tg<R.minT||w.hot))cold.push(w);else out.push(w)}
     last=i}
-  s.wins=out;s.cold=cold.find(w=>w.b>=TODAY&&w.t1>=TODAY-20)||null;
+  s.colds=cold;s.wins=out;s.cold=cold.find(w=>w.b>=TODAY&&w.t1>=TODAY-20)||null;
   const cur=out.find(w=>w.a<=TODAY&&TODAY<=w.b),next=out.find(w=>w.a>TODAY);
   s.state=cur?'go':next?'soon':'wait';s.win=cur||next||null;
   s.bolet=d=>out.some(w=>d>=w.a&&d<=w.b);
@@ -447,7 +452,12 @@ function openSite(id,from){cur=SITES.find(s=>s.id===id);calOff=0;selDay=TODAY;fo
 function dayNote(s,d){
   const r=rainOn(s,d),vs=visitsOn(s,d),w=s.wins.find(w=>d>=w.a&&d<=w.b);const parts=[];
   if(r!=null&&r>=1)parts.push(`${d>TODAY?'Previstos':'Van caure'} <strong>${Math.round(r)} litres</strong>.`);
-  if(w)parts.push((w.peak===d?'<strong>El dia més probable</strong>':'Dia de bolets')+` (per la pluja del ${fmt(w.t0)} al ${fmt(w.t1)})`+'.');
+  const tt=tempOn(s,d);if(tt!=null)parts.push(`${d>TODAY?'Temperatura prevista':'Temperatura mitjana'}: <strong>${Math.round(tt)} °C</strong>.`);
+  const why=w=>`Va ploure ${Math.round(w.mm)} litres el ${fmt(w.t1)}; mentre creixien (del ${fmt(w.t1+1)} al ${fmt(w.t1+RULE.wait-2)}) la mitjana ${w.prov?'de moment és':'va ser'} de <strong>${w.tg==null?'?':w.tg.toFixed(1).replace('.',',')} °C</strong>`;
+  const lim=RULE.maxT!=null?`entre ${RULE.minT} i ${RULE.maxT} °C`:`més de ${RULE.minT} °C`;
+  if(w)parts.push((w.peak===d?'<strong>El dia més probable.</strong>':'<strong>Dia de bolets.</strong>')+` ${why(w)} (calen ${lim})${w.prov?'; encara falten dies per saber-ho segur':''}.`);
+  const cw=!w&&s.colds.find(c=>d>=c.a&&d<=c.b);
+  if(cw)parts.push(`<strong>Hauria estat dia de bolets, però no.</strong> ${why(cw)}: ${cw.hot?'massa calor':'massa fred'} (calen ${lim}).`);
   vs.forEach(v=>parts.push(`Hi vau anar: <strong>${cepTxt(v.n)}</strong>${v.h?' a les '+esc(v.h):''}.${v.nota?' '+esc(v.nota):''}`));
   if(!parts.length)parts.push(d>TODAY+7?'Encara no hi ha previsió de pluja per a aquest dia.':'Ni pluja ni bolets.');
   return `<strong>${wdn(d)} ${fmt(d,{year:D(d).getUTCFullYear()!==2026?'numeric':undefined})}</strong> · ${parts.join(' ')}`}
@@ -458,10 +468,12 @@ function calendar(s){
   let h=`<div class="cal-head"><button data-cal="-1" aria-label="Setmanes anteriors">‹</button><h3>${title}</h3><button data-cal="1" aria-label="Setmanes següents" ${calOff>=0?'disabled':''}>›</button></div><div class="cal">`;
   ['dl','dt','dc','dj','dv','ds','dg'].forEach(w=>h+=`<span class="wd">${w}</span>`);
   for(let d=start;d<=end;d++){const r=rainOn(s,d),vs=visitsOn(s,d),b=s.bolet(d);
-    const cls=['day',b?'bol':'',s.peak(d)?'top':'',d===TODAY?'today':'',d===selDay?'sel':'',d>s.ser.end&&!b?'out':''].join(' ');
+    const tt=tempOn(s,d),cw=!b&&s.colds.some(w=>d>=w.a&&d<=w.b);
+    const tc=tt==null?'':tt<RULE.minT?'cold':RULE.maxT!=null&&tt>RULE.maxT?'hot':'';
+    const cls=['day',b?'bol':'',cw?'cx':'',s.peak(d)?'top':'',d===TODAY?'today':'',d===selDay?'sel':'',d>s.ser.end&&!b?'out':''].join(' ');
     const ds=r&&r>=1?Math.min(18,7+Math.sqrt(r)*1.7):0;
     const cnt=vs.length?(vs.reduce((a,v)=>a+(v.n||0),0)||'·'):'';
-    h+=`<button class="${cls}" data-day="${d}" aria-label="${fmt(d)}"><span class="n">${D(d).getUTCDate()}</span>
+    h+=`<button class="${cls}" data-day="${d}" aria-label="${fmt(d)}"><span class="n">${D(d).getUTCDate()}</span>${tt!=null?`<span class="tm ${tc} ${d>TODAY?'f':''}">${Math.round(tt)}°</span>`:''}
       ${vs.length?`<span class="c">${cnt}</span>`:''}
       ${ds?`<span class="drop ${d>TODAY?'f':''}">${dropSvg(ds*.8,ds)}<span>${Math.round(r)}</span></span>`:''}</button>`}
   return h+'</div>'}
@@ -475,7 +487,7 @@ function renderFitxa(){
    <p style="font-size:17px">${what(s)}</p>
    ${sun?`<div class="sun">${sunIcon}<div><strong>${nextGo===TODAY+1?'Demà':wdn(nextGo)+' '+fmt(nextGo)} surt el sol a les ${sun.sol}</strong>${wetTxt(s,nextGo)}</div></div>`:''}
    <div class="card">${calendar(s)}
-     <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>${SPECIES[SP].nom} trobats</span></div>
+     <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>${SPECIES[SP].nom} trobats</span><span><b class="mono" style="font-size:11px">17°</b>Temperatura mitjana</span><span><b class="mono" style="font-size:11px;color:#5B9BE0">9°</b>Massa fred</span><span><i class="sw" style="box-shadow:inset 0 0 0 1.5px #5B9BE0;background:repeating-linear-gradient(135deg,rgba(91,155,224,.25) 0 3px,transparent 3px 6px)"></i>Hi hauria hagut bolets, però ha fet fred</span></div>
      <div class="daynote" id="daynote">${dayNote(s,selDay)}</div>
    </div>
    <div class="card">
