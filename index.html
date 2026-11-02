@@ -402,7 +402,9 @@ function what(s){
   let t=0;for(let d=TODAY-9;d<=TODAY;d++)t+=rainOn(s,d)||0;return `Només ${Math.round(t)} litres els últims 10 dies`}
 
 /* ---------- Diari ---------- */
-let visits=store.get('visits',PRIV.visits||[]);
+// Les sortides de llocs.json són el diari compartit: s'afegeixen a les d'aquest mòbil si encara no hi són
+let visits=store.get('visits',[]);
+{const key=v=>v.d+'|'+v.site+'|'+(v.sp||'ceps')+'|'+v.n;const have=new Set(visits.map(key));(PRIV.visits||[]).forEach(v=>{if(!have.has(key(v)))visits.push(v)})}
 const saveVisits=()=>store.set('visits',visits);
 const ofSp=v=>(v.sp||'ceps')===SP; // les sortides antigues són de ceps
 const visitsOn=(s,d)=>visits.filter(v=>v.site===s.id&&ofSp(v)&&dnum(v.d)===d);
