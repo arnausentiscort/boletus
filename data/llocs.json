@@ -19,6 +19,81 @@
    "sp": [
     "ceps"
    ]
+  },
+  {
+   "id": "p1",
+   "name": "Pinar de Mont-ral",
+   "muni": "Mont-ral",
+   "lat": 41.29922,
+   "lng": 1.07288,
+   "sp": [
+    "rov",
+    "fre",
+    "lle",
+    "cam"
+   ]
+  },
+  {
+   "id": "p2",
+   "name": "Pinar d’Arbolí",
+   "muni": "Arbolí",
+   "lat": 41.23006,
+   "lng": 0.93899,
+   "sp": [
+    "rov",
+    "fre",
+    "lle",
+    "cam"
+   ]
+  },
+  {
+   "id": "p3",
+   "name": "Pinar de Vilaplana",
+   "muni": "Vilaplana",
+   "lat": 41.25432,
+   "lng": 1.06876,
+   "sp": [
+    "rov",
+    "fre",
+    "lle"
+   ]
+  },
+  {
+   "id": "p4",
+   "name": "Pinar del Catllar",
+   "muni": "el Catllar",
+   "lat": 41.15513,
+   "lng": 1.29536,
+   "sp": [
+    "rov",
+    "fre",
+    "lle"
+   ]
+  },
+  {
+   "id": "p5",
+   "name": "Pinar de la Bisbal",
+   "muni": "la Bisbal del Penedès",
+   "lat": 41.25948,
+   "lng": 1.45123,
+   "sp": [
+    "rov",
+    "fre",
+    "lle"
+   ]
+  },
+  {
+   "id": "p6",
+   "name": "Pinar de Vila-rodona",
+   "muni": "Vila-rodona",
+   "lat": 41.31314,
+   "lng": 1.42033,
+   "sp": [
+    "rov",
+    "fre",
+    "lle",
+    "cam"
+   ]
   }
  ],
  "visits": [

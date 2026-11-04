@@ -6,17 +6,24 @@
 Així, pluja amb calor i després fred dona només el primer avís, i pluja freda i després calor, només el segon.
 La regla és la mateixa que la de l'app (index.html).
 
-Cada espècie té la seva regla. Els ceps no han canviat; els rovellons tenen temporada (de setembre a gener)
-i també s'aturen si fa massa calor. L'avís de pluja és un de sol per lloc, amb el millor dia de cada espècie."""
-import json, math, os, sys, urllib.request, datetime as dt
+Cada espècie té la seva regla (la mateixa que a l'app). Els ceps no han canviat; les de pinar (rovellons, fredolics,
+llenegues negres i camagrocs) tenen temporada i s'aturen si fa massa calor. L'avís de pluja és un de sol per lloc, amb el
+millor dia de cada espècie. L'avís del dia abans porta la força de la tanda (0-100), amb les nits de gelada."""
+import json, math, os, re, sys, urllib.request, datetime as dt
 
 TOPIC = os.environ.get('NTFY_TOPIC', 'boletus-ceps-x7q2')
 APP = 'https://arnausentiscort.github.io/boletus/'
 SPECIES = {
     'ceps': dict(nom='ceps', mm=17, span=2, minT=12, wait=16, before=2, after=2, gap=5,
-                 forca=dict(mm=[10, 35], t=[12, 16, 22, 27], mes={5: .3, 6: .4, 7: .4, 8: .6, 9: 1, 10: 1, 11: .4, 12: .1})),
+                 forca=dict(mm=[10, 35], t=[12, 16, 22, 27], mes={5: .3, 6: .4, 7: .4, 8: .6, 9: 1, 10: 1, 11: .4, 12: .1}, gel=.2)),
     'rov': dict(nom='rovellons', mm=25, span=5, minT=10, maxT=20, wait=12, before=4, after=6, gap=5, months=[9, 10, 11, 12, 1],
-                forca=dict(mm=[12, 45], t=[6, 10, 16, 20], mes={9: .7, 10: 1, 11: .95, 12: .5, 1: .2})),
+                forca=dict(mm=[12, 45], t=[6, 10, 16, 20], mes={9: .7, 10: 1, 11: .95, 12: .5, 1: .2}, gel=.1)),
+    'fre': dict(nom='fredolics', mm=20, span=4, minT=3, maxT=14, wait=16, before=5, after=7, gap=5, months=[10, 11, 12, 1, 2],
+                forca=dict(mm=[8, 36], t=[-3, 1, 12, 16], mes={10: .55, 11: 1, 12: .9, 1: .5, 2: .2}, gel=.04)),
+    'lle': dict(nom='llenegues negres', mm=22, span=4, minT=6, maxT=17, wait=14, before=4, after=6, gap=5, months=[10, 11, 12, 1],
+                forca=dict(mm=[11, 42], t=[1, 5, 15, 19], mes={10: .5, 11: 1, 12: .9, 1: .45}, gel=.08)),
+    'cam': dict(nom='camagrocs', mm=28, span=5, minT=4, maxT=15, wait=18, before=5, after=8, gap=5, months=[10, 11, 12, 1],
+                forca=dict(mm=[14, 51], t=[-1, 3, 13, 17], mes={10: .55, 11: 1, 12: .8, 1: .35}, gel=.03)),
 }
 DIES = ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg']
 MESOS = ['gen', 'febr', 'març', 'abr', 'maig', 'juny', 'jul', 'ag', 'set', 'oct', 'nov', 'des']
@@ -35,12 +42,19 @@ def sunrise(d, lat, lon):
 def trap(x, a, b, c, d):
     return 0 if x <= a or x >= d else (x - a) / (b - a) if x < b else (d - x) / (d - c) if x > c else 1
 
-def forca(R, mm, tg, peak):
-    """Força de la tanda (0-100), com a l'app: pluja de l'episodi x temperatura de creixement x mes."""
+def forca(R, mm, tg, peak, gelades=(0, 0)):
+    """Força de la tanda (0-100), com a l'app: pluja de l'episodi x temperatura de creixement x mes x gelades."""
     F = R['forca']
     fp = min(1, max(0, (mm - F['mm'][0]) / (F['mm'][1] - F['mm'][0]))) ** .85
-    v = round(100 * fp * trap(tg, *F['t']) * F['mes'].get(peak.month, 0))
+    nits, total = gelades  # nits de -2 °C o menys i dies amb temperatura mínima
+    fg = 1 - min(.8, nits * F.get('gel', 0)) if total >= 3 else 1
+    v = round(100 * fp * trap(tg, *F['t']) * F['mes'].get(peak.month, 0) * fg)
     return v, 'bona' if v >= 60 else 'normal' if v >= 35 else 'fluixa'
+
+NL = chr(10)  # salt de línia dins dels missatges
+
+def nom_curt(nom):
+    return re.sub(r"^Pinar (de la |de l[’']|del |de |d[’'])", '', nom)
 
 def send(title, msg, tags):
     if os.environ.get('DRY'):
@@ -54,16 +68,15 @@ def main():
     llocs = json.load(open('data/llocs.json', encoding='utf-8'))['sites']
     lat = ','.join(f"{s['lat']:.4f}" for s in llocs); lon = ','.join(f"{s['lng']:.4f}" for s in llocs)
     u = (f'https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}'
-         '&daily=precipitation_sum,temperature_2m_mean&past_days=30&forecast_days=2&timezone=Europe%2FMadrid')
+         '&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min&past_days=30&forecast_days=2&timezone=Europe%2FMadrid')
     data = json.load(urllib.request.urlopen(u, timeout=60))
     data = data if isinstance(data, list) else [data]
     today = dt.datetime.now(dt.timezone(dt.timedelta(hours=1))).date() if 'TODAY' not in os.environ else dt.date.fromisoformat(os.environ['TODAY'])
     yesterday, tomorrow = today - dt.timedelta(1), today + dt.timedelta(1)
-    sent = 0
+    sent = 0; rain = {}; demà = {}
     for s, d in zip(llocs, data):
         days = [dt.date.fromisoformat(x) for x in d['daily']['time']]
-        r = [v or 0 for v in d['daily']['precipitation_sum']]; t = d['daily']['temperature_2m_mean']
-        rain_msgs = []  # un sol avís de pluja per lloc, amb totes les espècies
+        r = [v or 0 for v in d['daily']['precipitation_sum']]; t = d['daily']['temperature_2m_mean']; n = d['daily']['temperature_2m_min']
         for k, R in SPECIES.items():
             if k not in s.get('sp', ['ceps']): continue  # cada lloc només avisa de les seves espècies
             last = -99
@@ -80,14 +93,26 @@ def main():
                     # avís de pluja dels ceps: algun dels dies de pluja ha de passar de 12 °C
                     warm_rain = k != 'ceps' or (bool(tt) and max(tt) >= R['minT'])
                     if day == yesterday and warm_rain:
-                        rain_msgs.append((sm, f"{R['nom'].capitalize()}: millor dia {fmt(peak)} (del {a.day}{'' if a.month == b.month else ' ' + MESOS[a.month - 1]} al {b.day} {MESOS[b.month - 1]})"))
+                        rain.setdefault((k, peak, a, b), []).append((nom_curt(s['name']), sm))
                     if peak == tomorrow and good_after:
                         ep = sum(r[max(0, i - R['span'] + 1):i + 4])
-                        v, nom = forca(R, ep, sum(g) / len(g), peak)
-                        send(f"Demà és el millor dia de {R['nom']} a {s['name']}", f"Tanda {nom} ({v}/100). Surt el sol a les {sunrise(tomorrow, s['lat'], s['lng'])}. Com més d'hora, millor.", 'mushroom'); sent += 1
+                        gn = [x for x in n[i + 1:i + R['wait'] - 1] if x is not None]
+                        v, nom = forca(R, ep, sum(g) / len(g), peak, (sum(1 for x in gn if x <= -2), len(gn)))
+                        demà.setdefault(k, []).append((nom_curt(s['name']), v, nom, sunrise(tomorrow, s['lat'], s['lng'])))
                 last = i
-        if rain_msgs:
-            send(f"Ha plogut a {s['name']}", f"{round(max(m for m, _ in rain_msgs))} litres. Si després la temperatura acompanya:\n" + '\n'.join(x for _, x in rain_msgs), 'cloud_with_rain'); sent += 1
+    # Un sol avís de pluja per dia i un sol avís de "demà" per espècie, perquè no n'arribin molts
+    if rain:
+        mms = [m for v in rain.values() for _, m in v]
+        lines = []
+        for (k, peak, a, b), llocs in sorted(rain.items(), key=lambda kv: kv[0][1]):
+            ll = ', '.join(nm for nm, _ in llocs)
+            lines.append(f"{SPECIES[k]['nom'].capitalize()}: millor dia {fmt(peak)} (del {a.day}{'' if a.month == b.month else ' ' + MESOS[a.month - 1]} al {b.day} {MESOS[b.month - 1]}) · {ll}")
+        lit = f"{round(min(mms))}" if round(min(mms)) == round(max(mms)) else f"{round(min(mms))}-{round(max(mms))}"
+        send('Ha plogut als vostres boscos', f"{lit} litres. Si després la temperatura acompanya:{NL}" + NL.join(lines), 'cloud_with_rain'); sent += 1
+    for k, llocs in demà.items():
+        sol = min(x[3] for x in llocs)
+        cos = NL.join(f"{nm} · tanda {nom} ({v}/100)" for nm, v, nom, _ in sorted(llocs, key=lambda x: -x[1]))
+        send(f"Demà és el millor dia de {SPECIES[k]['nom']}", f"Surt el sol a les {sol}. Com més d'hora, millor.{NL}{cos}", 'mushroom'); sent += 1
     if '--prova' in sys.argv:
         send('Boletus funciona', "Els avisos estan activats. Rebràs un missatge quan plogui prou als vostres boscos.", 'white_check_mark')
     print('avisos enviats:', sent)
