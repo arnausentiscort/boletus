@@ -6,8 +6,8 @@
 Així, pluja amb calor i després fred dona només el primer avís, i pluja freda i després calor, només el segon.
 La regla és la mateixa que la de l'app (index.html).
 
-Cada espècie té la seva regla (la mateixa que a l'app). Els ceps no han canviat; les de pinar (rovellons, fredolics,
-llenegues negres i camagrocs) tenen temporada i s'aturen si fa massa calor. L'avís de pluja és un de sol per lloc, amb el
+Cada espècie té la seva regla (la mateixa que a l'app). Els ceps no han canviat; les de pinar (rovellons i bolets d'hivern:
+fredolic, llenega negra i camagroc) tenen temporada i s'aturen si fa massa calor. L'avís de pluja és un de sol per lloc, amb el
 millor dia de cada espècie. L'avís del dia abans porta la força de la tanda (0-100), amb les nits de gelada."""
 import json, math, os, re, sys, urllib.request, datetime as dt
 
@@ -18,12 +18,9 @@ SPECIES = {
                  forca=dict(mm=[10, 35], t=[12, 16, 22, 27], mes={5: .3, 6: .4, 7: .4, 8: .6, 9: 1, 10: 1, 11: .4, 12: .1}, gel=.2)),
     'rov': dict(nom='rovellons', mm=25, span=5, minT=10, maxT=20, wait=12, before=4, after=6, gap=5, months=[9, 10, 11, 12, 1],
                 forca=dict(mm=[12, 45], t=[6, 10, 16, 20], mes={9: .7, 10: 1, 11: .95, 12: .5, 1: .2}, gel=.1)),
-    'fre': dict(nom='fredolics', mm=20, span=4, minT=3, maxT=14, wait=16, before=5, after=7, gap=5, months=[10, 11, 12, 1, 2],
-                forca=dict(mm=[8, 36], t=[-3, 1, 12, 16], mes={10: .55, 11: 1, 12: .9, 1: .5, 2: .2}, gel=.04)),
-    'lle': dict(nom='llenegues negres', mm=22, span=4, minT=6, maxT=17, wait=14, before=4, after=6, gap=5, months=[10, 11, 12, 1],
-                forca=dict(mm=[11, 42], t=[1, 5, 15, 19], mes={10: .5, 11: 1, 12: .9, 1: .45}, gel=.08)),
-    'cam': dict(nom='camagrocs', mm=28, span=5, minT=4, maxT=15, wait=18, before=5, after=8, gap=5, months=[10, 11, 12, 1],
-                forca=dict(mm=[14, 51], t=[-1, 3, 13, 17], mes={10: .55, 11: 1, 12: .8, 1: .35}, gel=.03)),
+    # fredolic, llenega negra i camagroc, junts
+    'hiv': dict(nom="bolets d'hivern", mm=22, span=4, minT=3, maxT=15, wait=16, before=5, after=8, gap=5, months=[10, 11, 12, 1, 2],
+                forca=dict(mm=[10, 42], t=[-1, 3, 13, 17], mes={10: .5, 11: 1, 12: .9, 1: .5, 2: .2}, gel=.05)),
 }
 DIES = ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg']
 MESOS = ['gen', 'febr', 'març', 'abr', 'maig', 'juny', 'jul', 'ag', 'set', 'oct', 'nov', 'des']

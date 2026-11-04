@@ -1,2 +1,4 @@
 tools/make_pwa.py
 __pycache__/
+.cat_cache/
+tiles_new/

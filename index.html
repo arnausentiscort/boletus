@@ -52,14 +52,10 @@ p{margin:0}
 .brand{display:flex;flex-direction:column;gap:3px}
 :root{--acc:#8A5530;--acc-soft:rgba(138,85,48,.14)}
 :root[data-species="rov"]{--acc:#E2701F;--acc-soft:rgba(226,112,31,.16)}
-:root[data-species="fre"]{--acc:#6F8499;--acc-soft:rgba(111,132,153,.18)}
-:root[data-species="lle"]{--acc:#6B7B2E;--acc-soft:rgba(107,123,46,.18)}
-:root[data-species="cam"]{--acc:#C79A0C;--acc-soft:rgba(199,154,12,.17)}
+:root[data-species="hiv"]{--acc:#6F8499;--acc-soft:rgba(111,132,153,.18)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--acc:#D9A57E;--acc-soft:rgba(217,165,126,.13)}
   :root:not([data-theme="light"])[data-species="rov"]{--acc:#F39A4C;--acc-soft:rgba(243,154,76,.15)}
-  :root:not([data-theme="light"])[data-species="fre"]{--acc:#A9BBCB;--acc-soft:rgba(169,187,203,.14)}
-  :root:not([data-theme="light"])[data-species="lle"]{--acc:#A5B86A;--acc-soft:rgba(165,184,106,.14)}
-  :root:not([data-theme="light"])[data-species="cam"]{--acc:#F0C93B;--acc-soft:rgba(240,201,59,.14)}}
+  :root:not([data-theme="light"])[data-species="hiv"]{--acc:#A9BBCB;--acc-soft:rgba(169,187,203,.14)}}
 body{background-image:radial-gradient(120% 60% at 50% -10%,var(--acc-soft),transparent 70%);background-repeat:no-repeat;background-attachment:fixed;transition:background-color .3s}
 .spsw{display:flex;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:16px;padding:5px;margin:0 0 2px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;
   -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 10px,#000 calc(100% - 22px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 10px,#000 calc(100% - 22px),transparent 100%)}
@@ -382,24 +378,14 @@ const SPECIES={
     nit:"Com més d'hora hi aneu, menys gent hi haurà passat abans.",
     forca:{mm:[12,45],t:[6,10,16,20],mes:{9:.7,10:1,11:.95,12:.5,1:.2},gel:.1},
     spot:{alt:[80,300,1300,1750],ob:.8},leg:['Àcida: pinetell','Calcària: rovelló'],soil:{calc:'terra calcària, on va bé el rovelló',acid:'terra àcida, més aviat de pinetell'}},
-  fre:{nom:'Fredolics',chip:'Fredolics',tag:'radar de fredolics',u:['fredolic','fredolics'],key:'rule-fre',region:'data/region_rov.json',vells:'Fredolics vells',
-    rule0:{mm:20,span:4,minT:3,maxT:14,wait:16,before:5,after:7,obagaBonus:2,months:[10,11,12,1,2]},
-    nit:"És un bolet de fred: surt tard, quan els rovellons s'acaben. Més val matinar.",
-    forca:{mm:[8,36],t:[-3,1,12,16],mes:{10:.55,11:1,12:.9,1:.5,2:.2},gel:.04},
-    spot:{alt:[40,250,1400,1750],ob:.4},leg:['Terra àcida','Terra calcària'],
-    info:{arbre:'Pinedes, sobretot a la tardor avançada i a l\'hivern.',epoca:'D\'octubre a febrer; el millor, novembre.',alt:'Entre 250 i 1.400 m.',pluja:'20 litres en 4 dies; amb 36 l ja n\'hi ha prou.',temp:'Mitjanes de 1 a 12 °C: aguanta el fred millor que els altres.',gel:'Les glaçades el frenen poc.'}},
-  lle:{nom:'Llenegues negres',chip:'Llenegues negres',tag:'radar de llenegues',u:['llenega negra','llenegues negres'],key:'rule-lle',region:'data/region_rov.json',vells:'Llenegues velles',fem:true,quants:'Quantes',
-    rule0:{mm:22,span:4,minT:6,maxT:17,wait:14,before:4,after:6,obagaBonus:1,months:[10,11,12,1]},
-    nit:"Com més d'hora hi aneu, menys gent hi haurà passat abans.",
-    forca:{mm:[11,42],t:[1,5,15,19],mes:{10:.5,11:1,12:.9,1:.45},gel:.08},
-    spot:{alt:[0,100,900,1200],ob:.4,calc:1.1},leg:['Terra àcida','Calcària: llenega negra'],soil:{calc:'terra calcària, que li va bé',acid:'terra àcida, no és la seva preferida'},
-    info:{arbre:'Pinassa i pi blanc, en terreny calcari.',epoca:'D\'octubre a gener; el millor, novembre.',alt:'Entre 100 i 900 m: surt a baixa altura.',pluja:'22 litres en 4 dies; amb 42 l ja n\'hi ha prou.',temp:'Mitjanes de 5 a 15 °C.',gel:'Les glaçades fortes la frenen.'}},
-  cam:{nom:'Camagrocs',chip:'Camagrocs',tag:'radar de camagrocs',u:['camagroc','camagrocs'],key:'rule-cam',region:'data/region_rov.json',vells:'Camagrocs vells',
-    rule0:{mm:28,span:5,minT:4,maxT:15,wait:18,before:5,after:8,obagaBonus:2,months:[10,11,12,1]},
-    nit:"Surt tard i en llocs humits: les obagues amb molsa són les millors.",
-    forca:{mm:[14,51],t:[-1,3,13,17],mes:{10:.55,11:1,12:.8,1:.35},gel:.03},
-    spot:{alt:[180,420,1300,1650],ob:2.2},leg:['Terra àcida','Terra calcària'],
-    info:{arbre:'Pinedes humides, amb molsa, sobretot a les obagues.',epoca:'De novembre a gener; el millor, novembre.',alt:'Entre 400 i 1.300 m.',pluja:'28 litres en 5 dies; amb 51 l ja n\'hi ha prou. Triga més que els altres (uns 18 dies).',temp:'Mitjanes de 3 a 13 °C: li agrada el fred humit.',gel:'Aguanta bé les primeres glaçades.'}}};
+  // Fredolic, llenega negra i camagroc: surten a la mateixa època i als mateixos pinars, i van junts
+  hiv:{nom:"Bolets d'hivern",chip:"Bolets d'hivern",tag:"radar de bolets d'hivern",u:['bolet','bolets'],key:'rule-hiv',region:'data/region_rov.json',vells:'Bolets vells',
+    rule0:{mm:22,span:4,minT:3,maxT:15,wait:16,before:5,after:8,obagaBonus:2,months:[10,11,12,1,2]},
+    nit:"Surten tard i amb fred. Les obagues humides i amb molsa són les millors.",
+    forca:{mm:[10,42],t:[-1,3,13,17],mes:{10:.5,11:1,12:.9,1:.5,2:.2},gel:.05},
+    spot:{alt:[40,250,1300,1700],ob:1.2},leg:['Àcida: camagroc','Calcària: llenega negra'],soil:{calc:'terra calcària, bona per a la llenega negra',acid:'terra àcida, bona per al camagroc'},
+    info:{tipus:[['Fredolic','pinedes; és el que aguanta més el fred i surt fins al febrer.'],['Llenega negra','pinassa i pi blanc en terreny calcari, a poca altura (fins a uns 900 m).'],['Camagroc','pinedes humides amb molsa, sobretot a les obagues; és el que triga més a sortir.']],
+      arbre:'Pinedes, sobretot obagues humides.',epoca:"D'octubre a febrer; el millor, novembre i desembre.",alt:'Entre 250 i 1.300 m.',pluja:"22 litres en 4 dies; amb 42 l ja n'hi ha prou.",temp:'Mitjanes de 3 a 13 °C: els agrada el fred humit.',gel:'Aguanten les primeres glaçades.'}}};
 const trap=(x,[a,b,c,d])=>x<=a||x>=d?0:x<b?(x-a)/(b-a):x>c?(d-x)/(d-c):1;
 // Força d'una tanda: la pluja de tot l'episodi, la mitjana dels dies que creixen i el mes del millor dia
 function forca(s,w){const F=SPECIES[SP].forca;let mm=0;
@@ -585,15 +571,16 @@ let map,L1={},pins={},tap=null,sim=null,drawing=null,drawPts=[],drawMarks=[],dra
 function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors spots</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
      <div class="layerbar">
        <button class="opt" data-lay="cares" aria-pressed="true">Cara nord / sud</button>
        <button class="opt" data-lay="acid" aria-pressed="true">Terra àcida</button>
        <button class="opt" data-lay="orto" aria-pressed="true">Foto</button>
        <button class="opt" data-lay="spots" aria-pressed="true">10 millors spots</button>
+       <button class="opt" data-onsoc aria-pressed="false">◎ On sóc</button>
      </div></div>
-   <div class="card" id="mapcard"><p class="small">Toca una agulla per obrir un lloc teu, un punt de color per veure un possible spot, o qualsevol lloc del mapa per saber si la terra és àcida i quina cara té.</p></div>`;
-  map=L.map('map',{zoomAnimation:true,fadeAnimation:true,markerZoomAnimation:true,bounceAtZoomLimits:false,wheelPxPerZoomLevel:90,minZoom:9,maxZoom:18,maxBounds:[[40.45,0.1],[42.9,3.4]],maxBoundsViscosity:1});
+   <div class="card" id="mapcard"><p class="small">Els números són els 10 millors spots del tros de mapa que mires: mou-te o allunya't per veure'n d'altres. Toca una agulla per obrir un lloc teu, un número per veure un spot, o qualsevol lloc del mapa per saber si la terra és àcida i quina cara té.</p></div>`;
+  map=L.map('map',{zoomAnimation:true,fadeAnimation:true,markerZoomAnimation:true,bounceAtZoomLimits:false,wheelPxPerZoomLevel:90,minZoom:8,maxZoom:18,maxBounds:[[40.3,-.2],[43.1,3.6]],maxBoundsViscosity:1});
   window.__map=map; // per poder-lo revisar des de la consola
   map.attributionControl.setPrefix(false).addAttribution('ICGC · Esri · Terrain Tiles · Open-Meteo');
   // Fons en directe de l'ICGC (tota Catalunya, nítid a qualsevol zoom) + obaga/solana calculada
@@ -604,7 +591,7 @@ function buildMap(){
   map.createPane('acidP').style.zIndex=270;
   // Capes de colors en rajoles: el mòbil només carrega el tros que mira
   const BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-  region().then(R=>{const o={minZoom:9,maxZoom:18,maxNativeZoom:12,bounds:R.bounds,errorTileUrl:BLANK,keepBuffer:4};
+  region().then(R=>{const o={minZoom:8,maxZoom:18,maxNativeZoom:12,bounds:R.bounds,errorTileUrl:BLANK,keepBuffer:4};
     L1.cares=L.tileLayer('tiles/cares/{z}/{x}/{y}.png',Object.assign({pane:'obsolP',opacity:.85},o));L1.acid=L.tileLayer('tiles/acid/{z}/{x}/{y}.png',Object.assign({pane:'acidP'},o));
     drawSpots(R);
     // Pobles de referència i les dues cases
@@ -618,6 +605,7 @@ function buildMap(){
     drawTowns();map.on('zoomend',drawTowns);
     const on=store.get('capes',{cares:true,acid:true,spots:true});['cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()})});
   L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP',keepBuffer:4,updateWhenZooming:false}).addTo(map);
+  map.on('moveend',()=>{clearTimeout(L1.mv);L1.mv=setTimeout(()=>{if(L1.spots)region().then(drawSpots)},250)});
   L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng]).concat([[41.1561,1.1069]])),{padding:[50,60],maxZoom:15});L1.fit();
   drawPins();
   $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
@@ -627,6 +615,7 @@ function buildMap(){
 function legendSync(){if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots')}
 let TOP=[];
 // Els 10 millors spots de l'espècie triada (cada espècie té les seves zones i la seva puntuació)
+// (km: distància a casa; ara 0, perquè els spots són els del tros de mapa que mires)
 const SCORE={
   ceps:(z,km)=>3*z.bo+z.acida+Math.min(z.ha,150)/150+Math.max(0,1-Math.abs(z.alt-450)/350)+(z.ob>=.3?.8:0)-(z.arbre==='avellaners'?1:0)-km/20-2*(z.emp||0)-Math.max(0,(z.pend||0)-18)/7,
   // espècies de pinar: mida, altura (trapezi de cada espècie), obaga, terra i pendent
@@ -634,8 +623,10 @@ const SCORE={
 function drawSpots(R){
   const on=L1.spots?!!L1.spots._map:store.get('capes',{cares:true,acid:true,spots:true}).spots;
   if(L1.spots)map.removeLayer(L1.spots);
-  L1.spots=L.layerGroup();const H=R.home,kmH=z=>distKm(H.lat,H.lng,z.lat,z.lng),score=z=>(SCORE[SP]||SCORE.pinar)(z,kmH(z));
-  const cand=R.zones.map((z,i)=>Object.assign({i},z)).filter(z=>z.ha>=15&&kmH(z)<=40).sort((a,b)=>score(b)-score(a));
+  L1.spots=L.layerGroup();
+  // tota Catalunya: es puntuen totes les zones una vegada per espècie i es mostren les 10 millors del que es veu
+  R.sc=R.sc||{};if(!R.sc[SP])R.sc[SP]=R.zones.map(z=>(SCORE[SP]||SCORE.pinar)(z,0));const sc=R.sc[SP],vb=map.getBounds().pad(.02);
+  const cand=R.zones.map((z,i)=>Object.assign({i,_s:sc[i]},z)).filter(z=>z.ha>=15&&vb.contains([z.lat,z.lng])).sort((a,b)=>b._s-a._s);
   TOP=[];for(const z of cand){if(MINE().some(t=>distKm(t.lat,t.lng,z.lat,z.lng)<1.5))continue;// els llocs propis ja els coneixeu
     if(TOP.every(b=>distKm(b.lat,b.lng,z.lat,z.lng)>3))TOP.push(z);if(TOP.length===10)break}
   TOP.forEach((z,n)=>{const col=z.ob>=.45?'#3468C8':z.so>=.45?'#E88430':'#C9A21E';
@@ -654,13 +645,17 @@ function spotCard(i,n){const z=REG.zones[i],H=REG.home,km=distKm(H.lat,H.lng,z.l
    <div class="row"><a class="btn ghost" href="${gmDir(z.lat,z.lng)}" target="_blank" rel="noopener">Com arribar-hi</a><button class="btn ghost" data-zadd="${i}">Afegir als meus llocs</button></div>`;
   setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50)}
 // Dades de tota la zona per al punt tocat: R = cara, G = roca, B = arbre
-let RINFO=null;
+// Dades de tota Catalunya per rajoles z11 (R = cara×28, G = roca×80, B = arbre×40): només es baixa el tros que cal
+let RINFO=null;const INFOZ=11,INFOT={};
+const t11x=lng=>(lng+180)/360*2**INFOZ,t11y=lat=>(1-Math.asinh(Math.tan(lat*Math.PI/180))/Math.PI)/2*2**INFOZ;
+function infoTile(x,y){const k=x+'/'+y;
+  if(!(k in INFOT))INFOT[k]=new Promise(res=>{const im=new Image();
+    im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0);res(g.getImageData(0,0,256,256).data)};
+    im.onerror=()=>res(null);im.src=`tiles/info/${INFOZ}/${x}/${y}.png`});
+  return INFOT[k]}
 async function regInfo(lat,lng){
-  const R=await region();
-  if(!RINFO){RINFO=await new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);res({x,w:im.width,h:im.height})};im.onerror=()=>res(null);im.src='data/reg_info.png'})}
-  if(!RINFO)return null;const[[s,w],[n,e]]=R.bounds;
-  const px=Math.floor((lng-w)/(e-w)*RINFO.w),py=Math.floor((mY(n)-mY(lat))/(mY(n)-mY(s))*RINFO.h);
-  if(px<0||py<0||px>=RINFO.w||py>=RINFO.h)return null;const d=RINFO.x.getImageData(px,py,1,1).data;return{sec:Math.round(d[0]/28),rock:Math.round(d[1]/80),tree:Math.round(d[2]/40)}}
+  const fx=t11x(lng),fy=t11y(lat),x=Math.floor(fx),y=Math.floor(fy),d=await infoTile(x,y);if(!d)return null;
+  const k=(Math.floor((fy-y)*256)*256+Math.floor((fx-x)*256))*4;return{sec:Math.round(d[k]/28),rock:Math.round(d[k+1]/80),tree:Math.round(d[k+2]/40)}}
 function tagsHtml(sec,rock){
   const r=SP!=='ceps'?(rock===2?'<span class="tag2 t-unk">Terra calcària</span>':rock===1?'<span class="tag2 t-unk">Terra àcida</span>':rock===3?'<span class="tag2 t-unk">Terra barrejada</span>':''):rock===1||rock===3?'<span class="tag2 t-acid">Terra àcida ✓</span>':rock===2?'<span class="tag2 t-calc">Terra calcària ✗</span>':'<span class="tag2 t-unk">Roca sense dades</span>';
   const f=[7,0,1].includes(sec)?'<span class="tag2 t-ob">Cara nord</span>':[3,4,5].includes(sec)?'<span class="tag2 t-so">Cara sud</span>':sec===8?'<span class="tag2 t-pla">Pla</span>':`<span class="tag2 t-pla">Mira a l'${DIRS[sec]}</span>`;
@@ -702,9 +697,7 @@ function capBody(id,o,stroke){const st=stroke?' stroke="#fff" stroke-width="1.4"
    <path d="M6 30 H42 C41 31.4 40.2 32 38.8 32 H9.2 C7.8 32 7 31.4 6 30Z" fill="${o.g}"/>
    <ellipse cx="16" cy="16.5" rx="6.4" ry="2.8" transform="rotate(-28 16 16.5)" fill="#fff" opacity="${o.hl||.3}"/>${o.x||''}`}
 const CAPS={
-  fre:{c1:'#A5B0BB',c2:'#5F6C7B',s1:'#DAD8CB',s2:'#F4F2E8',g:'#D9D6C2',x:'<g fill="#fff" opacity=".28"><ellipse cx="30" cy="15" rx="2.2" ry="1"/><ellipse cx="34" cy="20" rx="1.8" ry=".9"/></g>'},
-  lle:{c1:'#5B5B46',c2:'#1E1E17',s1:'#D7D3BC',s2:'#F1EEDC',g:'#C9C3A0',hl:.5,x:'<path d="M12 31 q12 3 24 0" stroke="#fff" stroke-width=".9" fill="none" opacity=".35"/>'},
-  cam:{c1:'#F5CF45',c2:'#C98710',s1:'#F0D775',s2:'#FBEEA8',g:'#E8D27A',hl:.5,x:'<g fill="#7A4E08" opacity=".35"><ellipse cx="30" cy="16" rx="1.4" ry="1"/><ellipse cx="20" cy="22" rx="1.2" ry=".9"/><ellipse cx="34" cy="23" rx="1.1" ry=".8"/></g>'}};
+  hiv:{c1:'#A5B0BB',c2:'#5F6C7B',s1:'#DAD8CB',s2:'#F4F2E8',g:'#D9D6C2',x:'<g fill="#fff" opacity=".28"><ellipse cx="30" cy="15" rx="2.2" ry="1"/><ellipse cx="34" cy="20" rx="1.8" ry=".9"/></g>'},};
 const capSvg=(k,w,id,stroke)=>`<svg width="${w}" height="${w}" viewBox="0 6 48 42" aria-hidden="true">${capBody(id,CAPS[k],stroke)}</svg>`;
 const ROV_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true">${rovBody('pr',true)}</svg>`;
 const rovIcon=(w,id)=>`<svg width="${w}" height="${w}" viewBox="2 8 44 40" aria-hidden="true">${rovBody(id||'ri'+w,false)}</svg>`;
@@ -715,19 +708,26 @@ const COLS={nord:[52,104,200],sud:[232,132,48],eo:[214,186,64],pla:[150,150,140]
 const faceOf=sec=>[7,0,1].includes(sec)?'nord':[3,4,5].includes(sec)?'sud':sec===8?'pla':'eo';
 const REGCOV=['ni bosc ni matolls','pinar','alzinar o suredes','roureda','matolls','avellaners'];
 function srcLocal(){return{w:G.gw,h:G.gh,b:META.bounds,local:true,at(x,y){const i=y*G.gw+x;return{sec:G.sec[i],rock:G.rock[i],cov:coverName(G.cov[i]),rname:G.rdesc[i]>=0?META.rock_names[G.rdesc[i]]:'',elev:G.elev[i],slope:G.slope[i]}}}}
-let SRCREG=null;
-async function srcReg(){if(SRCREG)return SRCREG;const R=await region();await regInfo(R.home.lat,R.home.lng);if(!RINFO)return null;
-  const data=RINFO.x.getImageData(0,0,RINFO.w,RINFO.h).data;
-  SRCREG={w:RINFO.w,h:RINFO.h,b:R.bounds,local:false,at(x,y){const k=(y*this.w+x)*4;return{sec:Math.round(data[k]/28),rock:Math.round(data[k+1]/80),cov:REGCOV[Math.round(data[k+2]/40)]||'altres',rname:'',elev:null,slope:null}}};return SRCREG}
+// Tros de les dades de Catalunya que cobreix una zona (per a "Com és la zona" dels llocs sense detall de 5 m)
+async function srcReg(la0,la1,lo0,lo1){
+  const xa=Math.floor(t11x(lo0)),xb=Math.floor(t11x(lo1)),ya=Math.floor(t11y(la1)),yb=Math.floor(t11y(la0));
+  const w=(xb-xa+1)*256,h=(yb-ya+1)*256,data=new Uint8ClampedArray(w*h*4);let any=false;
+  for(let i=0;i<data.length;i+=4)data[i]=224;   // sense dades = pla
+  for(let y=ya;y<=yb;y++)for(let x=xa;x<=xb;x++){const t=await infoTile(x,y);if(!t)continue;any=true;
+    for(let r=0;r<256;r++)data.set(t.subarray(r*1024,(r+1)*1024),(((y-ya)*256+r)*w+(x-xa)*256)*4)}
+  if(!any)return null;
+  const tl=v=>v/2**INFOZ*360-180,tla=v=>Math.atan(Math.sinh(Math.PI*(1-2*v/2**INFOZ)))*180/Math.PI;
+  return{w,h,b:[[tla(yb+1),tl(xa)],[tla(ya),tl(xb+1)]],local:false,
+    at(x,y){const k=(y*w+x)*4;return{sec:Math.round(data[k]/28),rock:Math.round(data[k+1]/80),cov:REGCOV[Math.round(data[k+2]/40)]||'altres',rname:'',elev:null,slope:null}}}}
 // Detall de 5 m (relleu de l'IGN) al voltant dels vostres llocs
 const DET5={};
 async function srcDet(id){
   if(id in DET5)return DET5[id];
   try{const m=await j(`data/det/${id}.json`);const im=await new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ko;i.src=`data/det/${id}.png`});
     const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);
-    const data=x.getImageData(0,0,c.width,c.height).data;const R=await region();await regInfo(R.home.lat,R.home.lng);
+    const data=x.getImageData(0,0,c.width,c.height).data;
     DET5[id]={w:c.width,h:c.height,b:m.bounds,lin:true,local:true,det:true,
-      at(px,py,la,lo){const k=(py*this.w+px)*4;const ci=cellOf(la,lo);const ri=ci<0&&RINFO?null:null;
+      at(px,py,la,lo){const k=(py*this.w+px)*4;const ci=cellOf(la,lo);
         return{sec:Math.round(data[k]/28),slope:data[k+1],elev:data[k+2]+m.emin,
           rock:ci>=0?G.rock[ci]:0,cov:ci>=0?coverName(G.cov[ci]):'',rname:ci>=0&&G.rdesc[ci]>=0?META.rock_names[G.rdesc[ci]]:''}}}}
   catch(e){DET5[id]=null}
@@ -741,7 +741,7 @@ async function zoneDetail(s){
   if(poly){la0=Math.min(...poly.map(p=>p[0]));la1=Math.max(...poly.map(p=>p[0]));lo0=Math.min(...poly.map(p=>p[1]));lo1=Math.max(...poly.map(p=>p[1]))}
   else{const dl=600/111320,dn=600/(111320*k);la0=s.lat-dl;la1=s.lat+dl;lo0=s.lng-dn;lo1=s.lng+dn}
   const det=await srcDet(s.id);const inDet=det&&la0>=det.b[0][0]&&la1<=det.b[1][0]&&lo0>=det.b[0][1]&&lo1<=det.b[1][1];
-  const src=inDet?det:(cellOf(la0,lo0)>=0&&cellOf(la1,lo1)>=0)?srcLocal():await srcReg();if(!src)return null;
+  const src=inDet?det:(cellOf(la0,lo0)>=0&&cellOf(la1,lo1)>=0)?srcLocal():await srcReg(la0,la1,lo0,lo1);if(!src)return null;
   const[[S,W],[N,E]]=src.b,X=x=>(x-W)/(E-W)*src.w,Y=y=>src.lin?(N-y)/(N-S)*src.h:(mY(N)-mY(y))/(mY(N)-mY(S))*src.h;
   const latOf=y=>src.lin?N-y/src.h*(N-S):(2*Math.atan(Math.exp(mY(N)-y/src.h*(mY(N)-mY(S))))-Math.PI/2)*180/Math.PI,lngOf=x=>W+x/src.w*(E-W);
   const x0=Math.max(0,Math.floor(X(lo0))),x1=Math.min(src.w-1,Math.ceil(X(lo1))),y0=Math.max(0,Math.floor(Y(la1))),y1=Math.min(src.h-1,Math.ceil(Y(la0)));
@@ -798,7 +798,7 @@ function onMapClick(e){
   if(tap)map.removeLayer(tap);tap=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
   const tools=`<div class="row"><span class="coords">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmPt(e.latlng.lat,e.latlng.lng)}" target="_blank" rel="noopener">Google Maps</a><button class="btn ghost" data-addhere="${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}">Afegir lloc</button></div>`;
   if(i<0){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Mirant…</p>${tools}`;
-    regInfo(e.latlng.lat,e.latlng.lng).then(ri=>{if(!ri){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de la zona estudiada (uns 50 km al voltant de Torredembarra): aquí no tinc roca ni cares, però la pluja sí que funciona.</p>${tools}`;return}
+    regInfo(e.latlng.lat,e.latlng.lng).then(ri=>{if(!ri){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de Catalunya o al mar: aquí no tinc roca ni cares, però la pluja sí que funciona.</p>${tools}`;return}
       const ar=['','pinar','alzinar o suredes','roureda','matolls','avellaners'][ri.tree]||'ni bosc ni matolls';
       $('#mapcard').innerHTML=`<strong>Aquí</strong>${tagsHtml(ri.sec,ri.rock)}<p>${ar}</p>${SP!=='ceps'?(ri.tree===1?`<p class="small" style="color:var(--go);font-weight:700">Pinar: bon lloc per a ${SPECIES[SP].nom.toLowerCase()}.</p>`:''):ri.tree&&(ri.rock===1||ri.rock===3)&&ri.tree!==1?'<p class="small" style="color:var(--go);font-weight:700">Bon lloc: arbres i terreny àcid com els que volen aquestes espècies.</p>':''}${tools}`});return}
   // a prop dels vostres llocs, la cara surt del relleu de 5 m
@@ -817,7 +817,7 @@ function startDraw(id){
   $('#dfin').onclick=()=>{const s=SITES.find(x=>x.id===drawing);zones[s.id]=drawPts.slice();store.set('zones',zones);end();
     s.zone={kind:'poly',st:polyStats(zones[s.id])};evalSite(s);drawPins();pinCard(s)}}
 let REG=null;const REGS={};
-async function region(){const k=SP;if(!REGS[k]){try{REGS[k]=await j(SPECIES[k].region)}catch(e){REGS[k]={zones:[],bounds:META.bounds,home:{nom:'Torredembarra',lat:41.14616,lng:1.39595}}}}return REG=REGS[k]}
+async function region(){const k=SPECIES[SP].region;if(!REGS[k]){try{REGS[k]=await j(k)}catch(e){REGS[k]={zones:[],bounds:META.bounds,home:{nom:'Torredembarra',lat:41.14616,lng:1.39595}}}}return REG=REGS[k]}
 async function toggleSim(btn,on){
   const want=on===undefined?!sim:on;
   if(!want){if(sim){map.removeLayer(sim);sim=null}btn&&btn.setAttribute('aria-pressed','false');$('#simkey').hidden=true;return}
@@ -884,6 +884,7 @@ function diesCard(){const R=RULE,N=SPECIES[SP].u[1];
      <p class="small">Regla provisional: encara no l'hem provada amb sortides vostres. Apunteu-les al diari, també les de zero, i es podrà ajustar.</p></div>`}
 function genQue(){const S=SPECIES[SP],I=S.info;
   return `<div class="card how"><h3>Què busquem: ${S.nom.toLowerCase()}</h3>
+     ${I.tipus?`<p>Aquí van junts tres bolets de pinar que surten a la mateixa època i amb el mateix temps:</p><ul>${I.tipus.map(([n,d])=>`<li><strong>${n}</strong>: ${d}</li>`).join('')}</ul>`:''}
      <ul><li><strong>On:</strong> ${I.arbre}</li><li><strong>Quan:</strong> ${I.epoca}</li><li><strong>Altura:</strong> ${I.alt}</li><li><strong>Pluja:</strong> ${I.pluja}</li><li><strong>Temperatura:</strong> ${I.temp}</li><li><strong>Gelades:</strong> ${I.gel}</li></ul>
      <p class="small">Fitxa orientativa feta amb dades de guies i de BoletRadar.cat. Cap bolet es menja sense identificar-lo bé: davant del dubte, no el collis.</p></div>`}
 const genRecerca=()=>diesCard();
@@ -950,6 +951,10 @@ $('#spsw').innerHTML=Object.keys(SPECIES).map(k=>`<button data-sp="${k}" aria-pr
 setSpecies(SP);
 document.addEventListener('click',e=>{
   const spb=e.target.closest('[data-sp]');if(spb){setSpecies(spb.dataset.sp);return}
+  const os=e.target.closest('[data-onsoc]');if(os){if(!navigator.geolocation){os.textContent='Sense GPS';return}os.textContent='Buscant…';
+    navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];os.textContent='◎ On sóc';L1.moved=true;map.setView(ll,12);
+      if(L1.me)map.removeLayer(L1.me);L1.me=L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#2F67A6',fillOpacity:1}).addTo(map)},
+      ()=>{os.textContent="No s'ha pogut"},{enableHighAccuracy:true,timeout:15000});return}
   if(e.target.closest('[data-gomap]')){show('mapa');return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
   if(e.target.closest('#howbtn')){show('com');return}
