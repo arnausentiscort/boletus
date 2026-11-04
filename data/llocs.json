@@ -85,6 +85,18 @@
     "rov",
     "hiv"
    ]
+  },
+  {
+   "id": "avi",
+   "name": "Bosc de l'avi",
+   "muni": "Querol",
+   "lat": 41.388884,
+   "lng": 1.444445,
+   "sp": [
+    "ceps",
+    "rov",
+    "hiv"
+   ]
   }
  ],
  "visits": [

@@ -628,13 +628,14 @@ function sheetInit(){
 function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#EBD73C,#6EBE3C,#147832);border-radius:4px"></i>Bolets ara: fluixa → bona</span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
      <div class="mapctl">
        <button class="rbtn" data-onsoc aria-label="On sóc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
        <button class="rbtn" data-capes aria-expanded="false" aria-label="Capes i zones"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
      </div>
      <div class="laypanel" hidden>
        <strong>Què es veu</strong>
+       <button class="opt" data-lay="prob" aria-pressed="true">On hi ha bolets ara</button>
        <button class="opt" data-lay="spots" aria-pressed="true">10 millors spots</button>
        <button class="opt" data-lay="cares" aria-pressed="true">Cara nord / sud</button>
        <button class="opt" data-lay="acid" aria-pressed="true">Terra àcida o calcària</button>
@@ -643,7 +644,7 @@ function buildMap(){
        <select id="goto"><option value="">Tria…</option>${ZONES.map(([n],i)=>`<option value="${i}">${n}</option>`).join('')}</select>
      </div>
      <div class="card msheet" id="mapcard"></div></div>
-   <p class="maphint">Toca un número per veure un spot, una agulla per obrir un lloc vostre, o qualsevol punt per saber-ne la terra i la cara.</p>`;
+   <p class="maphint">Els colors són on hi ha bolets ara: groc, tanda fluixa; verd clar, normal; verd fosc, bona. El lila és on en sortiran aviat. Es calcula amb la pluja i la temperatura de cada zona. Toca un número per veure un spot, una agulla per obrir un lloc vostre, o qualsevol punt per saber-ne la terra i la cara.</p>`;
   map=L.map('map',{zoomAnimation:true,fadeAnimation:true,markerZoomAnimation:true,bounceAtZoomLimits:false,wheelPxPerZoomLevel:90,minZoom:8,maxZoom:18,maxBounds:[[40.3,-.2],[43.1,3.6]],maxBoundsViscosity:1});
   window.__map=map; // per poder-lo revisar des de la consola
   map.attributionControl.setPrefix(false).addAttribution('ICGC · Esri · Terrain Tiles · Open-Meteo');
@@ -667,7 +668,7 @@ function buildMap(){
       const html=lv===2?`<div class="casa" title="${n}">${homeSvg}</div>`:`<div class="town ${lv?'big':''}">${n}</div>`;
       L.marker([la,lo],{pane:'labels',interactive:false,keyboard:false,icon:L.divIcon({className:'',html,iconSize:lv===2?[20,20]:[160,22],iconAnchor:lv===2?[10,10]:[80,11]})}).addTo(L1.towns)})};
     drawTowns();map.on('zoomend',drawTowns);
-    const on=store.get('capes',{cares:true,acid:true,spots:true});['cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()})});
+    const on=Object.assign({prob:true},store.get('capes',{cares:true,acid:true,spots:true}));L1.prob=L.layerGroup();['prob','cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()});drawProb()});
   L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP',keepBuffer:4,updateWhenZooming:false}).addTo(map);
   map.on('moveend',()=>{clearTimeout(L1.mv);L1.mv=setTimeout(()=>{if(L1.spots)region().then(drawSpots)},250)});
   L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng]).concat([[41.1561,1.1069]])),{padding:[50,60],maxZoom:15});L1.fit();
@@ -676,7 +677,39 @@ function buildMap(){
     if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync()});
     L1.homeLayer=null;
   map.on('click',onMapClick);sheetInit()}
-function legendSync(){if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots')}
+function legendSync(){if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob')}
+/* ---------- On hi ha bolets ara, a tot Catalunya ----------
+   data/grid_wx.json (es fa cada matí) té la pluja i la temperatura d'unes caselles d'11 km on hi ha boscos.
+   A cada casella s'hi passa la mateixa regla i la mateixa força que als vostres llocs. */
+let GWX=null,GSITES=null,GEV=[];
+async function gridSites(){
+  if(!GWX){try{GWX=await fetch('data/grid_wx.json',{cache:'no-cache'}).then(r=>r.json())}catch(e){GWX={c:[]}}}
+  if(!GSITES){const st=GWX.start?dnum(GWX.start):0,f=a=>a.map(v=>v==null?null:v/10);
+    GSITES=GWX.c.map(([lat,lng,ob,sp,r,t,n],i)=>{const R=f(r);return{id:'g'+i,lat,lng,sp,zone:{st:{obaga:ob}},ser:{start:st,r:R,t:f(t),n:f(n),end:st+R.length-1}}})}
+  return GSITES}
+async function drawProb(){
+  if(!L1.prob)return;const G=await gridSites();L1.prob.clearLayers();
+  const want=SP==='ceps'?'ceps':'pin';GEV=G.filter(g=>g.sp.includes(want));GEV.forEach(evalSite);
+  if(!GEV.length)return;
+  const Z=8,C=(GWX.cell||.1),la0=Math.min(...GEV.map(g=>g.lat))-C,la1=Math.max(...GEV.map(g=>g.lat))+C,lo0=Math.min(...GEV.map(g=>g.lng))-C,lo1=Math.max(...GEV.map(g=>g.lng))+C;
+  const P=(la,lo)=>map.project([la,lo],Z),a=P(la1,lo0),b=P(la0,lo1),K=2,w=Math.ceil((b.x-a.x)*K),h=Math.ceil((b.y-a.y)*K);
+  const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+  GEV.forEach(s=>{if(s.state==='wait')return;const v=s.win&&s.win.f?s.win.f.v:40;
+    const q=P(s.lat,s.lng),x=(q.x-a.x)*K,y=(q.y-a.y)*K,rad=13*K;
+    const col=s.state==='soon'?'rgba(150,120,230,.6)':v>=60?'rgba(20,120,50,.85)':v>=35?'rgba(110,190,60,.7)':'rgba(235,215,60,.6)';
+    const gr=g.createRadialGradient(x,y,0,x,y,rad);gr.addColorStop(0,col);gr.addColorStop(.55,col);gr.addColorStop(1,col.replace(/[\d.]+\)$/,'0)'));
+    g.fillStyle=gr;g.fillRect(x-rad,y-rad,rad*2,rad*2)});
+  if(!map.getPane('probP')){const pp=map.createPane('probP');pp.style.zIndex=275;pp.style.pointerEvents='none'}
+  L.imageOverlay(c.toDataURL(),[[la0,lo0],[la1,lo1]],{pane:'probP',opacity:.75,interactive:false}).addTo(L1.prob)}
+// Què diu la casella més propera d'un punt del mapa
+function probHere(la,lo){
+  if(!GEV.length)return'';let best=null,bd=1e9;GEV.forEach(s=>{const d=distKm(la,lo,s.lat,s.lng);if(d<bd){bd=d;best=s}});
+  if(!best||bd>12)return'';const s=best,N=SPECIES[SP].nom.toLowerCase();
+  const t=s.state==='go'?`<b style="color:var(--go)">Per la pluja i la temperatura, ara toca ${N} per aquí</b>${s.win.f?' · tanda '+s.win.f.nom:''}`
+    :s.state==='soon'?`<b style="color:var(--soon)">Aviat:</b> millor dia ${wdn(s.win.peak)} ${fmt(s.win.peak)}`
+    :s.cold?`Va ploure, però després ha fet ${s.cold.hot?'massa calor':'fred'}: no surten`:'Per aquí encara falta aigua';
+  return `<p class="small" style="margin:2px 0 6px">${t}</p>`}
+window.__gev=()=>GEV;
 let TOP=[];
 // Els 10 millors spots de l'espècie triada (cada espècie té les seves zones i la seva puntuació)
 // (km: distància a casa; ara 0, perquè els spots són els del tros de mapa que mires)
@@ -862,7 +895,7 @@ function onMapClick(e){
     if(drawLine)map.removeLayer(drawLine);drawLine=L.polyline(drawPts,{color:'#7A2E8E',weight:3}).addTo(map);$('#dfin').disabled=drawPts.length<3;return}
   const i=cellOf(e.latlng.lat,e.latlng.lng);setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   if(tap)map.removeLayer(tap);tap=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
-  const tools=`<div class="row"><span class="coords">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmPt(e.latlng.lat,e.latlng.lng)}" target="_blank" rel="noopener">Google Maps</a><button class="btn ghost" data-addhere="${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}">Afegir lloc</button></div>`;
+  const tools=probHere(e.latlng.lat,e.latlng.lng)+`<div class="row"><span class="coords">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmPt(e.latlng.lat,e.latlng.lng)}" target="_blank" rel="noopener">Google Maps</a><button class="btn ghost" data-addhere="${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}">Afegir lloc</button></div>`;
   if(i<0){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Mirant…</p>${tools}`;
     regInfo(e.latlng.lat,e.latlng.lng).then(ri=>{if(!ri){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de Catalunya o al mar: aquí no tinc roca ni cares, però la pluja sí que funciona.</p>${tools}`;return}
       const ar=['','pinar','alzinar o suredes','roureda','matolls','avellaners'][ri.tree]||'ni bosc ni matolls';
@@ -1023,7 +1056,7 @@ function renderInici(){
    <div class="inidet">${tag}${det0}</div>
    <div class="modes">
      <button class="mode" data-goinici="${x.k}" data-to="llocs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span><b>Els meus llocs</b><small>${x.n} ${x.n===1?'lloc':'llocs'} amb el calendari</small></span></button>
-     <button class="mode alt" data-goinici="${x.k}" data-to="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span><b>Mapa</b><small>Els millors boscos de Catalunya</small></span></button>
+     <button class="mode alt" data-goinici="${x.k}" data-to="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span><b>Mapa</b><small>On hi ha bolets ara</small></span></button>
    </div>
    <button class="inilink" data-howinici>Com funciona l'app</button></div>`}
 
@@ -1045,7 +1078,7 @@ function setSpecies(k){
   $('#sptag').textContent=SPECIES[k].tag;document.documentElement.dataset.species=k;
   {const b=$('#spsw [aria-pressed=true]');if(b&&b.scrollIntoView)try{b.scrollIntoView({inline:'center',block:'nearest'})}catch(e){}}
   if(mapBuilt)drawPins();
-  if(mapBuilt){if(tap){map.removeLayer(tap);tap=null}$('#mapcard').innerHTML='';region().then(drawSpots)}
+  if(mapBuilt){if(tap){map.removeLayer(tap);tap=null}$('#mapcard').innerHTML='';region().then(drawSpots);drawProb()}
   if(screen==='fitxa')renderFitxa();else show(screen)}
 $('#spsw').innerHTML=Object.keys(SPECIES).map(k=>`<button data-sp="${k}" aria-pressed="${k===SP}">${spIcon(24,k)}${SPECIES[k].chip}</button>`).join('');
 setSpecies(SP);
