@@ -183,17 +183,17 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .hero{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.hero .small{white-space:nowrap}
 .hero h2{font-size:22px}
 .ini{display:flex;flex-direction:column;gap:12px}
-.sqs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.sq{position:relative;min-height:128px;background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--ink);text-align:center;min-width:0}
-.sq[data-k=ceps]{--c:#8A5530;--cs:rgba(138,85,48,.16)}.sq[data-k=rov]{--c:#E2701F;--cs:rgba(226,112,31,.17)}.sq[data-k=hiv]{--c:#6F8499;--cs:rgba(111,132,153,.2)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sq[data-k=ceps]{--c:#D9A57E}:root:not([data-theme="light"]) .sq[data-k=rov]{--c:#F39A4C}:root:not([data-theme="light"]) .sq[data-k=hiv]{--c:#A9BBCB}}
-:root[data-theme="dark"] .sq[data-k=ceps]{--c:#D9A57E}:root[data-theme="dark"] .sq[data-k=rov]{--c:#F39A4C}:root[data-theme="dark"] .sq[data-k=hiv]{--c:#A9BBCB}
-.sq[aria-pressed=true]{border-color:var(--c);background:linear-gradient(160deg,var(--cs),transparent 75%),var(--surface);box-shadow:0 0 0 1px var(--c) inset}
-.sq .nm{font-family:var(--f-display);font-weight:800;font-size:15px;line-height:1.1}
-.sq .st{font-size:12px;font-weight:700;color:var(--muted)}
-.sq .st.go{color:var(--go)}.sq .st.soon{color:var(--soon)}
+html{touch-action:manipulation}
+.segl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--muted);margin-bottom:-4px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--line);border-radius:999px}
+.sq{position:relative;border:0;background:transparent;border-radius:999px;padding:6px 4px;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--muted);font-family:var(--f-display);font-weight:800;font-size:14px;min-width:0;line-height:1.05}
+.sq svg{width:28px;height:28px;flex:none}
+.sq .nm{overflow:hidden;text-overflow:ellipsis}
+.sq .dot{position:absolute;top:5px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--go)}
+.sq .dot.soon{background:var(--soon)}
+.sq[data-k=ceps]{--c:#8A5530}.sq[data-k=rov]{--c:#E2701F}.sq[data-k=hiv]{--c:#6F8499}
+.sq[aria-checked=true]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1.5px var(--c),0 2px 6px rgba(0,0,0,.25)}
 .sq.off{opacity:.55}
-.sq .top{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--c);color:#fff;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:2px 8px;white-space:nowrap}
 .inidet{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px;font-size:14.5px;color:var(--muted);min-height:44px}
 .inidet b{color:var(--ink)}
 .modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -1010,16 +1010,17 @@ function renderInici(){
   const reco=[...S].sort((a,b)=>b.pts-a.pts)[0];
   if(!iniSel||!SPECIES[iniSel])iniSel=reco.k;const x=S.find(v=>v.k===iniSel),N=SPECIES[x.k].nom;
   const st=v=>v.go?['go','Vés-hi']:v.soon?['soon','Aviat']:!v.mes?['','Fora de temporada']:['','Encara no'];
-  const det=!x.n?`Encara no teniu cap lloc de <b>${N.toLowerCase()}</b>: busqueu-ne al mapa.`
+  const tag=x.k===reco.k&&(x.go||x.soon)?'<span class="chip s-go" style="margin-right:6px">Ara toca</span>':'';
+  const det0=!x.n?`Encara no teniu cap lloc de <b>${N.toLowerCase()}</b>: busqueu-ne al mapa.`
     :x.go?`<b>${N}</b>: bolets a ${x.go} de ${x.n} llocs${x.best?` · el millor, <b>${esc(x.best.name)}</b> (tanda ${x.best.f.nom})`:''}.`
     :x.soon?`<b>${N}</b>: aviat, el ${wdn(x.best.win.peak)} ${fmt(x.best.win.peak)} a <b>${esc(x.best.name)}</b>.`
     :!x.mes?`<b>${N}</b>: ara no és temporada.`:`<b>${N}</b>: encara falta aigua als vostres llocs.`;
   const d=new Date(),hora=d.getHours();
   $('#s-inici').innerHTML=`<div class="ini">
    <div class="hero"><h2>${hora<13?'Bon dia':hora<20?'Bona tarda':'Bona nit'}! Què busquem?</h2><span class="small">${d.toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short'})}</span></div>
-   <div class="sqs">${S.map(v=>{const [c,t]=st(v);return `<button class="sq ${v.mes?'':'off'}" data-k="${v.k}" data-inisel="${v.k}" aria-pressed="${v.k===x.k}">
-      ${v.k===reco.k&&(v.go||v.soon)?'<span class="top">Ara toca</span>':''}${spIcon(46,v.k)}<span class="nm">${SPECIES[v.k].nom}</span><span class="st ${c}">${t}</span></button>`}).join('')}</div>
-   <div class="inidet">${det}</div>
+   <span class="segl">Quin bolet?</span>
+   <div class="seg" role="radiogroup" aria-label="Quin bolet">${S.map(v=>`<button class="sq ${v.mes?'':'off'}" role="radio" data-k="${v.k}" data-inisel="${v.k}" aria-checked="${v.k===x.k}">${v.go||v.soon?`<i class="dot ${v.go?'':'soon'}"></i>`:''}${spIcon(28,v.k)}<span class="nm">${SPECIES[v.k].nom.replace("Bolets d'hivern","D'hivern")}</span></button>`).join('')}</div>
+   <div class="inidet">${tag}${det0}</div>
    <div class="modes">
      <button class="mode" data-goinici="${x.k}" data-to="llocs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span><b>Els meus llocs</b><small>${x.n} ${x.n===1?'lloc':'llocs'} amb el calendari</small></span></button>
      <button class="mode alt" data-goinici="${x.k}" data-to="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span><b>Mapa</b><small>Els millors boscos de Catalunya</small></span></button>
