@@ -13,8 +13,10 @@ import json, math, os, sys, urllib.request, datetime as dt
 TOPIC = os.environ.get('NTFY_TOPIC', 'boletus-ceps-x7q2')
 APP = 'https://arnausentiscort.github.io/boletus/'
 SPECIES = {
-    'ceps': dict(nom='ceps', mm=17, span=2, minT=12, wait=16, before=2, after=2, gap=5),
-    'rov': dict(nom='rovellons', mm=25, span=5, minT=10, maxT=20, wait=12, before=4, after=6, gap=5, months=[9, 10, 11, 12, 1]),
+    'ceps': dict(nom='ceps', mm=17, span=2, minT=12, wait=16, before=2, after=2, gap=5,
+                 forca=dict(mm=[10, 35], t=[12, 16, 22, 27], mes={5: .3, 6: .4, 7: .4, 8: .6, 9: 1, 10: 1, 11: .4, 12: .1})),
+    'rov': dict(nom='rovellons', mm=25, span=5, minT=10, maxT=20, wait=12, before=4, after=6, gap=5, months=[9, 10, 11, 12, 1],
+                forca=dict(mm=[12, 45], t=[6, 10, 16, 20], mes={9: .7, 10: 1, 11: .95, 12: .5, 1: .2})),
 }
 DIES = ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg']
 MESOS = ['gen', 'febr', 'març', 'abr', 'maig', 'juny', 'jul', 'ag', 'set', 'oct', 'nov', 'des']
@@ -29,6 +31,16 @@ def sunrise(d, lat, lon):
     off = 2 if last_sun(3) <= d < last_sun(10) else 1
     m = 720 - 4 * (lon + ha) - eq + off * 60
     return f"{int(m // 60)}:{int(m % 60):02d}"
+
+def trap(x, a, b, c, d):
+    return 0 if x <= a or x >= d else (x - a) / (b - a) if x < b else (d - x) / (d - c) if x > c else 1
+
+def forca(R, mm, tg, peak):
+    """Força de la tanda (0-100), com a l'app: pluja de l'episodi x temperatura de creixement x mes."""
+    F = R['forca']
+    fp = min(1, max(0, (mm - F['mm'][0]) / (F['mm'][1] - F['mm'][0]))) ** .85
+    v = round(100 * fp * trap(tg, *F['t']) * F['mes'].get(peak.month, 0))
+    return v, 'bona' if v >= 60 else 'normal' if v >= 35 else 'fluixa'
 
 def send(title, msg, tags):
     if os.environ.get('DRY'):
@@ -70,7 +82,9 @@ def main():
                     if day == yesterday and warm_rain:
                         rain_msgs.append((sm, f"{R['nom'].capitalize()}: millor dia {fmt(peak)} (del {a.day}{'' if a.month == b.month else ' ' + MESOS[a.month - 1]} al {b.day} {MESOS[b.month - 1]})"))
                     if peak == tomorrow and good_after:
-                        send(f"Demà és el millor dia de {R['nom']} a {s['name']}", f"Surt el sol a les {sunrise(tomorrow, s['lat'], s['lng'])}. Com més d'hora, millor.", 'mushroom'); sent += 1
+                        ep = sum(r[max(0, i - R['span'] + 1):i + 4])
+                        v, nom = forca(R, ep, sum(g) / len(g), peak)
+                        send(f"Demà és el millor dia de {R['nom']} a {s['name']}", f"Tanda {nom} ({v}/100). Surt el sol a les {sunrise(tomorrow, s['lat'], s['lng'])}. Com més d'hora, millor.", 'mushroom'); sent += 1
                 last = i
         if rain_msgs:
             send(f"Ha plogut a {s['name']}", f"{round(max(m for m, _ in rain_msgs))} litres. Si després la temperatura acompanya:\n" + '\n'.join(x for _, x in rain_msgs), 'cloud_with_rain'); sent += 1
