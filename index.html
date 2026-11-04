@@ -180,16 +180,29 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .mapkey.mini::before{content:"Llegenda ▾";font-weight:700}
 .maphint{font-size:13px;color:var(--muted);text-align:center}
 /* Inici */
-.hero h2{font-size:26px}
-.reco{background:linear-gradient(135deg,var(--acc-soft),transparent 70%),var(--surface);border:1.5px solid var(--acc);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
-.reco .lbl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--acc)}
-.reco h3{font-size:24px;display:flex;align-items:center;gap:10px}
-.spc{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;text-align:left;width:100%}
-.spc .ic{grid-row:span 2}
-.spc .nm{font-family:var(--f-display);font-weight:800;font-size:19px;display:flex;align-items:center;gap:8px}
-.spc .st{font-size:14px;color:var(--muted)}
-.spc .bt{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
-.spc.off{opacity:.62}
+.hero{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.hero .small{white-space:nowrap}
+.hero h2{font-size:22px}
+.ini{display:flex;flex-direction:column;gap:12px}
+.sqs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sq{position:relative;min-height:128px;background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--ink);text-align:center;min-width:0}
+.sq[data-k=ceps]{--c:#8A5530;--cs:rgba(138,85,48,.16)}.sq[data-k=rov]{--c:#E2701F;--cs:rgba(226,112,31,.17)}.sq[data-k=hiv]{--c:#6F8499;--cs:rgba(111,132,153,.2)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sq[data-k=ceps]{--c:#D9A57E}:root:not([data-theme="light"]) .sq[data-k=rov]{--c:#F39A4C}:root:not([data-theme="light"]) .sq[data-k=hiv]{--c:#A9BBCB}}
+:root[data-theme="dark"] .sq[data-k=ceps]{--c:#D9A57E}:root[data-theme="dark"] .sq[data-k=rov]{--c:#F39A4C}:root[data-theme="dark"] .sq[data-k=hiv]{--c:#A9BBCB}
+.sq[aria-pressed=true]{border-color:var(--c);background:linear-gradient(160deg,var(--cs),transparent 75%),var(--surface);box-shadow:0 0 0 1px var(--c) inset}
+.sq .nm{font-family:var(--f-display);font-weight:800;font-size:15px;line-height:1.1}
+.sq .st{font-size:12px;font-weight:700;color:var(--muted)}
+.sq .st.go{color:var(--go)}.sq .st.soon{color:var(--soon)}
+.sq.off{opacity:.55}
+.sq .top{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--c);color:#fff;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.inidet{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px;font-size:14.5px;color:var(--muted);min-height:44px}
+.inidet b{color:var(--ink)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{aspect-ratio:1/.82;border-radius:22px;border:0;padding:14px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left;font-family:var(--f-display);color:var(--on-moss);background:var(--moss)}
+.mode.alt{background:var(--surface2);color:var(--ink);border:1.5px solid var(--line)}
+.mode svg{width:34px;height:34px}
+.mode b{font-size:19px;line-height:1.1}
+.mode small{display:block;font-family:var(--f-body,inherit);font-size:12.5px;font-weight:600;opacity:.8;margin-top:3px}
+.inilink{align-self:center;background:none;border:0;color:var(--muted);font-weight:700;text-decoration:underline;padding:6px}
 body[data-screen=inici] .spsw{display:none}
 .tabs nav{grid-template-columns:1fr 1fr 1fr!important}
 
@@ -991,26 +1004,27 @@ function spSummary(k){
   const r={k,n:L.length,go:go.length,soon:soon.length,best:best&&{name:best.name,f:best.win.f,win:best.win,state:best.state},mes,
     pts:(go.length?3:soon.length?2:0)+(best?best.win.f.v/100:0)+mes+({ceps:.3,rov:.2}[k]||0)};
   SP=keep;RULE=loadRule();SITES.forEach(evalSite);return r}
+let iniSel=null;
 function renderInici(){
   const S=Object.keys(SPECIES).map(spSummary);
-  const reco=[...S].sort((a,b)=>b.pts-a.pts)[0];const R=SPECIES[reco.k];
-  const nom=k=>SPECIES[k].nom.toLowerCase();
-  const line=x=>!x.n?'Encara no hi teniu cap lloc: busqueu-ne al mapa.'
-    :x.go?`Ara hi ha bolets a ${x.go} ${x.go===1?'lloc':'llocs'}${x.best?` · el millor, ${esc(x.best.name)} (tanda ${x.best.f.nom})`:''}.`
-    :x.soon?`Aviat: el ${wdn(x.best.win.peak)} ${fmt(x.best.win.peak)} a ${esc(x.best.name)}.`
-    :!x.mes?'Ara no és temporada.':'Encara falta aigua.';
+  const reco=[...S].sort((a,b)=>b.pts-a.pts)[0];
+  if(!iniSel||!SPECIES[iniSel])iniSel=reco.k;const x=S.find(v=>v.k===iniSel),N=SPECIES[x.k].nom;
+  const st=v=>v.go?['go','Vés-hi']:v.soon?['soon','Aviat']:!v.mes?['','Fora de temporada']:['','Encara no'];
+  const det=!x.n?`Encara no teniu cap lloc de <b>${N.toLowerCase()}</b>: busqueu-ne al mapa.`
+    :x.go?`<b>${N}</b>: bolets a ${x.go} de ${x.n} llocs${x.best?` · el millor, <b>${esc(x.best.name)}</b> (tanda ${x.best.f.nom})`:''}.`
+    :x.soon?`<b>${N}</b>: aviat, el ${wdn(x.best.win.peak)} ${fmt(x.best.win.peak)} a <b>${esc(x.best.name)}</b>.`
+    :!x.mes?`<b>${N}</b>: ara no és temporada.`:`<b>${N}</b>: encara falta aigua als vostres llocs.`;
   const d=new Date(),hora=d.getHours();
-  $('#s-inici').innerHTML=`
-   <div class="hero"><span class="small">${d.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long'})}</span><h2>${hora<13?'Bon dia':hora<20?'Bona tarda':'Bona nit'}! Què busquem?</h2></div>
-   <div class="reco"><span class="lbl">${reco.go?'Ara toca':reco.soon?'El que ve ara':'El més probable ara'}</span>
-     <h3>${spIcon(40,reco.k)}${R.nom}</h3><p>${line(reco)}</p>
-     <div class="row"><button class="btn" data-goinici="${reco.k}" data-to="llocs" style="flex:1">Els meus llocs</button><button class="btn ghost" data-goinici="${reco.k}" data-to="mapa" style="flex:1">Mapa</button></div></div>
-   <strong style="font-family:var(--f-display);font-size:18px;margin-top:4px">Totes les espècies</strong>
-   ${S.map(x=>`<div class="spc ${x.mes?'':'off'}"><span class="ic">${spIcon(44,x.k)}</span>
-      <span class="nm">${SPECIES[x.k].nom}${x.go?'<span class="chip s-go">Vés-hi</span>':x.soon?'<span class="chip s-soon">Aviat</span>':''}</span>
-      <span class="st">${line(x)}</span>
-      <span class="bt"><button class="btn ghost" data-goinici="${x.k}" data-to="llocs">Llocs</button><button class="btn ghost" data-goinici="${x.k}" data-to="mapa">Mapa</button></span></div>`).join('')}
-   <button class="btn ghost" id="howbtn2" style="align-self:center" data-howinici>Com funciona l'app</button>`}
+  $('#s-inici').innerHTML=`<div class="ini">
+   <div class="hero"><h2>${hora<13?'Bon dia':hora<20?'Bona tarda':'Bona nit'}! Què busquem?</h2><span class="small">${d.toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short'})}</span></div>
+   <div class="sqs">${S.map(v=>{const [c,t]=st(v);return `<button class="sq ${v.mes?'':'off'}" data-k="${v.k}" data-inisel="${v.k}" aria-pressed="${v.k===x.k}">
+      ${v.k===reco.k&&(v.go||v.soon)?'<span class="top">Ara toca</span>':''}${spIcon(46,v.k)}<span class="nm">${SPECIES[v.k].nom}</span><span class="st ${c}">${t}</span></button>`}).join('')}</div>
+   <div class="inidet">${det}</div>
+   <div class="modes">
+     <button class="mode" data-goinici="${x.k}" data-to="llocs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span><b>Els meus llocs</b><small>${x.n} ${x.n===1?'lloc':'llocs'} amb el calendari</small></span></button>
+     <button class="mode alt" data-goinici="${x.k}" data-to="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span><b>Mapa</b><small>Els millors boscos de Catalunya</small></span></button>
+   </div>
+   <button class="inilink" data-howinici>Com funciona l'app</button></div>`}
 
 /* ---------- Navegació ---------- */
 let mapBuilt=false,lastTab='llocs',screen='llocs';
@@ -1042,6 +1056,7 @@ document.addEventListener('click',e=>{
       ()=>{os.classList.remove('busy');$('#mapcard').innerHTML="<p>No s'ha pogut saber on ets. Mira que el mòbil deixi fer servir la ubicació.</p>"},{enableHighAccuracy:true,timeout:15000});return}
   if(e.target.closest('[data-mclose]')){$('#mapcard').innerHTML='';if(tap){map.removeLayer(tap);tap=null}return}
   const cp=e.target.closest('[data-capes]');if(cp){const pn=$('#s-mapa .laypanel');pn.hidden=!pn.hidden;cp.setAttribute('aria-expanded',!pn.hidden);return}
+  const isel=e.target.closest('[data-inisel]');if(isel){iniSel=isel.dataset.inisel;renderInici();return}
   const gi=e.target.closest('[data-goinici]');if(gi){setSpecies(gi.dataset.goinici);show(gi.dataset.to);return}
   if(e.target.closest('[data-gomap]')){show('mapa');return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
