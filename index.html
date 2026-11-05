@@ -213,6 +213,16 @@ button.site:active{background:var(--surface2)}
 .mem .nt{color:var(--muted);font-size:14.5px}
 .mem.zero .cnt{color:var(--muted)}
 .mem .linkbtn{padding:2px 0}
+.memact{display:flex;gap:16px;align-items:center;margin-top:2px}
+.mem .amb{font-size:15px}
+.ph{position:relative;display:grid;gap:3px;border-radius:14px;overflow:hidden;margin:-3px -4px 6px;grid-template-columns:1fr 1fr}
+.ph img{width:100%;height:100%;aspect-ratio:1;object-fit:cover;display:block;cursor:zoom-in}
+.ph.n1 img{aspect-ratio:4/3;grid-column:1/-1}
+.ph.n3 img:first-child{grid-column:1/-1;aspect-ratio:2/1}
+.ph .more{position:absolute;right:0;bottom:0;width:calc(50% - 1.5px);aspect-ratio:1;display:grid;place-items:center;background:rgba(0,0,0,.5);color:#fff;font:800 24px var(--f-display);pointer-events:none}
+.lbox{position:fixed;inset:0;z-index:3000;background:rgba(8,10,6,.94);display:grid;place-items:center;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.lbox img{max-width:100%;max-height:100%;object-fit:contain}
+.lbn{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#ddd;font:500 13px var(--f-data)}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px 18px;margin:0;padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:20px;font-size:15px}
 .facts dt{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
 .facts dd{margin:0}
@@ -559,19 +569,74 @@ function renderLlocs(){
 
 const AVIS_TEMA='boletus-ceps-x7q2';
 
-/* ---------- DIARI: les sortides, de la més nova a la més antiga ---------- */
+/* ---------- DIARI: les sortides, de la més nova a la més antiga, amb fotos i amb qui hi vau anar ----------
+   Les fotos i "amb qui" són a data/diari.json i data/fotos/ (públics, com tota l'app).
+   Des del mòbil es poden pujar amb una clau de GitHub que només es desa en aquell mòbil. */
 const qTxt=(k,n)=>{const[u1,u2]=SPECIES[k].u;return n==null?'alguns '+u2:n===0?'cap '+u1:n===1?'1 '+u1:`${n} ${u2}`};
+let DIARI={};try{DIARI=await fetch('data/diari.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{})}catch(e){}
+const LOCALPH={};let dEdit=null,dMsg={},ghOpen=false;
+/* GitHub: llegir i escriure fitxers del repositori de l'app */
+const GH={repo:'arnausentiscort/boletus',tok:()=>store.get('ghtok',''),
+  h(){return{Authorization:'Bearer '+this.tok(),Accept:'application/vnd.github+json'}},
+  async get(p){const r=await fetch(`https://api.github.com/repos/${this.repo}/contents/${p}?ref=main&t=${Date.now()}`,{headers:this.h(),cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error('GitHub '+r.status);return r.json()},
+  async put(p,b64,msg,sha){const r=await fetch(`https://api.github.com/repos/${this.repo}/contents/${p}`,{method:'PUT',headers:this.h(),body:JSON.stringify(Object.assign({message:msg,content:b64,branch:'main'},sha?{sha}:{}))});if(!r.ok)throw new Error('GitHub '+r.status);return r.json()},
+  // canvia un JSON del repositori; si algú l'ha tocat alhora, es torna a llegir i es repeteix
+  async edit(p,fn,msg){for(let i=0;;i++){const g=await this.get(p);const cur=g?JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(g.content.replace(/\n/g,'')),c=>c.charCodeAt(0)))):null;
+    try{return await this.put(p,b64u(JSON.stringify(fn(cur),null,1)+'\n'),msg,g&&g.sha)}catch(e){if(i>=2)throw e}}}};
+function b64u(s){const b=new TextEncoder().encode(s);let o='';for(let i=0;i<b.length;i+=8192)o+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(o)}
+// foto a 1600 px en JPEG: pesa poc i perd les dades amagades (com el GPS)
+async function shrink(f){const u=URL.createObjectURL(f);try{const im=await new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ko;i.src=u});
+  const k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)}finally{URL.revokeObjectURL(u)}}
+async function addPhotos(key,files){
+  const[d,site]=key.split('|');const done=[];
+  try{for(let i=0;i<files.length;i++){dMsg[key]=`Pujant ${i+1} de ${files.length}…`;renderDiari();
+      const url=await shrink(files[i]),p=`data/fotos/${d}-${site}-${Date.now().toString(36)}.jpg`;
+      await GH.put(p,url.split(',')[1],`Foto de ${d}`);LOCALPH[p]=url;done.push(p)}
+    await GH.edit('data/diari.json',cur=>{cur=cur||{};const e=cur[key]=cur[key]||{fotos:[],amb:''};e.fotos=(e.fotos||[]).concat(done);return cur},`Fotos de ${d}`);
+    const e=DIARI[key]=DIARI[key]||{fotos:[],amb:''};e.fotos=(e.fotos||[]).concat(done);dMsg[key]=''}
+  catch(err){dMsg[key]=/401|403/.test(err.message)?'La clau de GitHub no val o no té permís. Torna-la a posar.':"No s'han pogut pujar"+(done.length?' totes':'')+'. Mira la connexió i torna-ho a provar.';if(/401|403/.test(err.message))store.set('ghtok','')}
+  renderDiari()}
+async function saveAmb(key,txt){dMsg[key]='Desant…';dEdit=null;renderDiari();
+  try{await GH.edit('data/diari.json',cur=>{cur=cur||{};const e=cur[key]=cur[key]||{fotos:[],amb:''};e.amb=txt;return cur},`Amb qui: ${key.split('|')[0]}`);
+    (DIARI[key]=DIARI[key]||{fotos:[],amb:''}).amb=txt;dMsg[key]=''}catch(e){dMsg[key]="No s'ha pogut desar. Mira la connexió."}
+  renderDiari()}
+function ghCard(){return `<div class="card how" id="ghcard"><h3>Clau per pujar fotos</h3>
+   <p class="small">Les fotos es desen a GitHub, amb l'app. Cal una clau, un sol cop per mòbil; es queda només en aquest mòbil.</p>
+   <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:14.5px">
+     <li>Obre <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">aquesta pàgina de GitHub</a> (amb el teu compte).</li>
+     <li>Nom: <b>boletus mòbil</b>. Caducitat: la que vulguis.</li>
+     <li><b>Repository access</b> → <b>Only select repositories</b> → <b>boletus</b>.</li>
+     <li><b>Permissions</b> → <b>Contents</b> → <b>Read and write</b>.</li>
+     <li><b>Generate token</b>, copia-la i enganxa-la aquí.</li></ol>
+   <form class="namef" id="ghf"><input id="ghi" type="password" autocomplete="off" placeholder="github_pat_…" aria-label="Clau de GitHub" required><button class="btn">Desa</button></form>
+   <p class="small" id="ghm"></p></div>`}
 function renderDiari(){
-  const g={};visits.filter(v=>SHOW.includes(v.sp||'ceps')).forEach(v=>{const k=v.d+'|'+v.site;(g[k]=g[k]||{d:v.d,site:v.site,it:[],notes:[],h:v.h}).it.push(v);if(v.nota)g[k].notes.push(v.nota)});
+  const g={};visits.filter(v=>SHOW.includes(v.sp||'ceps')).forEach(v=>{const k=v.d+'|'+v.site;(g[k]=g[k]||{d:v.d,site:v.site,it:[],notes:[]}).it.push(v);if(v.nota)g[k].notes.push(v.nota)});
   const L=Object.values(g).sort((a,b)=>b.d.localeCompare(a.d));
   const tot=k=>visits.filter(v=>(v.sp||'ceps')===k).reduce((a,v)=>a+(v.n||0),0);
   $('#s-diari').innerHTML=`<div class="intro"><p class="kicker">Diari</p><h2 class="lead">${L.length} ${L.length===1?'sortida':'sortides'}.</h2>
      <p class="sub">${SHOW.map(k=>qTxt(k,tot(k))).join(' · ')} en total</p></div>
-   ${L.map(o=>{const s=SITES.find(x=>x.id===o.site),dd=D(dnum(o.d));
+   ${ghOpen?ghCard():''}
+   ${L.map(o=>{const s=SITES.find(x=>x.id===o.site),dd=D(dnum(o.d)),key=o.d+'|'+o.site,X=DIARI[key]||{},F=X.fotos||[];
      const it=o.it.sort((a,b)=>(b.n||0)-(a.n||0));
-     return `<article class="mem${it.some(v=>v.n)?'':' zero'}"><p class="kicker">${dd.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})}</p>
-       <h3>${esc(s?s.name:o.site)}</h3><p class="cnt">${it.map(v=>`${spIcon(22,v.sp||'ceps')}${qTxt(v.sp||'ceps',v.n)}`).join('')}</p>
-       ${o.notes.length?`<p class="nt">${o.notes.map(esc).join(' ')}</p>`:''}${s?`<button class="linkbtn" data-open="${s.id}" data-from="diari">${esc(s.name)} ›</button>`:''}</article>`}).join('')||'<p class="sub">Encara no hi ha cap sortida. Apunta-les des de cada lloc.</p>'}`}
+     return `<article class="mem${it.some(v=>v.n)?'':' zero'}">
+       ${F.length?`<div class="ph n${Math.min(F.length,4)}">${F.slice(0,4).map((f,i)=>`<img src="${LOCALPH[f]||f}" alt="" loading="lazy" data-zoom="${key}" data-i="${i}">${i===3&&F.length>4?`<span class="more">+${F.length-4}</span>`:''}`).join('')}</div>`:''}
+       <p class="kicker">${dd.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})}</p>
+       <h3>${esc(s?s.name:o.site)}</h3><p class="cnt">${it.map(v=>`<span>${spIcon(22,v.sp||'ceps')}${qTxt(v.sp||'ceps',v.n)}</span>`).join('')}</p>
+       ${X.amb&&dEdit!==key?`<p class="amb">Amb ${esc(X.amb)}</p>`:''}
+       ${o.notes.length?`<p class="nt">${o.notes.map(esc).join(' ')}</p>`:''}
+       ${dEdit===key?`<form class="namef" data-ambf="${key}"><input value="${esc(X.amb||'')}" maxlength="120" placeholder="L'Arnau, el Berni i…" aria-label="Amb qui hi vau anar"><button class="btn">Desa</button></form>`:''}
+       ${dMsg[key]?`<p class="small">${esc(dMsg[key])}</p>`:''}
+       <div class="memact"><button class="linkbtn" data-addph="${key}">+ Fotos</button>${dEdit===key?'':`<button class="linkbtn" data-ambed="${key}">${X.amb?'Amb qui':'+ Amb qui'}</button>`}<span class="spacer"></span>${s?`<button class="linkbtn" data-open="${s.id}" data-from="diari">${esc(s.name)} ›</button>`:''}</div></article>`}).join('')||'<p class="sub">Encara no hi ha cap sortida. Apunta-les des de cada lloc.</p>'}
+   <input type="file" id="phin" accept="image/*" multiple hidden>`;
+  const gf=$('#ghf');if(gf)gf.onsubmit=async ev=>{ev.preventDefault();const t=$('#ghi').value.trim();store.set('ghtok',t);$('#ghm').textContent='Comprovant…';
+    try{await GH.get('data/llocs.json');ghOpen=false;renderDiari()}catch(e){store.set('ghtok','');$('#ghm').textContent='Aquesta clau no funciona. Mira que tingui Contents: Read and write al repositori boletus.'}};
+  $('#s-diari').querySelectorAll('[data-ambf]').forEach(f=>f.onsubmit=ev=>{ev.preventDefault();saveAmb(f.dataset.ambf,f.querySelector('input').value.trim())});
+  const fi=$('#phin');fi.onchange=()=>{const k=fi.dataset.key;if(k&&fi.files.length)addPhotos(k,[...fi.files]);fi.value=''}}
+function lightbox(key,i){const F=(DIARI[key]||{}).fotos||[];if(!F.length)return;let n=i;
+  const el=document.createElement('div');el.className='lbox';const draw=()=>{el.innerHTML=`<img src="${LOCALPH[F[n]]||F[n]}" alt="">${F.length>1?`<span class="lbn">${n+1} / ${F.length}</span>`:''}`};draw();
+  el.onclick=ev=>{if(F.length>1&&ev.clientX>innerWidth/2&&n<F.length-1){n++;draw()}else if(F.length>1&&ev.clientX<innerWidth/3&&n>0){n--;draw()}else el.remove()};document.body.appendChild(el)}
 
 /* ---------- FITXA ---------- */
 let cur=null,calOff=0,selDay=null,form=null;
@@ -1133,13 +1198,18 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-gomap]')){show('mapa');return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
   if(e.target.closest('#howbtn')){show('com');return}
+  const zf=e.target.closest('[data-zoom]');if(zf){lightbox(zf.dataset.zoom,+zf.dataset.i);return}
+  const ap=e.target.closest('[data-addph]');if(ap){if(!GH.tok()){ghOpen=true;renderDiari();$('#ghcard').scrollIntoView({behavior:'smooth'});return}const fi=$('#phin');fi.dataset.key=ap.dataset.addph;fi.click();return}
+  const ae=e.target.closest('[data-ambed]');if(ae){if(!GH.tok()){ghOpen=true;renderDiari();$('#ghcard').scrollIntoView({behavior:'smooth'});return}dEdit=ae.dataset.ambed;renderDiari();const i=$('[data-ambf] input');if(i)i.focus();return}
   const o=e.target.closest('[data-open]');if(o){openSite(o.dataset.open,o.dataset.from);return}
   if(e.target.closest('[data-back]')){show(screen==='fitxa'?cur.from:lastTab);return}
   const dy=e.target.closest('[data-day]');if(dy){selDay=+dy.dataset.day;$('#s-fitxa').querySelectorAll('.day.sel').forEach(x=>x.classList.remove('sel'));dy.classList.add('sel');$('#daynote').innerHTML=dayNote(cur,selDay);return}
   const cb=e.target.closest('[data-cal]');if(cb&&!cb.disabled){calOff=Math.min(0,calOff+ +cb.dataset.cal);renderFitxa();return}
   if(e.target.closest('[data-newvisit]')){const now=new Date();form={d:dstr(TODAY),n:0,h:`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,est:[],nota:''};renderFitxa();return}
   if(e.target.closest('[data-cancel]')){form=null;renderFitxa();return}
-  if(e.target.closest('[data-save]')){visits.push({d:$('#fdate').value||dstr(TODAY),site:cur.id,sp:SP,n:form.n,h:$('#fh').value,est:form.est,nota:$('#fnota').value.trim()});saveVisits();form=null;renderFitxa();return}
+  if(e.target.closest('[data-save]')){const nv={d:$('#fdate').value||dstr(TODAY),site:cur.id,sp:SP,n:form.n,h:$('#fh').value,est:form.est,nota:$('#fnota').value.trim()};visits.push(nv);saveVisits();
+    // amb la clau de GitHub, la sortida també va al diari compartit (data/llocs.json)
+    if(GH.tok())GH.edit('data/llocs.json',d=>{d.visits=d.visits||[];if(!d.visits.some(v=>v.d===nv.d&&v.site===nv.site&&(v.sp||'ceps')===nv.sp&&v.n===nv.n))d.visits.push(nv);return d},`Sortida del ${nv.d}`).catch(()=>{});form=null;renderFitxa();return}
   if(e.target.closest('[data-showmap]')){const s=cur;L1.moved=true;show('mapa');setTimeout(()=>{map.invalidateSize();map.setView([s.lat,s.lng],15);pinCard(s)},60);return}
   const ah=e.target.closest('[data-addhere]');if(ah){const[la,lo]=ah.dataset.addhere.split(',').map(Number);
     $('#mapcard').innerHTML=`<strong>Lloc nou</strong><form id="addf" class="sheet"><div><label for="addn">Nom</label><input id="addn" maxlength="40" required style="font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px;width:100%;box-sizing:border-box"></div><button class="btn">Desa el lloc</button></form><p class="small">Es guarda en aquest mòbil.</p>`;
