@@ -202,6 +202,10 @@ html{touch-action:manipulation}
 .mode svg{width:34px;height:34px}
 .mode b{font-size:19px;line-height:1.1}
 .mode small{display:block;font-family:var(--f-body,inherit);font-size:12.5px;font-weight:600;opacity:.8;margin-top:3px}
+.mkt{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;font-size:14px;padding:10px 14px;border-radius:16px;border:1px dashed var(--line)}
+.mkt:empty{display:none}
+.muted{color:var(--muted);font-weight:500}
+.mkt .lbl{flex-basis:100%;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--muted)}
 .inilink{align-self:center;background:none;border:0;color:var(--muted);font-weight:700;text-decoration:underline;padding:6px}
 body[data-screen=inici] .spsw{display:none}
 .tabs nav{grid-template-columns:1fr 1fr 1fr!important}
@@ -628,13 +632,14 @@ function sheetInit(){
 function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#EBD73C,#6EBE3C,#147832);border-radius:4px"></i>Bolets ara: fluixa → bona</span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#EBD73C,#6EBE3C,#147832);border-radius:4px"></i>Bolets ara: fluixa → bona</span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
      <div class="mapctl">
        <button class="rbtn" data-onsoc aria-label="On sóc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
        <button class="rbtn" data-capes aria-expanded="false" aria-label="Capes i zones"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
      </div>
      <div class="laypanel" hidden>
        <strong>Què es veu</strong>
+       <button class="opt" data-lay="bosc" aria-pressed="true">És bosc? (fosc = no)</button>
        <button class="opt" data-lay="prob" aria-pressed="true">On hi ha bolets ara</button>
        <button class="opt" data-lay="spots" aria-pressed="true">10 millors spots</button>
        <button class="opt" data-lay="cares" aria-pressed="true">Cara nord / sud</button>
@@ -644,7 +649,7 @@ function buildMap(){
        <select id="goto"><option value="">Tria…</option>${ZONES.map(([n],i)=>`<option value="${i}">${n}</option>`).join('')}</select>
      </div>
      <div class="card msheet" id="mapcard"></div></div>
-   <p class="maphint">Els colors són on hi ha bolets ara: groc, tanda fluixa; verd clar, normal; verd fosc, bona. El lila és on en sortiran aviat. Es calcula amb la pluja i la temperatura de cada zona. Toca un número per veure un spot, una agulla per obrir un lloc vostre, o qualsevol punt per saber-ne la terra i la cara.</p>`;
+   <p class="maphint">El fosc no és bosc i la línia verda és la vora del bosc. Els colors són on hi ha bolets ara: groc, tanda fluixa; verd clar, normal; verd fosc, bona. El lila és on en sortiran aviat. Es calcula amb la pluja i la temperatura de cada zona. Toca un número per veure un spot, una agulla per obrir un lloc vostre, o qualsevol punt per saber-ne la terra i la cara.</p>`;
   map=L.map('map',{zoomAnimation:true,fadeAnimation:true,markerZoomAnimation:true,bounceAtZoomLimits:false,wheelPxPerZoomLevel:90,minZoom:8,maxZoom:18,maxBounds:[[40.3,-.2],[43.1,3.6]],maxBoundsViscosity:1});
   window.__map=map; // per poder-lo revisar des de la consola
   map.attributionControl.setPrefix(false).addAttribution('ICGC · Esri · Terrain Tiles · Open-Meteo');
@@ -657,6 +662,8 @@ function buildMap(){
   // Capes de colors en rajoles: el mòbil només carrega el tros que mira
   const BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
   region().then(R=>{const o={minZoom:8,maxZoom:18,maxNativeZoom:12,bounds:R.bounds,errorTileUrl:BLANK,keepBuffer:4};
+    if(!map.getPane('boscP')){map.createPane('boscP').style.zIndex=280}
+    L1.bosc=L.tileLayer('tiles/bosc/{z}/{x}/{y}.png',Object.assign({pane:'boscP'},o));
     L1.cares=L.tileLayer('tiles/cares/{z}/{x}/{y}.png',Object.assign({pane:'obsolP',opacity:.85},o));L1.acid=L.tileLayer('tiles/acid/{z}/{x}/{y}.png',Object.assign({pane:'acidP'},o));
     drawSpots(R);
     // Pobles de referència i les dues cases
@@ -668,7 +675,7 @@ function buildMap(){
       const html=lv===2?`<div class="casa" title="${n}">${homeSvg}</div>`:`<div class="town ${lv?'big':''}">${n}</div>`;
       L.marker([la,lo],{pane:'labels',interactive:false,keyboard:false,icon:L.divIcon({className:'',html,iconSize:lv===2?[20,20]:[160,22],iconAnchor:lv===2?[10,10]:[80,11]})}).addTo(L1.towns)})};
     drawTowns();map.on('zoomend',drawTowns);
-    const on=Object.assign({prob:true},store.get('capes',{cares:true,acid:true,spots:true}));L1.prob=L.layerGroup();['prob','cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()});drawProb()});
+    const on=Object.assign({prob:true,bosc:true},store.get('capes',{cares:true,acid:true,spots:true}));L1.prob=L.layerGroup();['bosc','prob','cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()});drawProb()});
   L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP',keepBuffer:4,updateWhenZooming:false}).addTo(map);
   map.on('moveend',()=>{clearTimeout(L1.mv);L1.mv=setTimeout(()=>{if(L1.spots)region().then(drawSpots)},250)});
   L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng]).concat([[41.1561,1.1069]])),{padding:[50,60],maxZoom:15});L1.fit();
@@ -676,8 +683,8 @@ function buildMap(){
   $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
     if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync()});
     L1.homeLayer=null;
-  map.on('click',onMapClick);sheetInit()}
-function legendSync(){if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob')}
+  map.on('click',onMapClick);map.on('zoomend',probFade);sheetInit();new MutationObserver(paintIcgc).observe($('#mapcard'),{childList:true})}
+function legendSync(){if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob');$('#k-bosc').hidden=$('#k-bosc2').hidden=!on('bosc')}
 /* ---------- On hi ha bolets ara, a tot Catalunya ----------
    data/grid_wx.json (es fa cada matí) té la pluja i la temperatura d'unes caselles d'11 km on hi ha boscos.
    A cada casella s'hi passa la mateixa regla i la mateixa força que als vostres llocs. */
@@ -700,7 +707,9 @@ async function drawProb(){
     const gr=g.createRadialGradient(x,y,0,x,y,rad);gr.addColorStop(0,col);gr.addColorStop(.55,col);gr.addColorStop(1,col.replace(/[\d.]+\)$/,'0)'));
     g.fillStyle=gr;g.fillRect(x-rad,y-rad,rad*2,rad*2)});
   if(!map.getPane('probP')){const pp=map.createPane('probP');pp.style.zIndex=275;pp.style.pointerEvents='none'}
-  L.imageOverlay(c.toDataURL(),[[la0,lo0],[la1,lo1]],{pane:'probP',opacity:.75,interactive:false}).addTo(L1.prob)}
+  L.imageOverlay(c.toDataURL(),[[la0,lo0],[la1,lo1]],{pane:'probP',opacity:.75,interactive:false}).addTo(L1.prob);probFade()}
+// de prop, la taca de colors es fa més transparent perquè es vegi el bosc (la casella fa 11 km: de prop no diu res de nou)
+function probFade(){const p=map.getPane('probP');if(p){const z=map.getZoom();p.style.opacity=z<=10?1:z===11?.7:z===12?.45:z===13?.25:0}}
 // Què diu la casella més propera d'un punt del mapa
 function probHere(la,lo){
   if(!GEV.length)return'';let best=null,bd=1e9;GEV.forEach(s=>{const d=distKm(la,lo,s.lat,s.lng);if(d<bd){bd=d;best=s}});
@@ -710,6 +719,26 @@ function probHere(la,lo){
     :s.cold?`Va ploure, però després ha fet ${s.cold.hot?'massa calor':'fred'}: no surten`:'Per aquí encara falta aigua';
   return `<p class="small" style="margin:2px 0 6px">${t}</p>`}
 window.__gev=()=>GEV;
+/* És bosc? El mapa ho pinta amb el Mapa de cobertes de l'ICGC; en tocar un punt, es torna a preguntar a l'ICGC (1 m) per contrastar-ho */
+let ICQ={h:''};
+function icgcNom(c){
+  const clar=/clars/i.test(c)?' clar':'';
+  if(/aciculif/i.test(c))return['go',`Sí, és bosc${clar}: pinar o altres coníferes`];
+  if(/esclerof/i.test(c))return['go',`Sí, és bosc${clar}: alzines o suros`];
+  if(/caducif/i.test(c))return['go',`Sí, és bosc${clar}: roures, faigs o castanyers`];
+  if(/^bosc|ribera/i.test(c))return['go','Sí, és bosc'];
+  if(/matollar/i.test(c))return['soon','Matollar: no és bosc, potser amb algun pi'];
+  return['no','No és bosc: '+c.charAt(0).toLowerCase()+c.slice(1)]}
+function icgcAt(la,lo){
+  ICQ={h:"Comprovant a l'ICGC si és bosc…"};
+  const x=lo*20037508.34/180,y=Math.log(Math.tan(Math.PI/4+la*Math.PI/360))*6378137,d=3;
+  fetch(`https://geoserveis.icgc.cat/servei/catalunya/cobertes-sol/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=cobertes_2023&QUERY_LAYERS=cobertes_2023&CRS=EPSG:3857&BBOX=${x-d},${y-d},${x+d},${y+d}&WIDTH=3&HEIGHT=3&I=1&J=1&INFO_FORMAT=text/plain&STYLES=`)
+    .then(r=>r.arrayBuffer()).then(b=>{let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(b)}catch(e){t=new TextDecoder('windows-1252').decode(b)}
+      const m=t.match(/class = '(.*)'\s*$/m);if(!m){ICQ.h="L'ICGC no té dades d'aquest punt (fora de Catalunya o al mar).";return}
+      const c=m[1].replace(/^[\d.]+\s*\(\d+\)\s*/,'').trim(),[k,txt]=icgcNom(c);
+      ICQ.h=`<b style="color:${k==='go'?'var(--go)':k==='soon'?'var(--soon)':'var(--muted)'}">${esc(txt)}</b> <span class="muted">· ICGC 2023, 1 m</span>`})
+    .catch(()=>{ICQ.h="No s'ha pogut preguntar a l'ICGC (sense connexió?)."}).finally(paintIcgc);paintIcgc()}
+function paintIcgc(){document.querySelectorAll('#mapcard [data-icgc]').forEach(e=>{if(e.innerHTML!==ICQ.h)e.innerHTML=ICQ.h})}
 let TOP=[];
 // Els 10 millors spots de l'espècie triada (cada espècie té les seves zones i la seva puntuació)
 // (km: distància a casa; ara 0, perquè els spots són els del tros de mapa que mires)
@@ -895,7 +924,8 @@ function onMapClick(e){
     if(drawLine)map.removeLayer(drawLine);drawLine=L.polyline(drawPts,{color:'#7A2E8E',weight:3}).addTo(map);$('#dfin').disabled=drawPts.length<3;return}
   const i=cellOf(e.latlng.lat,e.latlng.lng);setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   if(tap)map.removeLayer(tap);tap=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
-  const tools=probHere(e.latlng.lat,e.latlng.lng)+`<div class="row"><span class="coords">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmPt(e.latlng.lat,e.latlng.lng)}" target="_blank" rel="noopener">Google Maps</a><button class="btn ghost" data-addhere="${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}">Afegir lloc</button></div>`;
+  icgcAt(e.latlng.lat,e.latlng.lng);
+  const tools=`<p class="small icgc" data-icgc></p>`+probHere(e.latlng.lat,e.latlng.lng)+`<div class="row"><span class="coords">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</span><span class="spacer"></span><a class="btn ghost" href="${gmPt(e.latlng.lat,e.latlng.lng)}" target="_blank" rel="noopener">Google Maps</a><button class="btn ghost" data-addhere="${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}">Afegir lloc</button></div>`;
   if(i<0){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Mirant…</p>${tools}`;
     regInfo(e.latlng.lat,e.latlng.lng).then(ri=>{if(!ri){$('#mapcard').innerHTML=`<strong>Aquí</strong><p class="small">Fora de Catalunya o al mar: aquí no tinc roca ni cares, però la pluja sí que funciona.</p>${tools}`;return}
       const ar=['','pinar','alzinar o suredes','roureda','matolls','avellaners'][ri.tree]||'ni bosc ni matolls';
@@ -1058,7 +1088,17 @@ function renderInici(){
      <button class="mode" data-goinici="${x.k}" data-to="llocs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span><b>Els meus llocs</b><small>${x.n} ${x.n===1?'lloc':'llocs'} amb el calendari</small></span></button>
      <button class="mode alt" data-goinici="${x.k}" data-to="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span><b>Mapa</b><small>On hi ha bolets ara</small></span></button>
    </div>
-   <button class="inilink" data-howinici>Com funciona l'app</button></div>`}
+   <div class="mkt" id="mkt"></div>
+   <button class="inilink" data-howinici>Com funciona l'app</button></div>`;paintMkt()}
+// Preu a Mercabarna (es desa cada matí): el darrer dia i com ha anat aquella setmana
+let MKT=null;
+async function paintMkt(){
+  if(!MKT){try{MKT=await fetch('data/mercat.json',{cache:'no-cache'}).then(r=>r.json())}catch(e){MKT={dies:{}}}}
+  const ds=Object.keys(MKT.dies||{}).sort(),el=$('#mkt');if(!el||!ds.length)return;
+  const d=ds[ds.length-1],R=MKT.dies[d],nom=k=>/sense determinar/i.test(k)?'Bolets de bosc (barrejats)':k.replace(/^Bolets /,'').replace(/^./,c=>c.toUpperCase());
+  const ks=Object.keys(R).filter(k=>!/xampiny|g[ií]rgol/i.test(k));if(!ks.length)return;
+  const prev=ds.slice(0,-1).reverse().find(x=>MKT.dies[x][ks[0]]),tr=prev?R[ks[0]][0]-MKT.dies[prev][ks[0]][0]:0;
+  el.innerHTML=`<span class="lbl">Mercat · Mercabarna, ${fmt(dnum(d))}</span>${ks.map(k=>`<span><b>${esc(nom(k))}</b> ${R[k][0].toLocaleString('ca-ES')} €/kg <span class="muted">(${R[k][2]}–${R[k][1]})</span></span>`).join('')}${tr?`<span class="muted">${tr>0?'▲ ha pujat':'▼ ha baixat'} ${Math.abs(tr)} € des del ${fmt(dnum(prev))}</span>`:''}`}
 
 /* ---------- Navegació ---------- */
 let mapBuilt=false,lastTab='llocs',screen='llocs';
