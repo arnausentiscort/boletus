@@ -22,6 +22,7 @@ SPECIES = {
     'hiv': dict(nom="bolets d'hivern", mm=22, span=4, minT=3, maxT=15, wait=16, before=5, after=8, gap=5, months=[10, 11, 12, 1, 2],
                 forca=dict(mm=[10, 42], t=[-1, 3, 13, 17], mes={10: .5, 11: 1, 12: .9, 1: .5, 2: .2}, gel=.05)),
 }
+AVISA = {'ceps', 'rov'}  # els bolets d'hivern es calculen a l'app, però no avisen
 DIES = ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg']
 MESOS = ['gen', 'febr', 'març', 'abr', 'maig', 'juny', 'jul', 'ag', 'set', 'oct', 'nov', 'des']
 def fmt(d): return f"{DIES[d.weekday()]} {d.day} {MESOS[d.month - 1]}"
@@ -75,6 +76,7 @@ def main():
         days = [dt.date.fromisoformat(x) for x in d['daily']['time']]
         r = [v or 0 for v in d['daily']['precipitation_sum']]; t = d['daily']['temperature_2m_mean']; n = d['daily']['temperature_2m_min']
         for k, R in SPECIES.items():
+            if k not in AVISA: continue  # la família només busca ceps i rovellons
             if k not in s.get('sp', ['ceps']): continue  # cada lloc només avisa de les seves espècies
             last = -99
             for i in range(R['span'] - 1, len(days)):

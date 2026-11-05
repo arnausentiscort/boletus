@@ -60,7 +60,7 @@ body{background-image:radial-gradient(120% 60% at 50% -10%,var(--acc-soft),trans
 .spsw{display:flex;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:16px;padding:5px;margin:0 0 2px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;
   -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 10px,#000 calc(100% - 22px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 10px,#000 calc(100% - 22px),transparent 100%)}
 .spsw::-webkit-scrollbar{display:none}
-.spsw button{flex:none;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;border:0;background:transparent;color:var(--muted);font:800 14px var(--f-display);padding:7px 4px;border-radius:12px;cursor:pointer;transition:background .2s,color .2s,box-shadow .2s}
+.spsw button{flex:1 1 0;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;border:0;background:transparent;color:var(--muted);font:800 14px var(--f-display);padding:7px 4px;border-radius:12px;cursor:pointer;transition:background .2s,color .2s,box-shadow .2s}
 .spsw button svg{flex:none;transition:transform .25s;filter:saturate(.35) opacity(.7)}
 .spsw button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.25),inset 0 -3px 0 var(--acc)}
 .spsw button[aria-pressed=true] svg{transform:scale(1.12) rotate(-4deg);filter:none}
@@ -178,6 +178,9 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .mapkey{pointer-events:auto;cursor:pointer}
 .mapkey.mini span{display:none}
 .mapkey.mini::before{content:"Llegenda ▾";font-weight:700}
+.mview{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--line);border-radius:999px}
+.mview button{border:0;background:transparent;color:var(--muted);font:800 14px var(--f-display);padding:8px 4px;border-radius:999px}
+.mview button[aria-checked=true]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1.5px var(--acc)}
 .maphint{font-size:13px;color:var(--muted);text-align:center}
 /* Inici */
 .hero{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.hero .small{white-space:nowrap}
@@ -185,8 +188,8 @@ input[type=time],input[type=date],textarea{font:inherit;color:var(--ink);backgro
 .ini{display:flex;flex-direction:column;gap:12px}
 html{touch-action:manipulation}
 .segl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--muted);margin-bottom:-4px}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--line);border-radius:999px}
-.sq{position:relative;border:0;background:transparent;border-radius:999px;padding:6px 4px;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--muted);font-family:var(--f-display);font-weight:800;font-size:14px;min-width:0;line-height:1.05}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--line);border-radius:999px}
+.sq{position:relative;border:0;background:transparent;border-radius:999px;padding:8px 4px;font-size:16px!important;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--muted);font-family:var(--f-display);font-weight:800;font-size:14px;min-width:0;line-height:1.05}
 .sq svg{width:28px;height:28px;flex:none}
 .sq .nm{overflow:hidden;text-overflow:ellipsis}
 .sq .dot{position:absolute;top:5px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--go)}
@@ -206,6 +209,7 @@ html{touch-action:manipulation}
 .mkt:empty{display:none}
 .muted{color:var(--muted);font-weight:500}
 .mkt .lbl{flex-basis:100%;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.altres{font-size:13px;color:var(--muted);text-align:center;margin:-2px 0}
 .inilink{align-self:center;background:none;border:0;color:var(--muted);font-weight:700;text-decoration:underline;padding:6px}
 body[data-screen=inici] .spsw{display:none}
 .tabs nav{grid-template-columns:1fr 1fr 1fr!important}
@@ -449,7 +453,9 @@ function forca(s,w){const F=SPECIES[SP].forca;let mm=0;
   const v=Math.round(100*fp*ft*fm*fg);
   return{v,mm,fp,ft,fm,fg,gel,gn,nom:v>=60?'bona':v>=35?'normal':'fluixa'}}
 const forcaChip=f=>`<span class="fchip f-${f.nom}">Tanda ${f.nom} · ${f.v}</span>`;
-let SP=SPECIES[store.get('sp','ceps')]?store.get('sp','ceps'):'ceps';
+// La família només busca ceps i rovellons: els bolets d'hivern es continuen calculant, però no surten als selectors
+const SHOW=['ceps','rov'];
+let SP=SHOW.includes(store.get('sp','ceps'))?store.get('sp','ceps'):'ceps';
 const loadRule=()=>Object.assign({},SPECIES[SP].rule0,store.get(SPECIES[SP].key,{}));
 let RULE=loadRule();
 function evalSite(s){
@@ -631,8 +637,9 @@ function sheetInit(){
   $('#goto').onchange=e=>{const z=ZONES[+e.target.value];if(!z)return;L1.moved=true;map.setView([z[1],z[2]],z[3]);$('#s-mapa .laypanel').hidden=true;$('[data-capes]').setAttribute('aria-expanded','false');e.target.value=''}}
 function buildMap(){
   $('#s-mapa').innerHTML=`
+   <div class="mview" role="radiogroup" aria-label="Què vols veure"><button role="radio" data-view="ara" aria-checked="true">Bolets ara</button><button role="radio" data-view="terra" aria-checked="false">Terreny</button><button role="radio" data-view="foto" aria-checked="false">Només foto</button></div>
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#EBD73C,#6EBE3C,#147832);border-radius:4px"></i>Bolets ara: fluixa → bona</span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#F5D746,#F49628,#E24028);border-radius:4px"></i>Bolets ara: fluixa → bona</span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
      <div class="mapctl">
        <button class="rbtn" data-onsoc aria-label="On sóc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
        <button class="rbtn" data-capes aria-expanded="false" aria-label="Capes i zones"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
@@ -649,7 +656,7 @@ function buildMap(){
        <select id="goto"><option value="">Tria…</option>${ZONES.map(([n],i)=>`<option value="${i}">${n}</option>`).join('')}</select>
      </div>
      <div class="card msheet" id="mapcard"></div></div>
-   <p class="maphint">El fosc no és bosc i la línia verda és la vora del bosc. Els colors són on hi ha bolets ara: groc, tanda fluixa; verd clar, normal; verd fosc, bona. El lila és on en sortiran aviat. Es calcula amb la pluja i la temperatura de cada zona. Toca un número per veure un spot, una agulla per obrir un lloc vostre, o qualsevol punt per saber-ne la terra i la cara.</p>`;
+   <p class="maphint">El fosc no és bosc i la línia verda és la vora del bosc. Els colors són on hi ha bolets ara: groc, tanda fluixa; taronja, normal; vermell, bona. El lila és on en sortiran aviat. Es calcula amb la pluja i la temperatura de cada zona. Toca un número per veure un spot, una agulla per obrir un lloc vostre, o qualsevol punt per saber-ne la terra i la cara.</p>`;
   map=L.map('map',{zoomAnimation:true,fadeAnimation:true,markerZoomAnimation:true,bounceAtZoomLimits:false,wheelPxPerZoomLevel:90,minZoom:8,maxZoom:18,maxBounds:[[40.3,-.2],[43.1,3.6]],maxBoundsViscosity:1});
   window.__map=map; // per poder-lo revisar des de la consola
   map.attributionControl.setPrefix(false).addAttribution('ICGC · Esri · Terrain Tiles · Open-Meteo');
@@ -675,7 +682,7 @@ function buildMap(){
       const html=lv===2?`<div class="casa" title="${n}">${homeSvg}</div>`:`<div class="town ${lv?'big':''}">${n}</div>`;
       L.marker([la,lo],{pane:'labels',interactive:false,keyboard:false,icon:L.divIcon({className:'',html,iconSize:lv===2?[20,20]:[160,22],iconAnchor:lv===2?[10,10]:[80,11]})}).addTo(L1.towns)})};
     drawTowns();map.on('zoomend',drawTowns);
-    const on=Object.assign({prob:true,bosc:true},store.get('capes',{cares:true,acid:true,spots:true}));L1.prob=L.layerGroup();['bosc','prob','cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()});drawProb()});
+    const on=Object.assign({prob:true,bosc:true},store.get('capes',{cares:true,acid:true,spots:true}));L1.prob=L.layerGroup();['bosc','prob','cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()});drawProb();mapView(store.get('vista','ara'))});
   L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP',keepBuffer:4,updateWhenZooming:false}).addTo(map);
   map.on('moveend',()=>{clearTimeout(L1.mv);L1.mv=setTimeout(()=>{if(L1.spots)region().then(drawSpots)},250)});
   L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng]).concat([[41.1561,1.1069]])),{padding:[50,60],maxZoom:15});L1.fit();
@@ -683,7 +690,16 @@ function buildMap(){
   $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
     if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync()});
     L1.homeLayer=null;
+  $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>mapView(b.dataset.view));
   map.on('click',onMapClick);map.on('zoomend',probFade);sheetInit();new MutationObserver(paintIcgc).observe($('#mapcard'),{childList:true})}
+// Vistes: "Bolets ara" (és bosc + on n'hi ha + spots), "Terreny" (cares i terra + spots) i "Només foto"
+const VIEWS={ara:{bosc:1,prob:1,spots:1,cares:0,acid:0},terra:{bosc:0,prob:0,spots:1,cares:1,acid:1},foto:{bosc:0,prob:0,spots:0,cares:0,acid:0}};
+function mapView(v){if(!VIEWS[v])v='ara';store.set('vista',v);
+  Object.entries(VIEWS[v]).forEach(([k,on])=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);if(b&&(b.getAttribute('aria-pressed')==='true')!==!!on)b.click()});
+  $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-checked',b.dataset.view===v));
+  const h=$('.maphint');if(h)h.textContent=v==='ara'?"El fosc no és bosc. Els colors són on hi ha bolets ara: groc, tanda fluixa; taronja, normal; vermell, bona; lila, aviat. Els números són els 10 millors spots del que veus. Toca qualsevol punt per saber si és bosc."
+    :v==='terra'?"Blau, cara nord (obaga); taronja, cara sud (solana). "+(SP==='ceps'?'La vora lila és terra àcida, la que volen els ceps; el blanc, calcària.':'El blanc és terra calcària, la del rovelló.')+" Toca qualsevol punt per saber-ne més."
+    :"Foto aèria neta. Toca qualsevol punt per saber si és bosc."}
 function legendSync(){if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob');$('#k-bosc').hidden=$('#k-bosc2').hidden=!on('bosc')}
 /* ---------- On hi ha bolets ara, a tot Catalunya ----------
    data/grid_wx.json (es fa cada matí) té la pluja i la temperatura d'unes caselles d'11 km on hi ha boscos.
@@ -703,7 +719,7 @@ async function drawProb(){
   const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
   GEV.forEach(s=>{if(s.state==='wait')return;const v=s.win&&s.win.f?s.win.f.v:40;
     const q=P(s.lat,s.lng),x=(q.x-a.x)*K,y=(q.y-a.y)*K,rad=13*K;
-    const col=s.state==='soon'?'rgba(150,120,230,.6)':v>=60?'rgba(20,120,50,.85)':v>=35?'rgba(110,190,60,.7)':'rgba(235,215,60,.6)';
+    const col=s.state==='soon'?'rgba(150,120,230,.6)':v>=60?'rgba(226,64,40,.85)':v>=35?'rgba(244,150,40,.75)':'rgba(245,215,70,.65)';
     const gr=g.createRadialGradient(x,y,0,x,y,rad);gr.addColorStop(0,col);gr.addColorStop(.55,col);gr.addColorStop(1,col.replace(/[\d.]+\)$/,'0)'));
     g.fillStyle=gr;g.fillRect(x-rad,y-rad,rad*2,rad*2)});
   if(!map.getPane('probP')){const pp=map.createPane('probP');pp.style.zIndex=275;pp.style.pointerEvents='none'}
@@ -1069,7 +1085,7 @@ function spSummary(k){
   SP=keep;RULE=loadRule();SITES.forEach(evalSite);return r}
 let iniSel=null;
 function renderInici(){
-  const S=Object.keys(SPECIES).map(spSummary);
+  const S=SHOW.map(spSummary),H=spSummary('hiv');
   const reco=[...S].sort((a,b)=>b.pts-a.pts)[0];
   if(!iniSel||!SPECIES[iniSel])iniSel=reco.k;const x=S.find(v=>v.k===iniSel),N=SPECIES[x.k].nom;
   const st=v=>v.go?['go','Vés-hi']:v.soon?['soon','Aviat']:!v.mes?['','Fora de temporada']:['','Encara no'];
@@ -1082,14 +1098,14 @@ function renderInici(){
   $('#s-inici').innerHTML=`<div class="ini">
    <div class="hero"><h2>${hora<13?'Bon dia':hora<20?'Bona tarda':'Bona nit'}! Què busquem?</h2><span class="small">${d.toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short'})}</span></div>
    <span class="segl">Quin bolet?</span>
-   <div class="seg" role="radiogroup" aria-label="Quin bolet">${S.map(v=>`<button class="sq ${v.mes?'':'off'}" role="radio" data-k="${v.k}" data-inisel="${v.k}" aria-checked="${v.k===x.k}">${v.go||v.soon?`<i class="dot ${v.go?'':'soon'}"></i>`:''}${spIcon(28,v.k)}<span class="nm">${SPECIES[v.k].nom.replace("Bolets d'hivern","D'hivern")}</span></button>`).join('')}</div>
+   <div class="seg" role="radiogroup" aria-label="Quin bolet">${S.map(v=>`<button class="sq ${v.mes?'':'off'}" role="radio" data-k="${v.k}" data-inisel="${v.k}" aria-checked="${v.k===x.k}">${v.go||v.soon?`<i class="dot ${v.go?'':'soon'}"></i>`:''}${spIcon(28,v.k)}<span class="nm">${SPECIES[v.k].nom}</span></button>`).join('')}</div>
    <div class="inidet">${tag}${det0}</div>
    <div class="modes">
      <button class="mode" data-goinici="${x.k}" data-to="llocs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span><b>Els meus llocs</b><small>${x.n} ${x.n===1?'lloc':'llocs'} amb el calendari</small></span></button>
      <button class="mode alt" data-goinici="${x.k}" data-to="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span><b>Mapa</b><small>On hi ha bolets ara</small></span></button>
    </div>
-   <div class="mkt" id="mkt"></div>
-   <button class="inilink" data-howinici>Com funciona l'app</button></div>`;paintMkt()}
+   <p class="altres">Altres bolets (no els busquem): bolets d'hivern ${H.go?`a ${H.go} de ${H.n} llocs`:H.soon?'aviat':!H.mes?'fora de temporada':'encara no'}.</p>
+   <button class="inilink" data-howinici>Com funciona l'app</button></div>`}
 // Preu a Mercabarna (es desa cada matí): el darrer dia i com ha anat aquella setmana
 let MKT=null;
 async function paintMkt(){
@@ -1120,7 +1136,7 @@ function setSpecies(k){
   if(mapBuilt)drawPins();
   if(mapBuilt){if(tap){map.removeLayer(tap);tap=null}$('#mapcard').innerHTML='';region().then(drawSpots);drawProb()}
   if(screen==='fitxa')renderFitxa();else show(screen)}
-$('#spsw').innerHTML=Object.keys(SPECIES).map(k=>`<button data-sp="${k}" aria-pressed="${k===SP}">${spIcon(24,k)}${SPECIES[k].chip}</button>`).join('');
+$('#spsw').innerHTML=SHOW.map(k=>`<button data-sp="${k}" aria-pressed="${k===SP}">${spIcon(24,k)}${SPECIES[k].chip}</button>`).join('');
 setSpecies(SP);
 document.addEventListener('click',e=>{
   const spb=e.target.closest('[data-sp]');if(spb){setSpecies(spb.dataset.sp);return}
