@@ -112,6 +112,12 @@ def main():
         sol = min(x[3] for x in llocs)
         cos = NL.join(f"{nm} · tanda {nom} ({v}/100)" for nm, v, nom, _ in sorted(llocs, key=lambda x: -x[1]))
         send(f"Demà és el millor dia de {SPECIES[k]['nom']}", f"Surt el sol a les {sol}. Com més d'hora, millor.{NL}{cos}", 'mushroom'); sent += 1
+    # Avís de temporada: un missatge els dies que canvia l'època (pesos del mes de la força de cada espècie)
+    TEMP = {(9, 1): ('Comença la temporada', "Setembre: ceps i rovellons fins a novembre. Quan plogui prou als vostres llocs, us avisaré."),
+            (10, 1): ('Octubre, el millor mes', "És el millor mes per als ceps i per als rovellons."),
+            (11, 20): ('La temporada s\'acaba', "Amb el fred en sortiran pocs més. Si plou i no glaça, encara pot sortir alguna tanda.")}
+    if (today.month, today.day) in TEMP:
+        t, m = TEMP[(today.month, today.day)]; send(t, m, 'calendar'); sent += 1
     if '--prova' in sys.argv:
         send('Boletus funciona', "Els avisos estan activats. Rebràs un missatge quan plogui prou als vostres boscos.", 'white_check_mark')
     print('avisos enviats:', sent)

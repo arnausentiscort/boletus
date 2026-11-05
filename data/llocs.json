@@ -97,6 +97,17 @@
     "rov",
     "hiv"
    ]
+  },
+  {
+   "id": "lin",
+   "name": "Artiga de Lin",
+   "muni": "Vielha e Mijaran",
+   "lat": 42.676569,
+   "lng": 0.787566,
+   "sp": [
+    "rov",
+    "ceps"
+   ]
   }
  ],
  "visits": [
@@ -133,6 +144,24 @@
    "h": "15:00",
    "est": [],
    "nota": "L'Arnau sol, dissabte a la tarda. 13 dies després de la pluja del 18-19 d'oct. (46 l), un dia abans de la finestra."
+  },
+  {
+   "d": "2024-09-27",
+   "site": "lin",
+   "sp": "rov",
+   "n": 40,
+   "h": "",
+   "est": [],
+   "nota": "Uns 40 rovellons, a prop de Vielha."
+  },
+  {
+   "d": "2024-09-27",
+   "site": "lin",
+   "sp": "ceps",
+   "n": 1,
+   "h": "",
+   "est": [],
+   "nota": "Un sol cep, amb els rovellons."
   }
  ]
 }
