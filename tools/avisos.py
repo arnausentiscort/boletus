@@ -78,6 +78,8 @@ def main():
         for k, R in SPECIES.items():
             if k not in AVISA: continue  # la família només busca ceps i rovellons
             if k not in s.get('sp', ['ceps']): continue  # cada lloc només avisa de les seves espècies
+            if k == 'rov':  # rovellons de muntanya: surten més tard i duren més (com a l'app)
+                dl = min(10, max(0, round((s.get('alt', 0) - 700) / 80))); R = dict(R, wait=R['wait'] + dl, after=R['after'] + math.ceil(dl / 2))
             last = -99
             for i in range(R['span'] - 1, len(days)):
                 if days[i] > yesterday: break  # només dies ja acabats

@@ -499,7 +499,12 @@ function evalSite(s){
   s.bolet=d=>out.some(w=>d>=w.a&&d<=w.b);
   out.forEach(w=>w.f=forca(s,w));cold.forEach(w=>w.f=forca(s,w));
   s.peak=d=>out.some(w=>w.peak===d)}
-SITES.forEach(evalSite);
+// Rovellons de muntanya: com més amunt, més fred, i surten més tard i aguanten més.
+// Ajustat amb l'Artiga de Lin (1.260 m): la regla de pinar baix deia del 8 al 18 de setembre i n'hi havia el 27.
+const altDelay=a=>a==null?0:Math.min(10,Math.max(0,Math.round((a-700)/80)));
+function evalAt(s){const d=SP==='rov'?altDelay(s.alt):0;if(!d){evalSite(s);return}
+  const keep=RULE;RULE=Object.assign({},keep,{wait:keep.wait+d,after:keep.after+Math.ceil(d/2)});try{evalSite(s)}finally{RULE=keep}}
+SITES.forEach(evalAt);
 window.__boletus={SITES,evalSite}; // per revisar des de la consola
 const STATE={go:['s-go','Ara'],soon:['s-soon','Aviat'],wait:['s-wait','Encara no']};
 const chip=s=>`<span class="chip ${STATE[s.state][0]}">${STATE[s.state][1]}</span>`;
@@ -734,7 +739,7 @@ function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mview" role="radiogroup" aria-label="Què vols veure"><button role="radio" data-view="ara" aria-checked="true">Bolets ara</button><button role="radio" data-view="terra" aria-checked="false">Terreny</button><button role="radio" data-view="foto" aria-checked="false">Foto</button></div>
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#F5D746,#F49628,#E24028);border-radius:4px"></i>Bolets ara: fluixa → bona</span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#F5D746,#F49628,#E24028);border-radius:4px"></i><b id="k-prob-t" style="font-weight:inherit">Tanda: fluixa → bona</b></span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
      <div class="mapctl">
        <button class="rbtn" data-onsoc aria-label="On sóc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
        <button class="rbtn" data-capes aria-expanded="false" aria-label="Capes i zones"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
@@ -792,10 +797,10 @@ const VIEWS={ara:{bosc:1,prob:1,spots:1,cares:0,acid:0},terra:{bosc:0,prob:0,spo
 function mapView(v){if(!VIEWS[v])v='ara';store.set('vista',v);
   Object.entries(VIEWS[v]).forEach(([k,on])=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);if(b&&(b.getAttribute('aria-pressed')==='true')!==!!on)b.click()});
   $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-checked',b.dataset.view===v));
-  const h=$('.maphint');if(h)h.innerHTML=v==='ara'?'Fosc, no és bosc. <b style="color:#E2A51E">Groc</b> → <b style="color:#E24028">vermell</b>: de tanda fluixa a bona. <b style="color:#9678E6">Lila</b>, aviat.'
+  const h=$('.maphint');if(h)h.innerHTML=v==='ara'?`Color només on hi ha ${SP==='ceps'?'roures, alzines o avellaners en terra àcida':'pinar'}. <b style="color:#E2A51E">Groc</b> → <b style="color:#E24028">vermell</b>: tanda fluixa → bona, per la pluja i la temperatura. <b style="color:#9678E6">Lila</b>, aviat.`
     :v==='terra'?'<b style="color:var(--obaga)">Blau</b>, cara nord. <b style="color:var(--solana)">Taronja</b>, cara sud. '+(SP==='ceps'?'Vora lila, terra àcida.':'Blanc, calcària.')
     :'Toca qualsevol punt per saber què hi ha.'}
-function legendSync(){if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob');$('#k-bosc').hidden=$('#k-bosc2').hidden=!on('bosc')}
+function legendSync(){if($('#k-prob-t'))$('#k-prob-t').textContent=(SP==='ceps'?'Bosc de ceps':'Pinar')+': fluixa → bona';if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob');$('#k-bosc').hidden=$('#k-bosc2').hidden=!on('bosc')}
 /* ---------- On hi ha bolets ara, a tot Catalunya ----------
    data/grid_wx.json (es fa cada matí) té la pluja i la temperatura d'unes caselles d'11 km on hi ha boscos.
    A cada casella s'hi passa la mateixa regla i la mateixa força que als vostres llocs. */
@@ -803,24 +808,29 @@ let GWX=null,GSITES=null,GEV=[];
 async function gridSites(){
   if(!GWX){try{GWX=await fetch('data/grid_wx.json',{cache:'no-cache'}).then(r=>r.json())}catch(e){GWX={c:[]}}}
   if(!GSITES){const st=GWX.start?dnum(GWX.start):0,f=a=>a.map(v=>v==null?null:v/10);
-    GSITES=GWX.c.map(([lat,lng,ob,sp,r,t,n],i)=>{const R=f(r);return{id:'g'+i,lat,lng,sp,zone:{st:{obaga:ob}},ser:{start:st,r:R,t:f(t),n:f(n),end:st+R.length-1}}})}
+    GSITES=GWX.c.map(([lat,lng,ob,sp,r,t,n,alt],i)=>{const R=f(r);return{id:'g'+i,lat,lng,sp,alt,zone:{st:{obaga:ob}},ser:{start:st,r:R,t:f(t),n:f(n),end:st+R.length-1}}})}
   return GSITES}
 async function drawProb(){
   if(!L1.prob)return;const G=await gridSites();L1.prob.clearLayers();
-  const want=SP==='ceps'?'ceps':'pin';GEV=G.filter(g=>g.sp.includes(want));GEV.forEach(evalSite);
-  if(!GEV.length)return;
-  const Z=8,C=(GWX.cell||.1),la0=Math.min(...GEV.map(g=>g.lat))-C,la1=Math.max(...GEV.map(g=>g.lat))+C,lo0=Math.min(...GEV.map(g=>g.lng))-C,lo1=Math.max(...GEV.map(g=>g.lng))+C;
-  const P=(la,lo)=>map.project([la,lo],Z),a=P(la1,lo0),b=P(la0,lo1),K=2,w=Math.ceil((b.x-a.x)*K),h=Math.ceil((b.y-a.y)*K);
-  const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
-  GEV.forEach(s=>{if(s.state==='wait')return;const v=s.win&&s.win.f?s.win.f.v:40;
-    const q=P(s.lat,s.lng),x=(q.x-a.x)*K,y=(q.y-a.y)*K,rad=13*K;
-    const col=s.state==='soon'?'rgba(150,120,230,.6)':v>=60?'rgba(226,64,40,.85)':v>=35?'rgba(244,150,40,.75)':'rgba(245,215,70,.65)';
-    const gr=g.createRadialGradient(x,y,0,x,y,rad);gr.addColorStop(0,col);gr.addColorStop(.55,col);gr.addColorStop(1,col.replace(/[\d.]+\)$/,'0)'));
-    g.fillStyle=gr;g.fillRect(x-rad,y-rad,rad*2,rad*2)});
-  if(!map.getPane('probP')){const pp=map.createPane('probP');pp.style.zIndex=275;pp.style.pointerEvents='none'}
-  L.imageOverlay(c.toDataURL(),[[la0,lo0],[la1,lo1]],{pane:'probP',opacity:.75,interactive:false}).addTo(L1.prob);probFade()}
-// de prop, la taca de colors es fa més transparent perquè es vegi el bosc (la casella fa 11 km: de prop no diu res de nou)
-function probFade(){const p=map.getPane('probP');if(p){const z=map.getZoom();p.style.opacity=z<=10?1:z===11?.7:z===12?.45:z===13?.25:0}}
+  const want=SP==='ceps'?'ceps':'pin',msk=SP==='ceps'?'ceps':'rov';GEV=G.filter(g=>g.sp.includes(want));GEV.forEach(evalAt);
+  const val=s=>s.state==='soon'?-1:s.win&&s.win.f?s.win.f.v:40;
+  const live=GEV.filter(s=>s.state!=='wait').sort((a,b)=>val(a)-val(b));if(!live.length)return;
+  const colOf=s=>{const v=val(s);return s.state==='soon'?'rgba(150,120,230,.75)':v>=60?'rgba(226,64,40,.9)':v>=35?'rgba(244,150,40,.85)':'rgba(245,215,70,.8)'};
+  if(!map.getPane('probP')){const pp=map.createPane('probP');pp.style.zIndex=282;pp.style.pointerEvents='none'}
+  // Cada rajola: el color de les caselles del voltant, retallat amb la màscara del bosc que toca (pinar o bosc de ceps)
+  const PL=L.GridLayer.extend({createTile(c,done){
+    const t=document.createElement('canvas');t.width=t.height=256;const g=t.getContext('2d'),z=c.z,o=c.scaleBy(L.point(256,256));
+    const rad=7000/(156543.03*Math.cos(41.7*Math.PI/180)/2**z);let any=false;
+    live.forEach(s=>{const p=map.project([s.lat,s.lng],z).subtract(o);if(p.x<-rad||p.y<-rad||p.x>256+rad||p.y>256+rad)return;any=true;
+      const col=colOf(s),gr=g.createRadialGradient(p.x,p.y,0,p.x,p.y,rad);gr.addColorStop(0,col);gr.addColorStop(.6,col);gr.addColorStop(1,col.replace(/[\d.]+\)$/,'0)'));
+      g.fillStyle=gr;g.fillRect(p.x-rad,p.y-rad,2*rad,2*rad)});
+    if(!any){setTimeout(()=>done(null,t));return t}
+    const mz=Math.min(z,12),k=2**(z-mz),mx=Math.floor(c.x/k),my=Math.floor(c.y/k),im=new Image();
+    im.onload=()=>{g.globalCompositeOperation='destination-in';const sw=256/k;g.drawImage(im,(c.x-mx*k)*sw,(c.y-my*k)*sw,sw,sw,0,0,256,256);done(null,t)};
+    im.onerror=()=>{g.clearRect(0,0,256,256);done(null,t)};im.src=`tiles/mask_${msk}/${mz}/${mx}/${my}.png`;return t}});
+  L1.prob.addLayer(new PL({pane:'probP',minZoom:8,maxZoom:18,keepBuffer:2,updateWhenZooming:false}));probFade()}
+// el color ja només és dins del bosc: de prop es fa una mica transparent perquè es vegi la foto
+function probFade(){const p=map.getPane('probP');if(p){const z=map.getZoom();p.style.opacity=z<=13?.9:z<=15?.7:.55}}
 // Què diu la casella més propera d'un punt del mapa
 function probHere(la,lo){
   if(!GEV.length)return'';let best=null,bd=1e9;GEV.forEach(s=>{const d=distKm(la,lo,s.lat,s.lng);if(d<bd){bd=d;best=s}});
@@ -1049,7 +1059,7 @@ function startDraw(id){
   const end=()=>{drawing=null;drawMarks.forEach(m=>map.removeLayer(m));drawMarks=[];if(drawLine)map.removeLayer(drawLine);drawLine=null};
   $('#dcan').onclick=()=>{end();$('#mapcard').innerHTML=''};
   $('#dfin').onclick=()=>{const s=SITES.find(x=>x.id===drawing);zones[s.id]=drawPts.slice();store.set('zones',zones);end();
-    s.zone={kind:'poly',st:polyStats(zones[s.id])};evalSite(s);drawPins();pinCard(s)}}
+    s.zone={kind:'poly',st:polyStats(zones[s.id])};evalAt(s);drawPins();pinCard(s)}}
 let REG=null;const REGS={};
 async function region(){const k=SPECIES[SP].region;if(!REGS[k]){try{REGS[k]=await j(k)}catch(e){REGS[k]={zones:[],bounds:META.bounds,home:{nom:'Torredembarra',lat:41.14616,lng:1.39595}}}}return REG=REGS[k]}
 async function toggleSim(btn,on){
@@ -1163,8 +1173,8 @@ function renderCom(){
      ${[['mm','Pluja mínima','l',10,80],['span','En quants dies','dies',1,7],['minT','Temperatura mínima després de la pluja','°C',0,22],...(RULE.maxT!=null?[['maxT','Temperatura màxima després de la pluja','°C',8,28]]:[]),['wait','Millor dia (dies després de la pluja)','dies',5,30],['before','Marge abans','dies',0,7],['after','Marge després','dies',0,10],['obagaBonus','Dies extra si és obaga','dies',0,6]]
        .map(([k,l,u,a,b])=>`<div class="slider"><label for="r-${k}">${l}</label><output id="o-${k}">${RULE[k]} ${u}</output><input type="range" id="r-${k}" data-k="${k}" data-u="${u}" min="${a}" max="${b}" value="${RULE[k]}"></div>`).join('')}
      <button class="btn ghost" id="rreset" style="align-self:flex-start">Tornar a la regla provisional</button></div>`;
-  $('#s-com').querySelectorAll('input[data-k]').forEach(inp=>inp.oninput=()=>{RULE[inp.dataset.k]=+inp.value;$('#o-'+inp.dataset.k).textContent=inp.value+' '+inp.dataset.u;store.set(SPECIES[SP].key,RULE);SITES.forEach(evalSite)});
-  $('#rreset').onclick=()=>{store.set(SPECIES[SP].key,{});RULE=loadRule();SITES.forEach(evalSite);renderCom()}}
+  $('#s-com').querySelectorAll('input[data-k]').forEach(inp=>inp.oninput=()=>{RULE[inp.dataset.k]=+inp.value;$('#o-'+inp.dataset.k).textContent=inp.value+' '+inp.dataset.u;store.set(SPECIES[SP].key,RULE);SITES.forEach(evalAt)});
+  $('#rreset').onclick=()=>{store.set(SPECIES[SP].key,{});RULE=loadRule();SITES.forEach(evalAt);renderCom()}}
 
 /* ---------- Navegació ---------- */
 let mapBuilt=false,lastTab='llocs',screen='llocs';
@@ -1179,7 +1189,7 @@ function show(t){
   if(t==='buscar')renderBuscar();
   window.scrollTo(0,0)}
 function setSpecies(k){
-  if(!SPECIES[k])return;SP=k;store.set('sp',k);RULE=loadRule();SITES.forEach(evalSite);form=null;
+  if(!SPECIES[k])return;SP=k;store.set('sp',k);RULE=loadRule();SITES.forEach(evalAt);form=null;
   document.querySelectorAll('[data-sp]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sp===k));
   document.documentElement.dataset.species=k;
   if(mapBuilt)drawPins();
