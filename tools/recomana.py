@@ -80,6 +80,23 @@ def avalua(R, k, days, r, t, n, alt, obaga, today):
         last = i
     return out, dl
 
+def bosc_real(la, lo, sp):
+    """El centre d'una taca de bosc pot caure en un poble: es porta al punt de bosc (no de vora) més proper, amb la màscara de l'app."""
+    from PIL import Image
+    n = 4096; fx = (lo + 180) / 360 * n; fy = (1 - math.asinh(math.tan(math.radians(la))) / math.pi) / 2 * n; x, y = int(fx), int(fy)
+    try: A = Image.open(f"tiles/mask_{'ceps' if sp == 'ceps' else 'rov'}/12/{x}/{y}.png").convert('LA').split()[1].load()
+    except OSError: return None
+    px, py = (fx - x) * 256, (fy - y) * 256; best = None
+    ok = lambda i, j: 0 <= i < 256 and 0 <= j < 256 and A[i, j] >= 200
+    for j in range(256):
+        for i in range(256):
+            if not ok(i, j): continue
+            dd = (i + .5 - px) ** 2 + (j + .5 - py) ** 2
+            if best and dd >= best[0]: continue
+            if sum(ok(i + a, j + b) for a in range(-2, 3) for b in range(-2, 3)) >= 22: best = (dd, i, j)
+    if not best or best[0] > 1600: return None
+    return (math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (y + (best[2] + .5) / 256) / n)))), (x + (best[1] + .5) / 256) / n * 360 - 180)
+
 def lloc_nom(la, lo):
     """Nom del lloc (poble o paratge) amb el cercador d'OpenStreetMap."""
     r = subprocess.run(['curl', '-sfL', '--max-time', '30', '-A', 'boletus/1.0 (github.com/arnausentiscort/boletus)',
@@ -155,6 +172,8 @@ def main():
     for z in cand: z['_n'] = (z['_w']['v'] if z['_w'] else -1) + 4 * z['_t'] - z['_km'] / 10
     top = sorted(cand, key=lambda z: -z['_n'])[:a.n]
     for z in top:
+        b = bosc_real(z['lat'], z['lng'], a.sp)
+        if b: z['lat'], z['lng'] = b
         z['_p'] = aparcar(z['lat'], z['lng']); z['_nom'] = lloc_nom(z['lat'], z['lng'])
         z['_reg'] = [t for (s, n_, w, e), t in REGULADES if s <= z['lat'] <= n_ and w <= z['lng'] <= e]
     if a.json:

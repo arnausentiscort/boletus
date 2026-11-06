@@ -223,6 +223,10 @@ button.site:active{background:var(--surface2)}
 .lbox{position:fixed;inset:0;z-index:3000;background:rgba(8,10,6,.94);display:grid;place-items:center;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
 .lbox img{max-width:100%;max-height:100%;object-fit:contain}
 .lbn{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#ddd;font:500 13px var(--f-data)}
+.planbtn{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:1px solid var(--line);background:linear-gradient(120deg,var(--acc-soft),transparent 70%),var(--surface);border-radius:18px;padding:12px 16px;color:var(--ink)}
+.planbtn b{font:800 17px var(--f-display)}.planbtn span{font-size:13px;color:var(--muted)}
+.mem.plan p{font-size:15px}.mem.plan .acts .btn{flex:1 1 auto;text-align:center}
+.parkp{width:26px;height:26px;border-radius:7px;background:#2F67A6;color:#fff;font:800 15px/22px var(--f-display);text-align:center;border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.5)}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px 18px;margin:0;padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:20px;font-size:15px}
 .facts dt{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
 .facts dd{margin:0}
@@ -322,6 +326,7 @@ button.site:active{background:var(--surface2)}
   <section class="screen" id="s-mapa" hidden></section>
   <section class="screen" id="s-com" hidden></section>
   <section class="screen" id="s-buscar" hidden></section>
+  <section class="screen" id="s-plan" hidden></section>
 </div>
 <div class="tabs"><nav role="tablist">
   <button role="tab" data-t="llocs" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Els meus llocs</button>
@@ -570,7 +575,8 @@ function renderLlocs(){
        <span class="nm"><span>${esc(s.name)}</span></span><span class="when">${s.state!=='wait'&&s.win.f?`<b class="nota n-${s.win.f.nom}" title="Nota de la tanda">${s.win.f.v}</b>`:''}${w}</span>
        <span class="mu">${esc(s.muni||'')}${lv?`${s.muni?' · ':''}última, ${fmt(dnum(lv.d))}`:''}</span><span class="st">${why}</span>
        ${stripHtml(s)}</button>`}).join('')}</div>
-   <p class="foot">Tres setmanes, avui marcat. <i class="k" style="background:var(--go)"></i>millor dia <i class="k" style="background:var(--go-soft);box-shadow:inset 0 0 0 1.5px var(--go)"></i>bolets <i class="k" style="background:var(--rain);border-radius:50%"></i>pluja<br>${esc(wxInfo)}</p>`}
+   <p class="foot">Tres setmanes, avui marcat. <i class="k" style="background:var(--go)"></i>millor dia <i class="k" style="background:var(--go-soft);box-shadow:inset 0 0 0 1.5px var(--go)"></i>bolets <i class="k" style="background:var(--rain);border-radius:50%"></i>pluja<br>${esc(wxInfo)}</p>
+   <button class="planbtn" data-goplan><b>Pla del cap de setmana</b><span>Boscos nous, on aparcar i què pentinar ›</span></button>`}
 
 const AVIS_TEMA='boletus-ceps-x7q2';
 
@@ -642,6 +648,96 @@ function renderDiari(){
 function lightbox(key,i){const F=(DIARI[key]||{}).fotos||[];if(!F.length)return;let n=i;
   const el=document.createElement('div');el.className='lbox';const draw=()=>{el.innerHTML=`<img src="${LOCALPH[F[n]]||F[n]}" alt="">${F.length>1?`<span class="lbn">${n+1} / ${F.length}</span>`:''}`};draw();
   el.onclick=ev=>{if(F.length>1&&ev.clientX>innerWidth/2&&n<F.length-1){n++;draw()}else if(F.length>1&&ev.clientX<innerWidth/3&&n>0){n--;draw()}else el.remove()};document.body.appendChild(el)}
+
+/* ---------- PLA DEL CAP DE SETMANA: on anar, on aparcar i què pentinar ----------
+   El mateix que tools/recomana.py, però al mòbil: es busca el lloc, s'agafen els millors boscos de terreny en el radi,
+   se'n baixa la pluja, s'hi passa la regla (amb el retard de muntanya) i, per als 3 millors, on aparcar (OpenStreetMap). */
+const wkend=()=>{const w=D(TODAY).getUTCDay();if(w===6)return[TODAY,TODAY+1];if(w===0)return[TODAY];const s=TODAY+(6-w);return[s,s+1]};
+let PLAN=Object.assign({q:'Reus',km:40},store.get('pla',{}),{days:wkend(),res:null,msg:'',pt:null,busy:false});
+const rumbTxt=(a,b,c,d)=>['nord','nord-est','est','sud-est','sud','sud-oest','oest','nord-oest'][Math.round(((Math.atan2(Math.sin((d-b)*Math.PI/180)*Math.cos(c*Math.PI/180),Math.cos(a*Math.PI/180)*Math.sin(c*Math.PI/180)-Math.sin(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.cos((d-b)*Math.PI/180))*180/Math.PI)+360)%360/45)%8];
+const REGULADES=[[41.85,42.22,1.20,1.80,'Solsonès: cal el permís de recol·lecció de bolets.'],[41.33,41.40,.99,1.10,"Bosc de Poblet (paratge natural): mira'n les normes abans de collir."]];
+async function planGeo(q){
+  const g=await j('https://geocoding-api.open-meteo.com/v1/search?'+new URLSearchParams({name:q,count:10,language:'ca',countryCode:'ES'}));
+  const r=(g.results||[]).filter(x=>/Catalu|Catalonia/.test(x.admin1||''));const p=(r.length?r:g.results||[])[0];
+  if(!p)throw new Error(`No trobo «${q}».`);return{lat:p.latitude,lng:p.longitude,name:p.name}}
+// fetch amb límit de temps: si un servei no respon, el pla surt igualment (sense aparcament o sense nom)
+const tfetch=(u,o,ms)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);return fetch(u,Object.assign({signal:c.signal},o||{})).finally(()=>clearTimeout(t))};
+const OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+// El centre d'una taca de bosc pot caure en un poble o un camp: es porta al punt de bosc de veritat més proper
+// (dins del bosc, no a la vora), amb la màscara de 38 m de l'ICGC
+async function snapForest(la,lo){const n=4096,fx=(lo+180)/360*n,fy=(1-Math.asinh(Math.tan(la*Math.PI/180))/Math.PI)/2*n,x=Math.floor(fx),y=Math.floor(fy);
+  const d=await new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0);res(g.getImageData(0,0,256,256).data)};
+    im.onerror=()=>res(null);im.src=`tiles/mask_${SP==='ceps'?'ceps':'rov'}/12/${x}/${y}.png`});
+  if(!d)return null;const px=(fx-x)*256,py=(fy-y)*256,A=(i,j)=>i<0||j<0||i>255||j>255?0:d[(j*256+i)*4+3];let best=null;
+  for(let j=0;j<256;j++)for(let i=0;i<256;i++){if(A(i,j)<200)continue;const dd=(i+.5-px)**2+(j+.5-py)**2;if(best&&dd>=best[0])continue;
+    let k=0;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(A(i+a,j+b)>=200)k++;if(k>=22)best=[dd,i,j]}
+  if(!best||best[0]>40*40)return null;
+  return{lng:(x+(best[1]+.5)/256)/n*360-180,lat:Math.atan(Math.sinh(Math.PI*(1-2*(y+(best[2]+.5)/256)/n)))*180/Math.PI}}
+async function planPark(la,lo){
+  const q=`[out:json][timeout:40];(nwr["amenity"="parking"](around:2000,${la},${lo});way["highway"~"^(tertiary|unclassified|residential|service|track)$"]["access"!~"^(private|no)$"]["motor_vehicle"!~"^(private|no)$"](around:1500,${la},${lo}););out center tags geom;`;
+  let d=null;for(const u of OVERPASS){try{d=await tfetch(u,{method:'POST',body:new URLSearchParams({data:q})},12000).then(r=>{if(!r.ok)throw 0;return r.json()});break}catch(e){}}
+  if(!d)return null;
+  let best=null;(d.elements||[]).forEach(e=>{const t=e.tags||{};let c;
+    if(t.amenity==='parking'){if(['private','no','customers'].includes(t.access))return;const p=e.center||{lat:e.lat,lon:e.lon};if(p.lat==null)return;
+      const k=distKm(la,lo,p.lat,p.lon);c=[k-.6,p.lat,p.lon,'aparcament'+(t.name?` «${t.name}»`:''),k]}
+    else{const hw=t.highway;if(hw==='track'&&!['grade1','grade2',undefined].includes(t.tracktype))return;const pts=e.geometry||[];if(!pts.length)return;
+      const p=pts.reduce((a,b)=>distKm(la,lo,a.lat,a.lon)<distKm(la,lo,b.lat,b.lon)?a:b),k=distKm(la,lo,p.lat,p.lon),nm=t.name||t.ref||'';
+      c=[k+(hw==='track'?.35:0),p.lat,p.lon,(hw==='track'?'pista':hw==='service'?'camí asfaltat':'carretera')+(nm?' '+nm:''),k]}
+    if(!best||c[0]<best[0])best=c});
+  return best&&{lat:best[1],lng:best[2],que:best[3],km:best[4]}}
+async function planNom(la,lo){try{const a=(await tfetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${la}&lon=${lo}&zoom=14&accept-language=ca`,{},8000).then(r=>r.json())).address||{};
+  return a.village||a.town||a.hamlet||a.municipality||a.city||''}catch(e){return''}}
+async function planRun(){
+  if(PLAN.busy)return;PLAN.busy=true;PLAN.res=null;PLAN.msg='Buscant el lloc…';renderPlan();
+  try{
+    const P=PLAN.pt||await planGeo(PLAN.q);PLAN.from=P;store.set('pla',{q:PLAN.q,km:PLAN.km});
+    PLAN.msg='Mirant els boscos i la pluja…';renderPlan();
+    const R=await region(),sc=(SCORE[SP]||SCORE.pinar);
+    const Z=R.zones.filter(z=>z.ha>=15&&distKm(P.lat,P.lng,z.lat,z.lng)<=PLAN.km).map(z=>Object.assign({_t:sc(z,0),_km:distKm(P.lat,P.lng,z.lat,z.lng)},z)).sort((a,b)=>b._t-a._t);
+    const cand=[];for(const z of Z){if(cand.every(c=>distKm(z.lat,z.lng,c.lat,c.lng)>3))cand.push(z);if(cand.length===30)break}
+    if(!cand.length)throw new Error(`No hi ha boscos de ${SPECIES[SP].nom.toLowerCase()} a ${PLAN.km} km.`);
+    const fd=Math.min(16,Math.max(...PLAN.days)-TODAY+2);
+    const W=await j(`https://api.open-meteo.com/v1/forecast?latitude=${cand.map(z=>z.lat.toFixed(4)).join(',')}&longitude=${cand.map(z=>z.lng.toFixed(4)).join(',')}&daily=precipitation_sum,temperature_2m_mean,temperature_2m_min&past_days=50&forecast_days=${fd}&timezone=Europe%2FMadrid`).then(x=>Array.isArray(x)?x:[x]);
+    cand.forEach((z,i)=>{const Dd=W[i].daily,st=dnum(Dd.time[0]);
+      const s={id:'pl'+i,lat:z.lat,lng:z.lng,alt:z.alt,zone:{st:{obaga:z.ob}},ser:{start:st,r:Dd.precipitation_sum,t:Dd.temperature_2m_mean,n:Dd.temperature_2m_min,end:st+Dd.time.length-1}};
+      evalAt(s);const hit=s.wins.filter(w=>PLAN.days.some(d=>d>=w.a&&d<=w.b));
+      z._w=hit.sort((a,b)=>b.f.v-a.f.v)[0]||null;z._dies=z._w?PLAN.days.filter(d=>d>=z._w.a&&d<=z._w.b):[];z._dl=SP==='rov'?altDelay(z.alt):0;
+      let r15=0;for(let d=TODAY-14;d<=TODAY;d++)r15+=rainOn(s,d)||0;z._r15=r15;
+      z._n=(z._w?z._w.f.v:-1)+4*z._t-z._km/10});
+    const top=cand.sort((a,b)=>b._n-a._n).slice(0,3);
+    PLAN.msg='Buscant on aparcar…';renderPlan();
+    await Promise.all(top.map(async z=>{const sn=await snapForest(z.lat,z.lng);if(sn){z.lat=sn.lat;z.lng=sn.lng}z._p=await planPark(z.lat,z.lng)}));
+    for(const z of top){z._nom=await planNom(z.lat,z.lng);z._reg=REGULADES.filter(([s,n,w,e])=>z.lat>=s&&z.lat<=n&&z.lng>=w&&z.lng<=e).map(x=>x[4])}
+    PLAN.res=top;PLAN.sp=SP;PLAN.msg=''}
+  catch(e){PLAN.msg=e.message&&/No /.test(e.message)?e.message:"No s'ha pogut fer el pla. Cal connexió."}
+  PLAN.busy=false;renderPlan()}
+function renderPlan(){
+  const el=$('#s-plan');if(!el)return;const N=SPECIES[SP].nom.toLowerCase();
+  const days=[...Array(7)].map((_,i)=>TODAY+i);
+  const res=PLAN.res&&PLAN.sp===SP?PLAN.res:null;
+  el.innerHTML=`<button class="back" data-back>‹ Mapa</button>
+   <div class="intro"><p class="kicker">Pla del cap de setmana</p><h2 class="lead">On anem a buscar ${N}?</h2></div>
+   <form class="namef" id="plf"><input id="plq" value="${esc(PLAN.pt?'On sóc ara':PLAN.q)}" placeholder="Reus, Bossòst, Santa Bàrbara…" aria-label="A prop d'on"><button class="btn" ${PLAN.busy?'disabled':''}>Busca</button></form>
+   <div class="chips">${days.map(d=>`<button type="button" class="opt" data-pld="${d}" aria-pressed="${PLAN.days.includes(d)}">${d===TODAY?'avui':d===TODAY+1?'demà':wdn(d)+' '+D(d).getUTCDate()}</button>`).join('')}</div>
+   <div class="chips">${[20,40,60].map(k=>`<button type="button" class="opt" data-plkm="${k}" aria-pressed="${PLAN.km===k}">${k} km</button>`).join('')}<span class="spacer"></span><button type="button" class="linkbtn" data-plgeo>On sóc</button></div>
+   ${PLAN.msg?`<p class="sub" ${PLAN.busy?'style="animation:pulse 1.2s infinite"':''}>${esc(PLAN.msg)}</p>`:''}
+   ${res?(res.some(z=>z._w)?'':`<p class="sub">Cap bosc té tanda aquests dies. Els millors de terreny, per si de cas:</p>`)+res.map((z,i)=>{const w=z._w,p=z._p;
+     return `<article class="mem plan">
+       <div class="row"><span class="kicker">${i+1} · a ${z._km.toFixed(0)} km, cap al ${rumbTxt(PLAN.from.lat,PLAN.from.lng,z.lat,z.lng)}</span><span class="spacer"></span>${w?`<b class="nota n-${w.f.nom}">${w.f.v}</b>`:''}</div>
+       <h3>${esc(z._nom||'Bosc')}</h3>
+       <p class="nt">${z.ha} ha de ${esc(z.arbre)} · ${z.alt} m · ${Math.round(z.ob*100)}% cara nord · pendent ${z.pend!=null?z.pend+'°':'?'}${(z.emp||0)>=.15?' · costerut':''}</p>
+       <p>${w?`Tanda ${w.f.nom} del ${fmt(w.a)} al ${fmt(w.b).replace(/\.$/,'')}${z._dl?` <span class="muted">(+${z._dl} dies per l'altura)</span>`:''}. Hi cau${z._dies.length>1?'en':''} ${z._dies.map(d=>wdl(d)).join(' i ')}.${w.prov?' <span class="muted">La temperatura encara ho pot canviar.</span>':''}`:`Sense tanda aquests dies · ${Math.round(z._r15)} l en 15 dies.`}</p>
+       ${p?`<p><b>Aparca:</b> ${esc(p.que)}. <b>Pentina:</b> cap al ${rumbTxt(p.lat,p.lng,z.lat,z.lng)}, ${Math.max(50,Math.round(p.km*1000/10)*10)} m.</p>`:`<p class="muted">No he trobat on aparcar a OpenStreetMap.</p>`}
+       ${z._reg.map(t=>`<p class="small" style="color:var(--soon);font-weight:700">⚠ ${esc(t)}</p>`).join('')}
+       <div class="acts">${p?`<a class="btn ghost" href="${gmDir(p.lat,p.lng)}" target="_blank" rel="noopener">Aparca aquí</a>`:''}<a class="btn ghost" href="${gmPt(z.lat,z.lng)}" target="_blank" rel="noopener">El bosc</a><button class="btn ghost" data-plmap="${i}">Al mapa</button></div></article>`}).join('')
+       +'<p class="foot">Calculat amb la pluja i el terreny: són boscos per provar, no llocs segurs. Mira a Google Maps que la pista no tingui barrera.</p>':''}`;
+  $('#plf').onsubmit=ev=>{ev.preventDefault();const v=$('#plq').value.trim();if(v&&v!=='On sóc ara'){PLAN.q=v;PLAN.pt=null}if(!PLAN.days.length)PLAN.days=wkend();planRun()}}
+function planMap(i){const z=PLAN.res[i],p=z._p;L1.moved=true;show('mapa');
+  setTimeout(()=>{map.invalidateSize();if(L1.plan)map.removeLayer(L1.plan);L1.plan=L.layerGroup().addTo(map);
+    L.circle([z.lat,z.lng],{radius:Math.sqrt(z.ha*1e4/Math.PI),color:'#fff',weight:2.5,dashArray:'6 6',fill:false,interactive:false}).addTo(L1.plan);
+    if(p){L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:'<div class="parkp">P</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.plan);
+      L.polyline([[p.lat,p.lng],[z.lat,z.lng]],{color:'#fff',weight:2,opacity:.8,interactive:false}).addTo(L1.plan)}
+    map.fitBounds(L.latLngBounds([[z.lat,z.lng]].concat(p?[[p.lat,p.lng]]:[])).pad(.6),{maxZoom:15})},80)}
 
 /* ---------- FITXA ---------- */
 let cur=null,calOff=0,selDay=null,form=null;
@@ -738,6 +834,7 @@ function sheetInit(){
 function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mview" role="radiogroup" aria-label="Què vols veure"><button role="radio" data-view="ara" aria-checked="true">Bolets ara</button><button role="radio" data-view="terra" aria-checked="false">Terreny</button><button role="radio" data-view="foto" aria-checked="false">Foto</button></div>
+   <button class="planbtn" data-goplan><b>Pla del cap de setmana</b><span>On anar, on aparcar i què pentinar ›</span></button>
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
      <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#F5D746,#F49628,#E24028);border-radius:4px"></i><b id="k-prob-t" style="font-weight:inherit">Tanda: fluixa → bona</b></span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
      <div class="mapctl">
@@ -1186,6 +1283,7 @@ function show(t){
   if(t==='diari')renderDiari();
   if(t==='mapa'){const first=!mapBuilt;if(!mapBuilt){buildMap();mapBuilt=true}else drawPins();setTimeout(()=>{map.invalidateSize();if(first&&!L1.moved)L1.fit()},30)}
   if(t==='com')renderCom();
+  if(t==='plan')renderPlan();
   if(t==='buscar')renderBuscar();
   window.scrollTo(0,0)}
 function setSpecies(k){
@@ -1208,11 +1306,17 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-gomap]')){show('mapa');return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
   if(e.target.closest('#howbtn')){show('com');return}
+  if(e.target.closest('[data-goplan]')){show('plan');return}
+  const pd=e.target.closest('[data-pld]');if(pd){const d=+pd.dataset.pld;PLAN.days=PLAN.days.includes(d)?PLAN.days.filter(x=>x!==d):[...PLAN.days,d].sort();renderPlan();return}
+  const pk=e.target.closest('[data-plkm]');if(pk){PLAN.km=+pk.dataset.plkm;renderPlan();return}
+  if(e.target.closest('[data-plgeo]')){if(!navigator.geolocation){PLAN.msg='Aquest mòbil no deixa saber on ets.';renderPlan();return}PLAN.msg='Buscant on ets…';renderPlan();
+    navigator.geolocation.getCurrentPosition(p=>{PLAN.pt={lat:p.coords.latitude,lng:p.coords.longitude,name:'on ets'};PLAN.msg='';planRun()},()=>{PLAN.msg="No s'ha pogut saber on ets.";renderPlan()},{enableHighAccuracy:false,timeout:15000});return}
+  const pm=e.target.closest('[data-plmap]');if(pm){planMap(+pm.dataset.plmap);return}
   const zf=e.target.closest('[data-zoom]');if(zf){lightbox(zf.dataset.zoom,+zf.dataset.i);return}
   const ap=e.target.closest('[data-addph]');if(ap){if(!GH.tok()){ghOpen=true;renderDiari();$('#ghcard').scrollIntoView({behavior:'smooth'});return}const fi=$('#phin');fi.dataset.key=ap.dataset.addph;fi.click();return}
   const ae=e.target.closest('[data-ambed]');if(ae){if(!GH.tok()){ghOpen=true;renderDiari();$('#ghcard').scrollIntoView({behavior:'smooth'});return}dEdit=ae.dataset.ambed;renderDiari();const i=$('[data-ambf] input');if(i)i.focus();return}
   const o=e.target.closest('[data-open]');if(o){openSite(o.dataset.open,o.dataset.from);return}
-  if(e.target.closest('[data-back]')){show(screen==='fitxa'?cur.from:lastTab);return}
+  if(e.target.closest('[data-back]')){show(screen==='fitxa'?cur.from:screen==='plan'?'mapa':lastTab);return}
   const dy=e.target.closest('[data-day]');if(dy){selDay=+dy.dataset.day;$('#s-fitxa').querySelectorAll('.day.sel').forEach(x=>x.classList.remove('sel'));dy.classList.add('sel');$('#daynote').innerHTML=dayNote(cur,selDay);return}
   const cb=e.target.closest('[data-cal]');if(cb&&!cb.disabled){calOff=Math.min(0,calOff+ +cb.dataset.cal);renderFitxa();return}
   if(e.target.closest('[data-newvisit]')){const now=new Date();form={d:dstr(TODAY),n:0,h:`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,est:[],nota:''};renderFitxa();return}
