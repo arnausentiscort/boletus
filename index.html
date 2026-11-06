@@ -795,7 +795,7 @@ const BOL=Object.fromEntries(BOLETS.map(([k,n,c])=>[k,{n,c}]));
 const BCOL={ceps:'#8A5530',rov:'#E2701F'};const bCol=k=>BCOL[k]||(BOL[k]&&BOL[k].c?BOL[k].c.c2:'#7E857A');
 let BICN=0;const bIcon=(k,w)=>k==='ceps'||k==='rov'?spIcon(w,k):`<svg width="${w}" height="${w}" viewBox="0 6 48 42" aria-hidden="true">${capBody('bi'+(++BICN),BOL[k]?BOL[k].c:BOL.altre.c,false)}</svg>`;
 const bNom=p=>p.nom||(BOL[p.sp]?BOL[p.sp].n:SPECIES[p.sp]?SPECIES[p.sp].nom:'Bolet');
-let REC=store.get('rec',null),RECS=store.get('recs',[]),recMsg='',lastFix=null,wake=null,altreOpen=false;
+let REC=store.get('rec',null),RECS=store.get('recs',[]),recMsg='',lastFix=null,altreOpen=false;
 const saveRec=()=>{store.set('rec',REC);store.set('recs',RECS)};
 // la millor lectura del GPS en uns segons: s'atura quan l'error baixa de "good" metres
 function fix(good,ms,onUpd){return new Promise(res=>{if(!navigator.geolocation)return res(null);let best=null,done=false,w=null;
@@ -817,9 +817,6 @@ async function recBolet(sp,nom){
   const f=await fix(8,15000,b=>{recMsg=`${n}: afinant… ±${b.acc} m`;paintRec()});
   if(f)Object.assign(p,f);saveRec();recMsg=f?`${n} apuntat · ±${f.acc} m`:`${n} sense GPS (s'ha apuntat l'hora)`;paintRec()}
 function recEnd(){if(!REC)return;REC.t1=Date.now();RECS.unshift(REC);REC=null;recMsg='';saveRec();paintRec();show('diari')}
-// mentre la pantalla "En ruta" està oberta, el mòbil no s'apaga (si el mòbil ho permet)
-async function wakeOn(on){try{if(on&&!wake&&navigator.wakeLock){wake=await navigator.wakeLock.request('screen');wake.addEventListener('release',()=>{wake=null})}if(!on&&wake){await wake.release();wake=null}}catch(e){}}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&screen==='ruta'&&REC)wakeOn(true)});
 function renderRuta(){
   const el=$('#s-ruta');if(!el)return;
   if(!REC){el.innerHTML=`<div class="intro"><p class="kicker">En ruta</p><h2 class="lead">Cap sortida en marxa.</h2></div>${recCard()}`;bindRecForm();return}
@@ -1416,7 +1413,7 @@ function show(t){
   if(t==='mapa'){const first=!mapBuilt;if(!mapBuilt){buildMap();mapBuilt=true}else drawPins();setTimeout(()=>{map.invalidateSize();if(first&&!L1.moved)L1.fit()},30)}
   if(t==='com')renderCom();
   if(t==='plan')renderPlan();
-  wakeOn(t==='ruta'&&!!REC);paintRec();
+  paintRec();
   if(t==='buscar')renderBuscar();
   window.scrollTo(0,0)}
 function setSpecies(k){
