@@ -227,6 +227,17 @@ button.site:active{background:var(--surface2)}
 .planbtn b{font:800 17px var(--f-display)}.planbtn span{font-size:13px;color:var(--muted)}
 .mem.plan p{font-size:15px}.mem.plan .acts .btn{flex:1 1 auto;text-align:center}
 .parkp{width:26px;height:26px;border-radius:7px;background:#2F67A6;color:#fff;font:800 15px/22px var(--f-display);text-align:center;border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.recbar{position:fixed;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:2100;max-width:504px;margin:0 auto;
+  display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;border-radius:20px;background:#1B2416;color:#E5EADD;box-shadow:0 6px 24px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.08)}
+.recbar .rect{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.recbar .rect b{font:700 13.5px var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recbar .rect span{font-size:12.5px;color:#B9C3AE;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#E24028;margin-right:6px;vertical-align:1px;animation:pulse 1.4s infinite}
+.recbar .bolet{display:flex;align-items:center;gap:6px;border:0;border-radius:16px;background:var(--acc);color:#fff;font:800 18px var(--f-display);padding:12px 16px;flex:none}
+.recbar .bolet svg{width:26px;height:26px}.recbar .bolet:active{transform:scale(.96)}
+.recbar .recend{border:0;background:transparent;color:#B9C3AE;font-weight:700;font-size:13px;padding:8px 4px;flex:none}
+.recrow{display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--line)}
+.recrow div{flex:1;min-width:0;display:flex;flex-direction:column}.recrow span{font-size:13px;color:var(--muted)}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px 18px;margin:0;padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:20px;font-size:15px}
 .facts dt{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
 .facts dd{margin:0}
@@ -628,6 +639,7 @@ function renderDiari(){
   const tot=k=>visits.filter(v=>(v.sp||'ceps')===k).reduce((a,v)=>a+(v.n||0),0);
   $('#s-diari').innerHTML=`<div class="intro"><p class="kicker">Diari</p><h2 class="lead">${L.length} ${L.length===1?'sortida':'sortides'}.</h2>
      <p class="sub">${SHOW.map(k=>qTxt(k,tot(k))).join(' · ')} en total</p></div>
+   ${recCard()}
    ${ghOpen?ghCard():''}
    ${L.map(o=>{const s=SITES.find(x=>x.id===o.site),dd=D(dnum(o.d)),key=o.d+'|'+o.site,X=DIARI[key]||{},F=X.fotos||[];
      const it=o.it.sort((a,b)=>(b.n||0)-(a.n||0));
@@ -643,6 +655,7 @@ function renderDiari(){
    <input type="file" id="phin" accept="image/*" multiple hidden>`;
   const gf=$('#ghf');if(gf)gf.onsubmit=async ev=>{ev.preventDefault();const t=$('#ghi').value.trim();store.set('ghtok',t);$('#ghm').textContent='Comprovant…';
     try{await GH.get('data/llocs.json');ghOpen=false;renderDiari()}catch(e){store.set('ghtok','');$('#ghm').textContent='Aquesta clau no funciona. Mira que tingui Contents: Read and write al repositori boletus.'}};
+  const rf=$('#recf');if(rf)rf.onsubmit=ev=>{ev.preventDefault();recStart($('#recwho').value.trim()||'Jo')};
   $('#s-diari').querySelectorAll('[data-ambf]').forEach(f=>f.onsubmit=ev=>{ev.preventDefault();saveAmb(f.dataset.ambf,f.querySelector('input').value.trim())});
   const fi=$('#phin');fi.onchange=()=>{const k=fi.dataset.key;if(k&&fi.files.length)addPhotos(k,[...fi.files]);fi.value=''}}
 function lightbox(key,i){const F=(DIARI[key]||{}).fotos||[];if(!F.length)return;let n=i;
@@ -738,6 +751,59 @@ function planMap(i){const z=PLAN.res[i],p=z._p;L1.moved=true;show('mapa');
     if(p){L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:'<div class="parkp">P</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.plan);
       L.polyline([[p.lat,p.lng],[z.lat,z.lng]],{color:'#fff',weight:2,opacity:.8,interactive:false}).addTo(L1.plan)}
     map.fitBounds(L.latLngBounds([[z.lat,z.lng]].concat(p?[[p.lat,p.lng]]:[])).pad(.6),{maxZoom:15})},80)}
+
+/* ---------- SORTIDA EN MARXA: d'on surts i on trobes cada bolet ----------
+   Primera prova: el punt d'inici (on aparques) i cada bolet, amb la ubicació tan exacta com doni el GPS i l'hora.
+   La ruta es grava amb Strava o una altra app; després s'ajunta tot per l'hora. Es desa només en aquest mòbil
+   i s'envia en un fitxer GPX. Cada mòbil posa el seu nom, per quan aneu en grup. */
+let REC=store.get('rec',null),RECS=store.get('recs',[]),recMsg='';
+const saveRec=()=>{store.set('rec',REC);store.set('recs',RECS)};
+// la millor lectura del GPS en uns segons: s'atura quan l'error baixa de "good" metres
+function fix(good,ms,onUpd){return new Promise(res=>{if(!navigator.geolocation)return res(null);let best=null,done=false,w=null;
+  const fin=()=>{if(done)return;done=true;if(w!=null)navigator.geolocation.clearWatch(w);clearTimeout(t);res(best)};
+  const t=setTimeout(fin,ms);
+  w=navigator.geolocation.watchPosition(p=>{const c=p.coords;if(!best||c.accuracy<best.acc){best={lat:+c.latitude.toFixed(6),lng:+c.longitude.toFixed(6),acc:Math.round(c.accuracy),alt:c.altitude!=null?Math.round(c.altitude):null};onUpd&&onUpd(best)}if(best.acc<=good)fin()},
+    ()=>fin(),{enableHighAccuracy:true,maximumAge:0,timeout:ms})})}
+const hm=t=>{const d=new Date(t);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')};
+const durTxt=ms=>{const m=Math.round(ms/60000);return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')};
+async function recStart(who){
+  store.set('qui',who);REC={id:'r'+Date.now().toString(36),who,t0:Date.now(),start:null,pts:[]};saveRec();recMsg='Mirant on ets…';paintRec();if(screen==='diari')renderDiari();
+  const id=REC.id,f=await fix(10,20000,b=>{recMsg=`Afinant l'inici… ±${b.acc} m`;paintRec()});
+  if(REC&&REC.id===id){REC.start=f;saveRec();recMsg=f?`Inici apuntat · ±${f.acc} m`:"No s'ha pogut saber on ets: l'inici queda sense punt.";paintRec()}}
+async function recBolet(){
+  if(!REC)return;const p={t:Date.now(),sp:SP,lat:null,lng:null,acc:null};REC.pts.push(p);saveRec();const n=REC.pts.length;
+  recMsg=`Bolet ${n}: mirant on ets…`;paintRec();if(navigator.vibrate)navigator.vibrate(40);
+  const f=await fix(8,15000,b=>{recMsg=`Bolet ${n}: afinant… ±${b.acc} m`;paintRec()});
+  if(f)Object.assign(p,f);saveRec();recMsg=f?`Bolet ${n} apuntat · ±${f.acc} m`:`Bolet ${n} sense GPS (s'ha apuntat l'hora)`;paintRec()}
+function recEnd(){if(!REC)return;REC.t1=Date.now();RECS.unshift(REC);REC=null;recMsg='';saveRec();paintRec();show('diari')}
+function paintRec(){let b=$('#recbar');
+  if(!REC){if(b)b.hidden=true;return}
+  if(!b){document.body.insertAdjacentHTML('beforeend','<div class="recbar" id="recbar"></div>');b=$('#recbar')}
+  b.hidden=false;b.innerHTML=`<div class="rect"><b><i class="recdot"></i>En marxa · ${durTxt(Date.now()-REC.t0)}</b><span>${esc(recMsg||`${REC.pts.length} ${REC.pts.length===1?'bolet':'bolets'}`)}</span></div>
+    <button class="bolet" data-bolet>${spIcon(26)}Bolet!</button><button class="recend" data-recend>Acaba</button>`}
+setInterval(()=>{if(REC)paintRec()},30000);
+function gpx(r){const w=(p,n)=>p&&p.lat!=null?`\n <wpt lat="${p.lat}" lon="${p.lng}">${p.alt!=null?`<ele>${p.alt}</ele>`:''}<time>${new Date(p.t).toISOString()}</time><name>${n}</name><desc>±${p.acc} m${p.sp?' · '+SPECIES[p.sp].nom:''}</desc></wpt>`:'';
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Boletus" xmlns="http://www.topografix.com/GPX/1/1">\n <metadata><name>Sortida de ${esc(r.who||'')} · ${new Date(r.t0).toISOString().slice(0,10)}</name><time>${new Date(r.t0).toISOString()}</time></metadata>`
+    +w(r.start&&Object.assign({t:r.t0},r.start),'Inici')+r.pts.map((p,i)=>w(p,`Bolet ${i+1}`)).join('')+`\n</gpx>\n`}
+async function recShare(r){
+  const name=`boletus-${new Date(r.t0).toISOString().slice(0,10)}-${(r.who||'sortida').toLowerCase().replace(/[^a-z0-9]+/g,'-')}.gpx`,f=new File([gpx(r)],name,{type:'application/gpx+xml'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sortida Boletus'});return}catch(e){if(e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove()}
+function recCard(){const qui=store.get('qui','');
+  return `<div class="card recc">${REC?`<strong style="font-family:var(--f-display);font-size:18px">Sortida en marxa des de les ${hm(REC.t0)}</strong>
+     <p class="small">Toca <b>Bolet!</b> a la barra de baix cada cop que en trobis un. Quan acabis, <b>Acaba</b>.</p>`
+    :`<strong style="font-family:var(--f-display);font-size:18px">Sortim a buscar</strong>
+     <p class="small">Apunta d'on surts i on trobes cada bolet, amb la ubicació exacta. La ruta, grava-la amb Strava.</p>
+     <form class="namef" id="recf"><input id="recwho" value="${esc(qui)}" placeholder="Qui ets?" aria-label="Qui ets" maxlength="30" required><button class="btn">Comença</button></form>`}</div>
+   ${RECS.map((r,i)=>{const ok=r.pts.filter(p=>p.lat!=null);return `<div class="recrow"><div><b>${D(dnum(new Date(r.t0).toLocaleDateString('sv'))).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})} · ${hm(r.t0)}–${hm(r.t1)}</b>
+       <span>${esc(r.who||'')} · ${r.pts.length} ${r.pts.length===1?'bolet':'bolets'}${r.start?'':' · sense inici'}${ok.length<r.pts.length?` · ${r.pts.length-ok.length} sense GPS`:''}</span></div>
+       <button class="linkbtn" data-recmap="${i}">Mapa</button><button class="linkbtn" data-recsend="${i}">Envia</button></div>`}).join('')}`}
+function recMap(i){const r=RECS[i];L1.moved=true;show('mapa');
+  setTimeout(()=>{map.invalidateSize();if(L1.rec)map.removeLayer(L1.rec);L1.rec=L.layerGroup().addTo(map);const all=[];
+    if(r.start){all.push([r.start.lat,r.start.lng]);L.marker([r.start.lat,r.start.lng],{icon:L.divIcon({className:'',html:'<div class="parkp" style="background:#2E8B4B">▶</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.rec)}
+    r.pts.forEach((p,k)=>{if(p.lat==null)return;all.push([p.lat,p.lng]);L.circle([p.lat,p.lng],{radius:p.acc||10,color:'#fff',weight:1,fillOpacity:.15,interactive:false}).addTo(L1.rec);
+      L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${p.sp==='rov'?'#E2701F':'#8A5530'}">${k+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]}),interactive:false}).addTo(L1.rec)});
+    if(all.length)map.fitBounds(L.latLngBounds(all).pad(.3),{maxZoom:17})},80)}
 
 /* ---------- FITXA ---------- */
 let cur=null,calOff=0,selDay=null,form=null;
@@ -1307,6 +1373,10 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
   if(e.target.closest('#howbtn')){show('com');return}
   if(e.target.closest('[data-goplan]')){show('plan');return}
+  if(e.target.closest('[data-bolet]')){recBolet();return}
+  const re=e.target.closest('[data-recend]');if(re){if(re.dataset.sure){recEnd()}else{re.dataset.sure='1';re.textContent='Segur?';setTimeout(()=>{if(re.isConnected){delete re.dataset.sure;re.textContent='Acaba'}},4000)}return}
+  const rm=e.target.closest('[data-recmap]');if(rm){recMap(+rm.dataset.recmap);return}
+  const rs=e.target.closest('[data-recsend]');if(rs){recShare(RECS[+rs.dataset.recsend]);return}
   const pd=e.target.closest('[data-pld]');if(pd){const d=+pd.dataset.pld;PLAN.days=PLAN.days.includes(d)?PLAN.days.filter(x=>x!==d):[...PLAN.days,d].sort();renderPlan();return}
   const pk=e.target.closest('[data-plkm]');if(pk){PLAN.km=+pk.dataset.plkm;renderPlan();return}
   if(e.target.closest('[data-plgeo]')){if(!navigator.geolocation){PLAN.msg='Aquest mòbil no deixa saber on ets.';renderPlan();return}PLAN.msg='Buscant on ets…';renderPlan();
@@ -1339,7 +1409,7 @@ document.addEventListener('click',e=>{
     ex.push({sp:[SP],id:'x'+Date.now().toString(36),name:`Zona a ${distKm(H.lat,H.lng,z.lat,z.lng).toFixed(0)} km (${bearing(H.lat,H.lng,z.lat,z.lng)})`,muni:'',lat:z.lat,lng:z.lng});store.set('extra',ex);store.set('obre','llocs');location.reload();return}
   const dr=e.target.closest('[data-draw]');if(dr){const s=SITES.find(x=>x.id===dr.dataset.draw);map.setView([s.lat,s.lng],15);startDraw(s.id);return}
 });
-show('llocs');store.set('obre','');
+show('llocs');store.set('obre','');paintRec();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
