@@ -259,8 +259,13 @@ button.site:active{background:var(--surface2)}
 .lbtn{flex:none;min-width:42px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font:800 14px var(--f-display)}
 .lbtn.x{min-width:36px;color:var(--muted);font-weight:600}
 .recendbig{background:#B23A26;color:#fff}
-.recrow{display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--line)}
-.recrow div{flex:1;min-width:0;display:flex;flex-direction:column}.recrow span{font-size:13px;color:var(--muted)}
+.recrow{display:flex;flex-direction:column;gap:6px;padding:14px 4px;border-bottom:1px solid var(--line)}
+.rr-top{display:flex;flex-direction:column}.rr-top span{font-size:13px;color:var(--muted)}
+.rr-st{font:500 14px var(--f-data);color:var(--ink)}
+.rr-pf{display:flex;justify-content:space-between;font:500 10px var(--f-data);color:var(--muted)}
+.rr-act{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.rr-add{padding:7px 12px;font-size:14px}.rr-del{color:var(--muted)}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:14.5px;color:var(--muted)}.steps b{color:var(--ink)}
+details.small summary{cursor:pointer;font-weight:700;color:var(--muted)}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px 18px;margin:0;padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:20px;font-size:15px}
 .facts dt{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
 .facts dd{margin:0}
@@ -913,12 +918,14 @@ function renderRuta(){
      <div class="bigtime mono">${clock(Date.now()-REC.t0)}</div>
      <div class="rstats"><span><b>${nTot(REC)}</b>${nTot(REC)===1?'bolet':'bolets'}</span><span><b>${dk==null?'—':dk<1?Math.round(dk*1000)+' m':dk.toFixed(1).replace('.',',')+' km'}</b>de l'inici</span><span><b>${lastFix?'±'+lastFix.acc+' m':'—'}</b>GPS</span></div>
      <p class="rmsg" aria-live="polite">${esc(recMsg)}</p></div>
+   <p class="small" style="margin:-4px 2px 0">La ruta la grava Strava. Aquí només apuntes els bolets; al final hi afegiràs el GPX.</p>
    <p class="segl">Què has trobat?</p>
    ${altreOpen?`<form class="namef" id="altf"><input id="altn" placeholder="Quin bolet?" aria-label="Quin bolet" maxlength="40" required><button class="btn">Apunta</button></form>`:''}
    <div class="bgrid">${BOLETS.map(([k,n])=>`<button class="bbtn" data-bol="${k}">${cnt[k]?`<i class="bc">${cnt[k]}</i>`:''}${bIcon(k,40)}<span>${n}</span></button>`).join('')}</div>
    ${last.length?`<p class="segl">Els últims</p><div class="list">${last.map(([p,i])=>`<div class="lrow">${bIcon(p.sp,26)}<span class="ln"><b>${esc(bNom(p))}${(p.n||1)>1?` ×${p.n}`:''}</b><span>${hm(p.t)} · ${p.acc!=null?'±'+p.acc+' m':p.lat==null?'buscant GPS…':''}</span></span>
        <button class="lbtn" data-boln="${i}" aria-label="Un més aquí">+1</button><button class="lbtn x" data-boldel="${i}" aria-label="Esborra">✕</button></div>`).join('')}</div>`:''}
-   <div class="acts" style="margin-top:4px"><button class="btn ghost" data-recmapnow>Mapa</button><button class="btn recendbig" data-recend>Acaba la sortida</button></div>`;
+   <div class="acts" style="margin-top:4px"><button class="btn ghost" data-recmapnow>Mapa</button><button class="btn recendbig" data-recend>Acaba la sortida</button></div>
+   <button class="linkbtn" data-recdiscard style="align-self:center">Descarta la sortida (sense desar-la)</button>`;
   const af=$('#altf');if(af){$('#altn').value=keepV;$('#altn').focus();af.onsubmit=ev=>{ev.preventDefault();const v=$('#altn').value.trim();$('#altn').blur();altreOpen=false;if(v)recBolet('altre',v);else renderRuta()}}}
 function paintRec(){
   if(screen==='ruta'&&!(document.activeElement&&document.activeElement.id==='altn'))renderRuta();  // no es refà mentre escrius el nom d'un bolet
@@ -935,23 +942,65 @@ async function recShare(r){
   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sortida Boletus'});return}catch(e){if(e.name==='AbortError')return}}
   const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove()}
 function recSum(r){const c={};r.pts.forEach(p=>{const k=bNom(p);c[k]=(c[k]||0)+(p.n||1)});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${v} ${k.toLowerCase()}`).join(', ')||'cap bolet'}
+/* La ruta la grava Strava (o una altra app) i aquí s'hi afegeix el GPX: es veu al mapa amb els bolets, i amb km, temps i desnivell */
+function parseGpx(txt){
+  const x=new DOMParser().parseFromString(txt,'application/xml');if(x.getElementsByTagName('parsererror').length)throw new Error('format');
+  let nodes=[...x.getElementsByTagName('trkpt')];if(!nodes.length)nodes=[...x.getElementsByTagName('rtept')];
+  const pts=[];nodes.forEach(n=>{const la=+n.getAttribute('lat'),lo=+n.getAttribute('lon');if(!isFinite(la)||!isFinite(lo))return;
+    const e=n.getElementsByTagName('ele')[0],t=n.getElementsByTagName('time')[0];pts.push([la,lo,e&&isFinite(+e.textContent)?Math.round(+e.textContent):null,t&&isFinite(Date.parse(t.textContent))?Date.parse(t.textContent):null])});
+  if(pts.length<2)throw new Error('buit');
+  const out=[pts[0]];for(let i=1;i<pts.length-1;i++){const l=out[out.length-1];if(distKm(l[0],l[1],pts[i][0],pts[i][1])*1000>=6)out.push(pts[i])}out.push(pts[pts.length-1]);  // un punt cada 6 m com a mínim
+  return out.map(p=>[+p[0].toFixed(5),+p[1].toFixed(5),p[2],p[3]])}
+function trackStats(tr){let km=0,up=0,down=0,ref=null;for(let i=1;i<tr.length;i++)km+=distKm(tr[i-1][0],tr[i-1][1],tr[i][0],tr[i][1]);
+  // l'altura del GPS salta uns metres: s'aplana una mica i només compten els canvis de 3 m o més
+  const el=tr.map(p=>p[2]),sm=el.map((v,i)=>{if(v==null)return null;let sx=0,c=0;for(let j=Math.max(0,i-2);j<=Math.min(el.length-1,i+2);j++)if(el[j]!=null){sx+=el[j];c++}return sx/c});
+  sm.forEach(v=>{if(v==null)return;if(ref==null){ref=v;return}if(v>=ref+3){up+=v-ref;ref=v}else if(v<=ref-3){down+=ref-v;ref=v}});
+  const t0=tr.find(p=>p[3]!=null),t1=[...tr].reverse().find(p=>p[3]!=null),has=el.some(v=>v!=null);
+  return{km,up:has?Math.round(up):null,down:has?Math.round(down):null,ms:t0&&t1?t1[3]-t0[3]:null}}
+function perfil(tr){const el=tr.map(p=>p[2]);if(!el.some(v=>v!=null))return'';let d=0;const xs=[0];for(let i=1;i<tr.length;i++){d+=distKm(tr[i-1][0],tr[i-1][1],tr[i][0],tr[i][1]);xs.push(d)}
+  const vs=el.map((v,i)=>v==null?null:[xs[i],v]).filter(Boolean),st=Math.max(1,Math.round(vs.length/160)),q=vs.filter((_,i)=>i%st===0||i===vs.length-1);
+  const mn=Math.min(...q.map(p=>p[1])),mx=Math.max(...q.map(p=>p[1])),W=300,H=44,sx=W/(d||1),sy=(H-6)/((mx-mn)||1);
+  const pts=q.map(p=>`${(p[0]*sx).toFixed(1)},${(H-3-(p[1]-mn)*sy).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:44px;display:block" aria-hidden="true"><polygon points="0,${H} ${pts} ${W},${H}" fill="#8A5530" opacity=".22"/><polyline points="${pts}" fill="none" stroke="#8A5530" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg><span class="rr-pf"><span>${Math.round(mn)} m</span><span>${Math.round(mx)} m</span></span>`}
+const kmTxt=k=>k.toFixed(k<10?1:0).replace('.',',')+' km';
+function recStatsTxt(r){if(!r.track)return'';const t=trackStats(r.track);return [kmTxt(t.km),t.ms!=null?durTxt(t.ms):null,t.up!=null?`+${t.up} m`:null,t.down>=1?`−${t.down} m`:null].filter(Boolean).join(' · ')}
+async function recImport(i,file){
+  const r=RECS[i];if(!r||!file)return;
+  try{const tr=parseGpx(await file.text());r.track=tr;
+    if(!r.start)r.start={lat:tr[0][0],lng:tr[0][1],acc:15,alt:tr[0][2]};
+    // els bolets que no van agafar GPS es posen a la ruta segons l'hora (si la ruta té hores)
+    let put=0;const timed=tr.filter(q=>q[3]!=null);
+    r.pts.forEach(p=>{if(p.lat!=null||!timed.length)return;let b=null;timed.forEach(q=>{const d=Math.abs(q[3]-p.t);if(!b||d<b.d)b={d,q}});if(b&&b.d<=10*60e3){p.lat=b.q[0];p.lng=b.q[1];p.alt=b.q[2];p.acc=15;p.deRuta=true;put++}});
+    const t0=timed.length?timed[0][3]:null,t1=timed.length?timed[timed.length-1][3]:null,fora=r.pts.length&&timed.length&&!r.pts.some(p=>p.t>=t0-10*60e3&&p.t<=t1+10*60e3);
+    r.imsg=(fora?"Compte: les hores de la ruta no coincideixen amb les dels bolets, potser és d'un altre dia. ":'')+(put?`${put} ${put===1?'bolet':'bolets'} sense GPS ${put===1?"s'ha posat":"s'han posat"} a la ruta per l'hora. `:'');
+    saveRec()}
+  catch(e){r.imsg="No s'ha pogut llegir aquest fitxer. Ha de ser un GPX (la ruta d'Strava, Wikiloc, Komoot…)."}
+  if(screen==='diari')renderDiari();else if(screen==='ruta')renderRuta()}
 function recCard(){const qui=store.get('qui','');
   return `<div class="card recc">${REC?`<strong style="font-family:var(--f-display);font-size:18px">Sortida en marxa des de les ${hm(REC.t0)}</strong>
      <button class="btn" data-goruta>Obre la pantalla de ruta</button>`
     :`<strong style="font-family:var(--f-display);font-size:18px">Sortim a buscar</strong>
-     <p class="small">Apunta d'on surts i on trobes cada bolet, de qualsevol mena, amb la ubicació exacta. La ruta, grava-la amb Strava.</p>
-     <form class="namef" id="recf"><input id="recwho" value="${esc(qui)}" placeholder="Qui ets?" aria-label="Qui ets" maxlength="30" required><button class="btn">Comença</button></form>`}</div>
-   ${RECS.map((r,i)=>`<div class="recrow"><div><b>${D(dnum(new Date(r.t0).toLocaleDateString('sv'))).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})} · ${hm(r.t0)}–${hm(r.t1)}</b>
+     <ol class="steps"><li>Obre <b>Strava</b> (o una altra app de rutes) i comença a gravar.</li><li>Torna aquí, posa el teu nom i toca <b>Comença</b>. Cada cop que trobis un bolet, toca'l.</li><li>Quan acabis, toca <b>Acaba</b> i afegeix la ruta a la sortida amb <b>+ Ruta (GPX)</b>.</li></ol>
+     <form class="namef" id="recf"><input id="recwho" value="${esc(qui)}" placeholder="Qui ets?" aria-label="Qui ets" maxlength="30" required><button class="btn">Comença</button></form>
+     <details class="small"><summary>Com trec el GPX d'Strava?</summary><p style="margin-top:6px">Strava el deixa exportar des de <b>strava.com</b> al navegador: obre l'activitat, toca <b>⋯</b> i <b>Exporta GPX</b>. Wikiloc i Komoot l'exporten des de la seva app. Quan el tinguis, a la sortida toca <b>+ Ruta (GPX)</b> i tria el fitxer.</p></details>`}</div>
+   <input type="file" id="gpxin" hidden>
+   ${RECS.map((r,i)=>{const st=recStatsTxt(r);return `<div class="recrow"><div class="rr-top"><b>${D(dnum(new Date(r.t0).toLocaleDateString('sv'))).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})} · ${hm(r.t0)}–${hm(r.t1)}</b>
        <span>${esc(r.who||'')} · ${esc(recSum(r))}${r.start?'':' · sense inici'}</span></div>
-       <button class="linkbtn" data-recmap="${i}">Mapa</button><button class="linkbtn" data-recsend="${i}">Envia</button></div>`).join('')}`}
-function bindRecForm(){const rf=$('#recf');if(rf)rf.onsubmit=ev=>{ev.preventDefault();recStart($('#recwho').value.trim()||'Jo')}}
+       ${st?`<div class="rr-st">${esc(st)}</div>${perfil(r.track)}`:''}
+       ${r.imsg?`<p class="small" style="color:var(--soon)">${esc(r.imsg)}</p>`:''}
+       <div class="rr-act"><button class="linkbtn" data-recmap="${i}">Mapa</button>${r.track?`<button class="linkbtn" data-recgpx="${i}">Canvia la ruta</button>`:`<button class="btn ghost rr-add" data-recgpx="${i}">+ Ruta (GPX)</button>`}<button class="linkbtn" data-recsend="${i}">Envia</button><span class="spacer"></span><button class="linkbtn rr-del" data-recdel="${i}">Esborra</button></div></div>`}).join('')}`}
+function bindRecForm(){const rf=$('#recf');if(rf)rf.onsubmit=ev=>{ev.preventDefault();recStart($('#recwho').value.trim()||'Jo')};
+  const gi=$('#gpxin');if(gi)gi.onchange=()=>{const f=gi.files[0],i=+gi.dataset.i;gi.value='';if(f)recImport(i,f)}}
 function recMap(r){L1.moved=true;show('mapa');
   setTimeout(()=>{map.invalidateSize();if(L1.rec)map.removeLayer(L1.rec);L1.rec=L.layerGroup().addTo(map);const all=[];
+    if(r.track){const ll=r.track.map(p=>[p[0],p[1]]);L.polyline(ll,{color:'#fff',weight:7,opacity:.9,interactive:false}).addTo(L1.rec);L.polyline(ll,{color:'#2F67A6',weight:4,interactive:false}).addTo(L1.rec);ll.forEach(x=>all.push(x));
+      const e=ll[ll.length-1];L.marker(e,{icon:L.divIcon({className:'',html:'<div class="parkp" style="background:#3E2410">■</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.rec)}
     if(r.start){all.push([r.start.lat,r.start.lng]);L.marker([r.start.lat,r.start.lng],{icon:L.divIcon({className:'',html:'<div class="parkp" style="background:#2E8B4B">▶</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.rec)}
     r.pts.forEach((p,k)=>{if(p.lat==null)return;all.push([p.lat,p.lng]);L.circle([p.lat,p.lng],{radius:p.acc||10,color:'#fff',weight:1,fillOpacity:.15,interactive:false}).addTo(L1.rec);
       L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${bCol(p.sp)}" title="${esc(bNom(p))}">${k+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
-       .on('click',ev=>{L.DomEvent.stopPropagation(ev);$('#mapcard').innerHTML=`<strong>${k+1}. ${esc(bNom(p))}${(p.n||1)>1?' ×'+p.n:''}</strong><p class="small">${hm(p.t)} · ±${p.acc} m${p.alt!=null?' · '+p.alt+' m':''}</p><div class="row"><a class="btn ghost" href="${gmDir(p.lat,p.lng)}" target="_blank" rel="noopener">Com arribar-hi</a></div>`}).addTo(L1.rec)});
-    if(all.length)map.fitBounds(L.latLngBounds(all).pad(.3),{maxZoom:17})},80)}
+       .on('click',ev=>{L.DomEvent.stopPropagation(ev);$('#mapcard').innerHTML=`<strong>${k+1}. ${esc(bNom(p))}${(p.n||1)>1?' ×'+p.n:''}</strong><p class="small">${hm(p.t)} · ±${p.acc} m${p.alt!=null?' · '+p.alt+' m':''}${p.deRuta?" · posat a la ruta per l'hora":''}</p><div class="row"><a class="btn ghost" href="${gmDir(p.lat,p.lng)}" target="_blank" rel="noopener">Com arribar-hi</a></div>`}).addTo(L1.rec)});
+    const st=recStatsTxt(r);$('#mapcard').innerHTML=`<strong style="font-family:var(--f-display);font-size:18px">Sortida de ${esc(r.who||'')} · ${r.pts.reduce((a,p)=>a+(p.n||1),0)} bolets</strong>${st?`<p>${esc(st)}</p>`:`<p class="small">Sense ruta: afegeix el GPX des del Diari.</p>`}<p class="small">▶ inici · ■ final · els números són els bolets (toca'ls).</p>`;
+    if(all.length)map.fitBounds(L.latLngBounds(all).pad(.25),{maxZoom:17})},80)}
 
 /* ---------- FITXA ---------- */
 let cur=null,calOff=0,selDay=null,form=null;
@@ -1506,6 +1555,7 @@ function renderCom(){
 let mapBuilt=false,lastTab='llocs',screen='llocs';
 function show(t){
   screen=t;document.body.dataset.screen=t;
+  if(t!=='ruta'){const rr=$('#s-ruta');if(rr)rr.innerHTML=''}   // la pantalla En ruta no es deixa amagada (duplicaria botons)
   document.querySelectorAll('.screen').forEach(s=>s.hidden=s.id!=='s-'+t);
   if(t==='llocs'||t==='mapa'||t==='diari'){lastTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t))}
   if(t==='llocs')renderLlocs();
@@ -1543,6 +1593,9 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-goruta]')){show('ruta');return}
   if(e.target.closest('[data-recmapnow]')){if(REC)recMap(REC);return}
   const re=e.target.closest('[data-recend]');if(re){if(re.dataset.sure){recEnd()}else{re.dataset.sure='1';re.textContent='Segur?';setTimeout(()=>{if(re.isConnected){delete re.dataset.sure;re.textContent='Acaba'}},4000)}return}
+  const rg=e.target.closest('[data-recgpx]');if(rg){const gi=$('#gpxin');if(gi){gi.dataset.i=rg.dataset.recgpx;gi.click()}return}
+  const rd=e.target.closest('[data-recdel]');if(rd){if(rd.dataset.sure){RECS.splice(+rd.dataset.recdel,1);saveRec();if(screen==='diari')renderDiari();else renderRuta()}else{rd.dataset.sure='1';rd.textContent='Segur?';rd.style.color='var(--soon)';setTimeout(()=>{if(rd.isConnected){delete rd.dataset.sure;rd.textContent='Esborra';rd.style.color=''}},4000)}return}
+  const rx=e.target.closest('[data-recdiscard]');if(rx){if(rx.dataset.sure){REC=null;recMsg='';saveRec();paintRec();show('diari')}else{rx.dataset.sure='1';rx.textContent="Segur? Es perden els bolets d'aquesta sortida";setTimeout(()=>{if(rx.isConnected){delete rx.dataset.sure;rx.textContent='Descarta la sortida (sense desar-la)'}},4000)}return}
   const rm=e.target.closest('[data-recmap]');if(rm){recMap(RECS[+rm.dataset.recmap]);return}
   const rs=e.target.closest('[data-recsend]');if(rs){recShare(RECS[+rs.dataset.recsend]);return}
   const pd=e.target.closest('[data-pld]');if(pd){const d=+pd.dataset.pld;PLAN.days=PLAN.days.includes(d)?PLAN.days.filter(x=>x!==d):[...PLAN.days,d].sort();renderPlan();return}
