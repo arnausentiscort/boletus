@@ -117,7 +117,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .cal .wd{font-size:11px;color:var(--muted);text-align:center;font-weight:700}
 .day{position:relative;aspect-ratio:1/1.34;border-radius:10px;background:var(--surface2);border:0;padding:3px 0 0;display:flex;flex-direction:column;align-items:center;font-size:12px;min-width:0}
 .fchip{display:inline-block;font-weight:800;font-size:12.5px;border-radius:999px;padding:2px 9px;margin-left:4px;vertical-align:1px;white-space:nowrap}
-.f-bona{background:var(--go);color:#fff}.f-normal{background:var(--go-soft);color:var(--go);box-shadow:inset 0 0 0 1.5px var(--go)}.f-fluixa{background:var(--wait-soft);color:var(--wait)}
+.f-bona{background:#E24028;color:#fff}.f-normal{background:#F49628;color:#1C2218}.f-fluixa{background:#F2C94C;color:#1C2218}
 .fbar{display:grid;grid-template-columns:92px 1fr auto;gap:8px;align-items:center;font-size:14px}
 .fbar i{height:8px;border-radius:4px;background:var(--surface2);overflow:hidden;display:block}.fbar i b{display:block;height:100%;border-radius:4px;background:var(--go)}
 .day .tm{font:500 10px/1.15 var(--f-data);color:var(--muted)}
@@ -127,7 +127,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 .day .n{font-weight:700;line-height:1.1}
 .day.bol{background:var(--go-soft)}
 .day.bol .n{color:var(--go)}
-.day.top{background:var(--go)}
+.day.s1{background:color-mix(in srgb,#F2C94C 62%,var(--surface2))}.day.s2{background:color-mix(in srgb,#F49628 72%,var(--surface2))}.day.s3{background:color-mix(in srgb,#E24028 88%,var(--surface2))}
+.day.s1 .n,.day.s2 .n{color:#1C2218}.day.s1 .tm,.day.s2 .tm{color:#1C2218;opacity:.7}.day.s3 .n,.day.s3 .tm{color:#fff}.day.s3 .tm{opacity:.85}
+.day.hs .n{align-self:flex-start;margin-left:5px}
+.day .sc{position:absolute;right:3px;top:4px;font:500 9px/1 var(--f-data);color:#1C2218}.day .sc.lo{color:var(--muted);opacity:.8}.day.s3 .sc,.day.top .sc{color:#fff}
+.strip i.b.s1{background:#F2C94C;box-shadow:none}.strip i.b.s2{background:#F49628;box-shadow:none}.strip i.b.s3{background:#E24028;box-shadow:none}.strip i.p{background:#8F2615}
+.day.top{background:#8F2615}
 .day.top .n{color:#fff}
 .day.top .drop{opacity:1;filter:brightness(2.2)}
 .day.top .drop span{color:#fff}
@@ -200,12 +205,12 @@ button.site:active{background:var(--surface2)}
 .site .when{font:800 19px/1.2 var(--f-display);text-align:right;white-space:nowrap}
 .site .mu,.site .st{font-size:13px;color:var(--muted)}
 .site .st{text-align:right;white-space:nowrap}
-.site.go .when{color:var(--go)}.site.soon .when{color:var(--soon)}.site.wait .when{color:var(--wait);font-weight:600}
+.site.go .when{color:var(--ink)}.site.soon .when{color:var(--soon)}.site.wait .when{color:var(--wait);font-weight:600}
 .site .strip{grid-column:1/-1;margin-top:11px}
 .foot{font-size:12.5px;color:var(--muted);padding:0 4px;line-height:1.5}
 .foot i.k{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin:0 3px 0 1px}
 .nota{display:inline-block;min-width:30px;padding:0 6px;box-sizing:border-box;height:24px;line-height:24px;border-radius:12px;font:500 13px var(--f-data);text-align:center;margin-right:8px;vertical-align:3px}
-.n-bona{background:var(--go);color:#fff}.n-normal{background:var(--go-soft);color:var(--go)}.n-fluixa{background:var(--wait-soft);color:var(--wait)}
+.n-bona{background:#E24028;color:#fff}.n-normal{background:#F49628;color:#1C2218}.n-fluixa{background:#F2C94C;color:#1C2218}
 .mem{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:15px 16px;display:flex;flex-direction:column;gap:6px}
 .mem h3{font-size:22px;letter-spacing:-.02em}
 .mem .cnt{display:flex;flex-wrap:wrap;gap:4px 14px;font-weight:700;font-size:16px}
@@ -556,7 +561,7 @@ function evalRov(s){
     if(x&&x.v>=35){if(!cw||cw.b!==d-1){cw={a:d,b:d,peak:d,x};wins.push(cw)}else{cw.b=d;if(x.v>cw.x.v){cw.peak=d;cw.x=x}}}
     // terra mullada però massa fred o massa calor
     if(x&&x.v<35&&x.M>0&&x.H>=.45&&x.T===0){if(!cc||cc.b!==d-1){let t1=d;for(let q=d;q>=Math.max(0,d-14);q--)if((ser.r[q-ser.start]||0)>=8){t1=q;break}cc={a:d,b:d,peak:d,t1,tg:x.tm,hot:x.tm!=null&&x.tm>(R.maxT||99),f:null};colds.push(cc)}else cc.b=d}}
-  wins.forEach(w=>{const x=w.x;w.f={v:x.v,nom:x.v>=60?'bona':'normal',mm:x.hum,fp:x.H,ft:x.T,fm:x.M,fg:x.G,gel:x.gel,gn:x.gn};w.tg=x.tm;w.t1=w.a-R.lag;w.prov=w.peak>TODAY;w.mm=x.hum});
+  wins.forEach(w=>{const x=w.x;w.f={v:x.v,nom:x.v>=75?'bona':x.v>=55?'normal':'fluixa',mm:x.hum,fp:x.H,ft:x.T,fm:x.M,fg:x.G,gel:x.gel,gn:x.gn};w.tg=x.tm;w.t1=w.a-R.lag;w.prov=w.peak>TODAY;w.mm=x.hum});
   s.wins=wins;s.colds=colds;s.cold=colds.find(c=>c.a<=TODAY&&TODAY<=c.b)||null;
   const cur=wins.find(w=>w.a<=TODAY&&TODAY<=w.b),next=wins.find(w=>w.a>TODAY);
   s.state=cur?'go':next?'soon':'wait';s.win=cur||next||null;
@@ -599,7 +604,8 @@ function whenOf(s,k){
   return['—',s.cold?(s.cold.hot?'massa calor':'massa fred'):!mesOk(k||SP)?'fora de temporada':'falta aigua']}
 function stripHtml(s){let cells='';
   for(let d=TODAY-7;d<=TODAY+13;d++){const r=rainOn(s,d);const sz=r&&r>=2?Math.min(10,4+Math.sqrt(r)*1.2):0;
-    cells+=`<i class="${s.peak(d)?'p':s.bolet(d)?'b':''} ${d===TODAY?'t':''}">${sz?`<u class="${d>TODAY?'f':''}" style="width:${sz}px;height:${sz}px"></u>`:''}</i>`}
+    const sx=SP==='rov'&&s.sc?s.sc(d):null,wd=!sx&&s.bolet(d)?s.wins.find(w=>d>=w.a&&d<=w.b):null,lv=sx?(sx.v>=35?(sx.v>=75?'s3':sx.v>=55?'s2':'s1'):''):wd?(wd.f.v>=60?'s3':wd.f.v>=35?'s2':'s1'):'';
+       cells+=`<i class="${s.peak(d)?'p':s.bolet(d)?'b':''} ${lv} ${d===TODAY?'t':''}">${sz?`<u class="${d>TODAY?'f':''}" style="width:${sz}px;height:${sz}px"></u>`:''}</i>`}
   return `<span class="strip" aria-hidden="true">${cells}</span>`}
 function leadOf(list){
   const go=list.filter(s=>s.state==='go').sort((a,b)=>(b.win.f?b.win.f.v:0)-(a.win.f?a.win.f.v:0));
@@ -628,7 +634,7 @@ function renderLlocs(){
        <span class="nm"><span>${esc(s.name)}</span></span><span class="when">${s.state!=='wait'&&s.win.f?`<b class="nota n-${s.win.f.nom}" title="Nota de la tanda">${s.win.f.v}</b>`:''}${w}</span>
        <span class="mu">${esc(s.muni||'')}${lv?`${s.muni?' · ':''}última, ${fmt(dnum(lv.d))}`:''}</span><span class="st">${why}</span>
        ${stripHtml(s)}</button>`}).join('')}</div>
-   <p class="foot">Tres setmanes, avui marcat. <i class="k" style="background:var(--go)"></i>millor dia <i class="k" style="background:var(--go-soft);box-shadow:inset 0 0 0 1.5px var(--go)"></i>bolets <i class="k" style="background:var(--rain);border-radius:50%"></i>pluja<br>${esc(wxInfo)}</p>
+   <p class="foot">Tres setmanes, avui marcat. <i class="k" style="background:#F2C94C"></i>fluixa <i class="k" style="background:#F49628"></i>normal <i class="k" style="background:#E24028"></i>bona <i class="k" style="background:#8F2615"></i>millor <i class="k" style="background:var(--rain);border-radius:50%"></i>pluja<br>${esc(wxInfo)}</p>
    <button class="planbtn" data-goplan><b>Pla del cap de setmana</b><span>Boscos nous, on aparcar i què pentinar ›</span></button>`}
 
 const AVIS_TEMA='boletus-ceps-x7q2';
@@ -973,10 +979,11 @@ function calendar(s){
   for(let d=start;d<=end;d++){const r=rainOn(s,d),vs=visitsOn(s,d),b=s.bolet(d);
     const tt=tempOn(s,d),cw=!b&&s.colds.some(w=>d>=w.a&&d<=w.b);
     const tc=tt==null?'':tt<RULE.minT?'cold':RULE.maxT!=null&&tt>RULE.maxT?'hot':'';
-    const cls=['day',b?'bol':'',cw?'cx':'',s.peak(d)?'top':'',d===TODAY?'today':'',d===selDay?'sel':'',d>s.ser.end&&!b?'out':''].join(' ');
+    const sx=SP==='rov'&&s.sc?s.sc(d):null,wd=!sx&&b?s.wins.find(w=>d>=w.a&&d<=w.b):null,lv=sx?(sx.v>=35?(sx.v>=75?'s3':sx.v>=55?'s2':'s1'):''):wd?(wd.f.v>=60?'s3':wd.f.v>=35?'s2':'s1'):'';
+    const cls=['day',b?'bol':'',lv,sx&&sx.v>0?'hs':'',cw?'cx':'',s.peak(d)?'top':'',d===TODAY?'today':'',d===selDay?'sel':'',d>s.ser.end&&!b?'out':''].join(' ');
     const ds=r&&r>=1?Math.min(18,7+Math.sqrt(r)*1.7):0;
     const cnt=vs.length?(vs.reduce((a,v)=>a+(v.n||0),0)||'·'):'';
-    h+=`<button class="${cls}" data-day="${d}" aria-label="${fmt(d)}"><span class="n">${D(d).getUTCDate()}</span>${tt!=null?`<span class="tm ${tc} ${d>TODAY?'f':''}">${Math.round(tt)}°</span>`:''}
+    h+=`<button class="${cls}" data-day="${d}" aria-label="${fmt(d)}"><span class="n">${D(d).getUTCDate()}</span>${sx&&sx.v>0?`<span class="sc ${sx.v>=35?'':'lo'}">${sx.v}</span>`:''}${tt!=null?`<span class="tm ${tc} ${d>TODAY?'f':''}">${Math.round(tt)}°</span>`:''}
       ${vs.length?`<span class="c">${cnt}</span>`:''}
       ${ds?`<span class="drop ${d>TODAY?'f':''}">${dropSvg(ds*.8,ds)}<span>${Math.round(r)}</span></span>`:''}</button>`}
   return h+'</div>'}
@@ -1003,7 +1010,7 @@ function renderFitxa(){
    ${sun?`<div class="sun">${sunIcon}<div><strong>${nextGo===TODAY+1?'Demà':wdn(nextGo)+' '+fmt(nextGo)} surt el sol a les ${sun.sol}</strong>${wetTxt(s,nextGo)}</div></div>`:''}
    ${s.win&&s.win.f?forcaCard(s.win):''}
    <div class="card">${calendar(s)}
-     <div class="legend"><span><i class="sw" style="background:var(--go)"></i>Millor dia</span><span><i class="sw" style="background:var(--go-soft);outline:1.5px solid var(--go)"></i>Dies de bolets</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>${SPECIES[SP].nom} trobats</span><span><b class="mono" style="font-size:11px">17°</b>Temperatura mitjana</span><span><b class="mono" style="font-size:11px;color:#5B9BE0">9°</b>Massa fred</span><span><i class="sw" style="box-shadow:inset 0 0 0 1.5px #5B9BE0;background:repeating-linear-gradient(135deg,rgba(91,155,224,.25) 0 3px,transparent 3px 6px)"></i>Hi hauria hagut bolets, però ha fet fred</span></div>
+     <div class="legend"><span><i class="sw" style="background:#8F2615"></i>Millor dia</span><span><i class="sw" style="background:#F2C94C"></i>Fluixa</span><span><i class="sw" style="background:#F49628"></i>Normal</span><span><i class="sw" style="background:#E24028"></i>Bona</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>${SPECIES[SP].nom} trobats</span><span><b class="mono" style="font-size:11px">17°</b>Temperatura mitjana</span><span><b class="mono" style="font-size:11px;color:#5B9BE0">9°</b>Massa fred</span><span><i class="sw" style="box-shadow:inset 0 0 0 1.5px #5B9BE0;background:repeating-linear-gradient(135deg,rgba(91,155,224,.25) 0 3px,transparent 3px 6px)"></i>Hi hauria hagut bolets, però ha fet fred</span></div>
      <div class="daynote" id="daynote">${dayNote(s,selDay)}</div>
    </div>
    <div class="card">
@@ -1123,7 +1130,8 @@ async function drawProb(){
   const want=SP==='ceps'?'ceps':'pin',msk=SP==='ceps'?'ceps':'rov';GEV=G.filter(g=>g.sp.includes(want));GEV.forEach(evalAt);
   const val=s=>s.state==='soon'?-1:s.win&&s.win.f?s.win.f.v:40;
   const live=GEV.filter(s=>s.state!=='wait').sort((a,b)=>val(a)-val(b));if(!live.length)return;
-  const colOf=s=>{const v=val(s);return s.state==='soon'?'rgba(150,120,230,.75)':v>=60?'rgba(226,64,40,.9)':v>=35?'rgba(244,150,40,.85)':'rgba(245,215,70,.8)'};
+  const hiT=SP==='ceps'?60:75,midT=SP==='ceps'?35:55;  // com al calendari: groc fluixa, taronja normal, vermell bona
+  const colOf=s=>{const v=val(s);return s.state==='soon'?'rgba(150,120,230,.75)':v>=hiT?'rgba(226,64,40,.9)':v>=midT?'rgba(244,150,40,.85)':'rgba(245,215,70,.8)'};
   if(!map.getPane('probP')){const pp=map.createPane('probP');pp.style.zIndex=282;pp.style.pointerEvents='none'}
   // Cada rajola: el color de les caselles del voltant, retallat amb la màscara del bosc que toca (pinar o bosc de ceps)
   const PL=L.GridLayer.extend({createTile(c,done){
@@ -1434,7 +1442,7 @@ function rovDies(){const R=RULE;
      <li>Compta la humitat de fa <strong>${R.lag} dies</strong>, que és el que triguen a sortir.</li>
      <li><strong>Temperatura</strong> mitjana dels últims 10 dies: de 10 a 16 °C és ideal; per sota de 6 o per sobre de 20 °C, res.</li>
      <li><strong>Època</strong>: de setembre a gener, el millor d'octubre i novembre. I les nits de gelada resten punts.</li></ul>
-     <p><strong>Dia de rovellons</strong> és un dia de 35 o més. <strong>Bona</strong> és 60 o més.</p>
+     <p><strong>Dia de rovellons</strong> és un dia de 35 o més. Els colors són els del mapa: <strong style="color:#C9A21E">groc</strong> (35–54, fluixa), <strong style="color:#E07A10">taronja</strong> (55–74, normal) i <strong style="color:#E24028">vermell</strong> (75 o més, bona).</p>
      <p class="small">Ajustat amb dues sortides reals: Creixell (8 de novembre de 2026) i l'Artiga de Lin (27 de setembre de 2024). Són poques: apunteu-ne més, també les de zero. No es compta la pluja prevista: només la que ja ha caigut.</p></div>`}
 // Regla de les altres espècies, amb els números de cada una
 function diesCard(){const R=RULE,N=SPECIES[SP].u[1];
