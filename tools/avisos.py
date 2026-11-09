@@ -10,6 +10,8 @@ Cada espècie té la seva regla (la mateixa que a l'app). Els ceps no han canvia
 fredolic, llenega negra i camagroc) tenen temporada i s'aturen si fa massa calor. L'avís de pluja és un de sol per lloc, amb el
 millor dia de cada espècie. L'avís del dia abans porta la força de la tanda (0-100), amb les nits de gelada."""
 import json, math, os, re, sys, urllib.request, datetime as dt
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from recomana import avalua_rov  # la nota diària dels rovellons és la mateixa que a l'app
 
 TOPIC = os.environ.get('NTFY_TOPIC', 'boletus-ceps-x7q2')
 APP = 'https://arnausentiscort.github.io/boletus/'
@@ -71,15 +73,25 @@ def main():
     data = data if isinstance(data, list) else [data]
     today = dt.datetime.now(dt.timezone(dt.timedelta(hours=1))).date() if 'TODAY' not in os.environ else dt.date.fromisoformat(os.environ['TODAY'])
     yesterday, tomorrow = today - dt.timedelta(1), today + dt.timedelta(1)
-    sent = 0; rain = {}; demà = {}
+    sent = 0; rain = {}; demà = {}; ara = []
     for s, d in zip(llocs, data):
         days = [dt.date.fromisoformat(x) for x in d['daily']['time']]
         r = [v or 0 for v in d['daily']['precipitation_sum']]; t = d['daily']['temperature_2m_mean']; n = d['daily']['temperature_2m_min']
         for k, R in SPECIES.items():
             if k not in AVISA: continue  # la família només busca ceps i rovellons
             if k not in s.get('sp', ['ceps']): continue  # cada lloc només avisa de les seves espècies
-            if k == 'rov':  # rovellons de muntanya: surten més tard i duren més (com a l'app)
-                dl = min(10, max(0, round((s.get('alt', 0) - 700) / 80))); R = dict(R, wait=R['wait'] + dl, after=R['after'] + math.ceil(dl / 2))
+            if k == 'rov':  # rovellons: nota diària (humitat de la terra), no tandes
+                wins, sc = avalua_rov(R, days, r, t, n, today, today + dt.timedelta(14))
+                get = lambda d: sc.get(d, (0,))[0]; nm = nom_curt(s['name'])
+                if get(today) >= 60 and get(yesterday) < 60: ara.append((nm, get(today)))
+                if get(tomorrow) >= 35 and get(tomorrow) > get(today) and get(tomorrow) >= get(tomorrow + dt.timedelta(1)):
+                    v = get(tomorrow); demà.setdefault('rov', []).append((nm, v, 'bona' if v >= 60 else 'normal', sunrise(tomorrow, s['lat'], s['lng'])))
+                if yesterday in days:
+                    iy = days.index(yesterday)
+                    if sum(r[iy - 1:iy + 1]) >= 15 and sum(r[iy - 2:iy]) < 15:  # ahir va ploure prou: avís de pluja
+                        nx = next((w for w in wins if w['b'] >= tomorrow), None)
+                        if nx: rain.setdefault(('rov', nx['peak'], nx['a'], nx['b']), []).append((nm, sum(r[iy - 1:iy + 1])))
+                continue
             last = -99
             for i in range(R['span'] - 1, len(days)):
                 if days[i] > yesterday: break  # només dies ja acabats
@@ -110,6 +122,8 @@ def main():
             lines.append(f"{SPECIES[k]['nom'].capitalize()}: millor dia {fmt(peak)} (del {a.day}{'' if a.month == b.month else ' ' + MESOS[a.month - 1]} al {b.day} {MESOS[b.month - 1]}) · {ll}")
         lit = f"{round(min(mms))}" if round(min(mms)) == round(max(mms)) else f"{round(min(mms))}-{round(max(mms))}"
         send('Ha plogut als vostres boscos', f"{lit} litres. Si després la temperatura acompanya:{NL}" + NL.join(lines), 'cloud_with_rain'); sent += 1
+    if ara:
+        send('Ara toca als vostres rovellons', NL.join(f"{nm} · nota {v}" for nm, v in sorted(ara, key=lambda x: -x[1])) + f"{NL}Com més d'hora, menys gent hi haurà passat.", 'mushroom'); sent += 1
     for k, llocs in demà.items():
         sol = min(x[3] for x in llocs)
         cos = NL.join(f"{nm} · tanda {nom} ({v}/100)" for nm, v, nom, _ in sorted(llocs, key=lambda x: -x[1]))

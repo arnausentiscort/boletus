@@ -481,8 +481,9 @@ const SPECIES={
     // força: litres (de "poc" a "prou"), temperatura dels dies de creixement (trapezi), pes de cada mes i cost de cada nit de gelada
     forca:{mm:[10,35],t:[12,16,22,27],mes:{5:.3,6:.4,7:.4,8:.6,9:1,10:1,11:.4,12:.1},gel:.2}},
   // Les altres espècies són de pinar: regles provisionals a partir de guies, boletaires i BoletRadar.cat; s'ajustaran amb el diari
-  rov:{nom:'Rovellons',chip:'Rovellons',tag:'radar de rovellons',u:['rovelló','rovellons'],key:'rule-rov',region:'data/region_rov.json',vells:'Rovellons vells',
-    rule0:{mm:25,span:5,minT:10,maxT:20,wait:12,before:4,after:6,obagaBonus:2,months:[9,10,11,12,1]},
+  rov:{nom:'Rovellons',chip:'Rovellons',tag:'radar de rovellons',u:['rovelló','rovellons'],key:'rule-rov2',region:'data/region_rov.json',vells:'Rovellons vells',
+    // Rovellons: nota diària a partir de la humitat que guarda la terra (half: vida mitjana en dies, lag: retard, hlo/hhi: l de "gens" i de "de sobra")
+    rule0:{half:10,lag:3,hlo:15,hhi:65,mm:25,span:5,minT:10,maxT:20,wait:12,before:4,after:6,obagaBonus:2,months:[9,10,11,12,1]},
     nit:"Com més d'hora hi aneu, menys gent hi haurà passat abans.",
     forca:{mm:[12,45],t:[6,10,16,20],mes:{9:.7,10:1,11:.95,12:.5,1:.2},gel:.1},
     spot:{alt:[80,300,1300,1750],ob:.8},leg:['Àcida: pinetell','Calcària: rovelló'],soil:{calc:'terra calcària, on va bé el rovelló',acid:'terra àcida, més aviat de pinetell'}},
@@ -505,7 +506,7 @@ function forca(s,w){const F=SPECIES[SP].forca;let mm=0;
   const fg=gn>=3?1-Math.min(.8,gel*(F.gel||0)):1;
   const v=Math.round(100*fp*ft*fm*fg);
   return{v,mm,fp,ft,fm,fg,gel,gn,nom:v>=60?'bona':v>=35?'normal':'fluixa'}}
-const forcaChip=f=>`<span class="fchip f-${f.nom}">Tanda ${f.nom} · ${f.v}</span>`;
+const forcaChip=f=>`<span class="fchip f-${f.nom}">${SP==='rov'?'Nota':'Tanda'} ${f.nom} · ${f.v}</span>`;
 // La família només busca ceps i rovellons: els bolets d'hivern es continuen calculant, però no surten als selectors
 const SHOW=['ceps','rov'];
 let SP=SHOW.includes(store.get('sp','ceps'))?store.get('sp','ceps'):'ceps';
@@ -534,11 +535,33 @@ function evalSite(s){
   s.bolet=d=>out.some(w=>d>=w.a&&d<=w.b);
   out.forEach(w=>w.f=forca(s,w));cold.forEach(w=>w.f=forca(s,w));
   s.peak=d=>out.some(w=>w.peak===d)}
-// Rovellons de muntanya: com més amunt, més fred, i surten més tard i aguanten més.
-// Ajustat amb l'Artiga de Lin (1.260 m): la regla de pinar baix deia del 8 al 18 de setembre i n'hi havia el 27.
-const altDelay=a=>a==null?0:Math.min(10,Math.max(0,Math.round((a-700)/80)));
-function evalAt(s){const d=SP==='rov'?altDelay(s.alt):0;if(!d){evalSite(s);return}
-  const keep=RULE;RULE=Object.assign({},keep,{wait:keep.wait+d,after:keep.after+Math.ceil(d/2)});try{evalSite(s)}finally{RULE=keep}}
+/* Rovellons: una nota de 0 a 100 cada dia, no tandes.
+   Un índex de humitat: cada dia se suma la pluja nova i la d'abans es va assecant (vida mitjana R.half dies).
+   Els rovellons hi responen amb R.lag dies de retard. Nota = humitat × temperatura × època × gelades.
+   Dia de rovellons = nota de 35 o més. Ajustat amb dos casos reals: Creixell (8-11-2026) i l'Artiga de Lin (27-9-2024). */
+function evalRov(s){
+  const R=RULE,F=SPECIES.rov.forca,ser=s.ser,k=Math.pow(.5,1/R.half),N=ser.r.length;
+  const lastReal=Math.min(N-1,TODAY-ser.start),nd=TODAY+14-ser.start+1;
+  // la pluja que ja ha caigut; a partir d'avui, la humitat només es va assecant (no es compta la pluja prevista)
+  const api=new Array(nd);let a=0;for(let i=0;i<nd;i++){a=a*k+(i<=lastReal?(ser.r[i]||0):0);api[i]=a}
+  const tmean=i=>{const e=Math.min(i,N-1);let sm=0,c=0;for(let j=Math.max(0,e-9);j<=e;j++){const v=ser.t[j];if(v!=null){sm+=v;c++}}return c?sm/c:null};
+  const info=new Array(nd).fill(null);
+  for(let i=R.lag;i<nd;i++){const d=ser.start+i,hum=api[i-R.lag];
+    const H=Math.pow(Math.min(1,Math.max(0,(hum-R.hlo)/(R.hhi-R.hlo))),.85),tm=tmean(i),T=tm==null?.5:trap(tm,F.t),M=F.mes[D(d).getUTCMonth()+1]||0;
+    let gel=0,gn=0;if(ser.n)for(let q=Math.max(0,i-6);q<=Math.min(i,N-1);q++){const v=ser.n[q];if(v!=null){gn++;if(v<=-2)gel++}}
+    const G=gn>=3?1-Math.min(.8,gel*(F.gel||0)):1;
+    info[i]={v:Math.round(100*H*T*M*G),H,T,M,G,hum,tm,gel,gn}}
+  const wins=[],colds=[];let cw=null,cc=null;
+  for(let i=0;i<nd;i++){const x=info[i],d=ser.start+i;
+    if(x&&x.v>=35){if(!cw||cw.b!==d-1){cw={a:d,b:d,peak:d,x};wins.push(cw)}else{cw.b=d;if(x.v>cw.x.v){cw.peak=d;cw.x=x}}}
+    // terra mullada però massa fred o massa calor
+    if(x&&x.v<35&&x.M>0&&x.H>=.45&&x.T===0){if(!cc||cc.b!==d-1){let t1=d;for(let q=d;q>=Math.max(0,d-14);q--)if((ser.r[q-ser.start]||0)>=8){t1=q;break}cc={a:d,b:d,peak:d,t1,tg:x.tm,hot:x.tm!=null&&x.tm>(R.maxT||99),f:null};colds.push(cc)}else cc.b=d}}
+  wins.forEach(w=>{const x=w.x;w.f={v:x.v,nom:x.v>=60?'bona':'normal',mm:x.hum,fp:x.H,ft:x.T,fm:x.M,fg:x.G,gel:x.gel,gn:x.gn};w.tg=x.tm;w.t1=w.a-R.lag;w.prov=w.peak>TODAY;w.mm=x.hum});
+  s.wins=wins;s.colds=colds;s.cold=colds.find(c=>c.a<=TODAY&&TODAY<=c.b)||null;
+  const cur=wins.find(w=>w.a<=TODAY&&TODAY<=w.b),next=wins.find(w=>w.a>TODAY);
+  s.state=cur?'go':next?'soon':'wait';s.win=cur||next||null;
+  s.sc=d=>info[d-ser.start]||null;s.bolet=d=>{const x=info[d-ser.start];return !!x&&x.v>=35};s.peak=d=>wins.some(w=>w.peak===d)}
+function evalAt(s){if(SP==='rov')evalRov(s);else evalSite(s)}
 SITES.forEach(evalAt);
 window.__boletus={SITES,evalSite}; // per revisar des de la consola
 const STATE={go:['s-go','Ara'],soon:['s-soon','Aviat'],wait:['s-wait','Encara no']};
@@ -582,12 +605,12 @@ function leadOf(list){
   const go=list.filter(s=>s.state==='go').sort((a,b)=>(b.win.f?b.win.f.v:0)-(a.win.f?a.win.f.v:0));
   const soon=list.filter(s=>s.state==='soon').sort((a,b)=>a.win.peak-b.win.peak);
   if(go.length){const b=go[0];return{site:b,day:TODAY+1,h:`Ara n'hi ha a <em>${esc(b.name)}</em>${go.length>1?` i ${go.length-1} ${go.length===2?'lloc':'llocs'} més`:''}.`,
-    s:`Tanda ${b.win.f.nom}${b.win.peak>TODAY?` · millor dia, ${wdl(b.win.peak)}`:''}`}}
+    s:`${SP==='rov'?'Nota':'Tanda'} ${b.win.f.nom} (${b.win.f.v})${b.win.peak>TODAY?` · millor dia, ${wdl(b.win.peak)}`:''}`}}
   if(soon.length){const b=soon[0],p=b.win.peak;return{site:b,day:b.win.a,h:`${cap1(p===TODAY+1?'demà':wdl(p)+' '+D(p).getUTCDate())}, a <em>${esc(b.name)}</em>.`,
-    s:`Millor dia${b.win.prov?(RULE.maxT!=null?', si no fa fred ni calor':', si no fa fred'):''} · tanda ${b.win.f.nom}`}}
+    s:`Millor dia${b.win.prov?(RULE.maxT!=null?', si no fa fred ni calor':', si no fa fred'):''} · ${SP==='rov'?'nota':'tanda'} ${b.win.f.nom}`}}
   const s0=list[0];let t=0;for(let d=TODAY-9;d<=TODAY;d++)t+=rainOn(s0,d)||0;
   return{site:null,h:'De moment, res.',s:s0.cold?`Va ploure el ${fmt(s0.cold.t1)}, però després ha fet ${s0.cold.hot?'massa calor':'fred'}.`
-    :!mesOk(SP)?'Ara no és temporada.':`${Math.round(t)} litres els últims 10 dies. En calen ${RULE.mm} en ${RULE.span} dies.`}}
+    :!mesOk(SP)?'Ara no és temporada.':(SP==='rov'?`${Math.round(t)} litres els últims 10 dies: la terra encara està seca.`:`${Math.round(t)} litres els últims 10 dies. En calen ${RULE.mm} en ${RULE.span} dies.`)}}
 function renderLlocs(){
   const order={go:0,soon:1,wait:2},N=SPECIES[SP].nom;
   const list=MINE().sort((a,b)=>order[a.state]-order[b.state]||((a.win&&b.win)?a.win.peak-b.win.peak:0));
@@ -733,7 +756,7 @@ async function planRun(){
     cand.forEach((z,i)=>{const Dd=W[i].daily,st=dnum(Dd.time[0]);
       const s={id:'pl'+i,lat:z.lat,lng:z.lng,alt:z.alt,zone:{st:{obaga:z.ob}},ser:{start:st,r:Dd.precipitation_sum,t:Dd.temperature_2m_mean,n:Dd.temperature_2m_min,end:st+Dd.time.length-1}};
       evalAt(s);const hit=s.wins.filter(w=>PLAN.days.some(d=>d>=w.a&&d<=w.b));
-      z._w=hit.sort((a,b)=>b.f.v-a.f.v)[0]||null;z._dies=z._w?PLAN.days.filter(d=>d>=z._w.a&&d<=z._w.b):[];z._dl=SP==='rov'?altDelay(z.alt):0;
+      z._w=hit.sort((a,b)=>b.f.v-a.f.v)[0]||null;z._dies=z._w?PLAN.days.filter(d=>d>=z._w.a&&d<=z._w.b):[];z._dl=0;
       let r15=0;for(let d=TODAY-14;d<=TODAY;d++)r15+=rainOn(s,d)||0;z._r15=r15;
       z._n=(z._w?z._w.f.v:-1)+4*z._t-z._km/10});
     const top=cand.sort((a,b)=>b._n-a._n).slice(0,3);
@@ -933,8 +956,10 @@ function dayNote(s,d){
   const tt=tempOn(s,d);if(tt!=null)parts.push(`${d>TODAY?'Temperatura prevista':'Temperatura mitjana'}: <strong>${Math.round(tt)} °C</strong>.`);
   const why=w=>`Va ploure ${Math.round(w.mm)} litres el ${fmt(w.t1)}; mentre creixien (del ${fmt(w.t1+1)} al ${fmt(w.t1+RULE.wait-2)}) la mitjana ${w.prov?'de moment és':'va ser'} de <strong>${w.tg==null?'?':w.tg.toFixed(1).replace('.',',')} °C</strong>`;
   const lim=RULE.maxT!=null?`entre ${RULE.minT} i ${RULE.maxT} °C`:`més de ${RULE.minT} °C`;
-  if(w)parts.push((w.peak===d?'<strong>El dia més probable.</strong>':'<strong>Dia de bolets.</strong>')+` ${why(w)} (calen ${lim})${w.prov?'; encara falten dies per saber-ho segur':''}. Tanda ${w.f.nom} (${w.f.v}/100).`);
-  const cw=!w&&s.colds.find(c=>d>=c.a&&d<=c.b);
+  if(SP==='rov'){const x=s.sc&&s.sc(d);
+    if(x&&x.v>0)parts.push((w?(w.peak===d?'<strong>El millor dia.</strong> ':'<strong>Dia de rovellons.</strong> '):'')+`Nota <strong>${x.v}/100</strong>: la terra guarda l'equivalent a ${Math.round(x.hum)} litres de pluja${x.tm!=null?` i fa ${x.tm.toFixed(1).replace('.',',')} °C de mitjana`:''}.${d>TODAY?' <span class="muted">(Si no plou més.)</span>':''}`);
+  }else if(w)parts.push((w.peak===d?'<strong>El dia més probable.</strong>':'<strong>Dia de bolets.</strong>')+` ${why(w)} (calen ${lim})${w.prov?'; encara falten dies per saber-ho segur':''}. Tanda ${w.f.nom} (${w.f.v}/100).`);
+  const cw=SP!=='rov'&&!w&&s.colds.find(c=>d>=c.a&&d<=c.b);
   if(cw)parts.push(`<strong>Hauria estat dia de bolets, però no.</strong> ${why(cw)}: ${cw.hot?'massa calor':'massa fred'} (calen ${lim}).`);
   vs.forEach(v=>parts.push(`Hi vau anar: <strong>${cepTxt(v.n)}</strong>${v.h?' a les '+esc(v.h):''}.${v.nota?' '+esc(v.nota):''}`));
   if(!parts.length)parts.push(d>TODAY+7?'Encara no hi ha previsió de pluja per a aquest dia.':'Ni pluja ni bolets.');
@@ -960,12 +985,13 @@ function forcaCard(w){const f=w.f,F=SPECIES[SP].forca,pc=x=>Math.round(x*100);
   const tt=w.tg==null?'encara sense dades':`${w.tg.toFixed(1).replace('.',',')} °C${w.prov?' fins ara':''}`;
   const tmsg=w.tg==null?'':w.tg<F.t[1]?'fresc':w.tg>F.t[2]?'calorós':'ideal';
   const row=(l,x,d)=>`<div class="fbar"><span>${l}</span><i><b style="width:${pc(x)}%"></b></i><span class="small">${d}</span></div>`;
-  return `<div class="card"><div class="row"><strong style="font-family:var(--f-display);font-size:19px">Com de bona és la tanda</strong><span class="spacer"></span>${forcaChip(f)}</div>
-   ${row('Pluja',f.fp,`${Math.round(f.mm)} l`)}
+  return `<div class="card"><div class="row"><strong style="font-family:var(--f-display);font-size:19px">${SP==='rov'?'Quina nota té':'Com de bona és la tanda'}</strong><span class="spacer"></span>${forcaChip(f)}</div>
+   ${row(SP==='rov'?'Humitat':'Pluja',f.fp,SP==='rov'?`${Math.round(f.mm)} l a la terra`:`${Math.round(f.mm)} l`)}
    ${row('Temperatura',f.ft,`${tt}${tmsg?' · '+tmsg:''}`)}
    ${row('Època',f.fm,MES[D(w.peak).getUTCMonth()])}
    ${f.gn>=3?row('Gelades',f.fg,f.gel?`${f.gel} ${f.gel===1?'nit':'nits'} de gelada`:'cap nit de gelada'):''}
-   <p class="small">De 0 a 100: la pluja de tot l'episodi (amb ${F.mm[1]} l o més ja n'hi ha prou), la temperatura mitjana mentre creixen (millor entre ${F.t[1]} i ${F.t[2]} °C) i si és bona època${f.gn>=3?'. Cada nit de gelada (a −2 °C o menys) resta punts':''}. ${w.prov?'Encara falten dies de temperatura: pot canviar.':''}</p></div>`}
+   ${SP==='rov'?`<p class="small">De 0 a 100 el millor dia: la humitat que guarda la terra (la pluja dels últims dies, que es va assecant; amb ${RULE.hhi} l ja n'hi ha de sobra), la temperatura (millor entre ${F.t[1]} i ${F.t[2]} °C) i si és bona època.${f.gn>=3?' Cada nit de gelada resta punts.':''} ${w.prov?'Si plou, la nota pot pujar; si fa fred, baixar.':''}</p></div>`:''}
+   ${SP==='rov'?'':`<p class="small">De 0 a 100: la pluja de tot l'episodi (amb ${F.mm[1]} l o més ja n'hi ha prou), la temperatura mitjana mentre creixen (millor entre ${F.t[1]} i ${F.t[2]} °C) i si és bona època${f.gn>=3?'. Cada nit de gelada (a −2 °C o menys) resta punts':''}. ${w.prov?'Encara falten dies de temperatura: pot canviar.':''}</p></div>`}`}
 function renderFitxa(){
   const s=cur,st=s.zone.st;
   const nextGo=s.state==='go'?TODAY+1:s.state==='soon'?s.win.a:null;const sun=nextGo?sunTimes(nextGo,s.lat,s.lng):null;
@@ -1397,9 +1423,19 @@ function rovRecerca(){return `<div class="card how"><h3>Què diu la recerca</h3>
      <p><strong>Quants dies tarden?</strong> Els primers, <strong>8–15 dies</strong> després de la pluja. Cada tanda dura unes dues setmanes, i si torna a ploure sense glaçar, en surt una altra.</p>
      <p><strong>Quan?</strong> De setembre a desembre, sobretot d'octubre a novembre. Les obagues comencen abans.</p>
      <p class="small">Xifres de guies i de boletaires; estudis amb números exactes n'hi ha pocs. Aquesta regla encara no està provada amb sortides vostres: apunteu-les al diari.</p></div>
-   ${diesCard()}`}
+   ${rovDies()}`}
 const MESOS_C=['','gener','febrer','març','abril','maig','juny','juliol','agost','setembre','octubre','novembre','desembre'];
 const mesosTxt=ms=>{const o=[...ms].sort((a,b)=>(a<7?a+12:a)-(b<7?b+12:b));return `de ${MESOS_C[o[0]]} a ${MESOS_C[o[o.length-1]]}`};
+// Rovellons: la nota diària
+function rovDies(){const R=RULE;
+  return `<div class="card how"><h3>Nota dels rovellons</h3>
+     <p>Els rovellons no surten en una tanda curta: mentre la terra guarda la humitat, en van sortint durant setmanes. Per això, cada dia té una <strong>nota de 0 a 100</strong>:</p>
+     <ul><li><strong>Humitat</strong>: se suma la pluja de cada dia i la d'abans es va assecant (a la meitat cada ${R.half} dies). Amb ${R.hlo} l o menys no és res; amb ${R.hhi} l o més ja n'hi ha de sobra.</li>
+     <li>Compta la humitat de fa <strong>${R.lag} dies</strong>, que és el que triguen a sortir.</li>
+     <li><strong>Temperatura</strong> mitjana dels últims 10 dies: de 10 a 16 °C és ideal; per sota de 6 o per sobre de 20 °C, res.</li>
+     <li><strong>Època</strong>: de setembre a gener, el millor d'octubre i novembre. I les nits de gelada resten punts.</li></ul>
+     <p><strong>Dia de rovellons</strong> és un dia de 35 o més. <strong>Bona</strong> és 60 o més.</p>
+     <p class="small">Ajustat amb dues sortides reals: Creixell (8 de novembre de 2026) i l'Artiga de Lin (27 de setembre de 2024). Són poques: apunteu-ne més, també les de zero. No es compta la pluja prevista: només la que ja ha caigut.</p></div>`}
 // Regla de les altres espècies, amb els números de cada una
 function diesCard(){const R=RULE,N=SPECIES[SP].u[1];
   return `<div class="card how"><h3>Dies de ${N}</h3>
@@ -1441,7 +1477,7 @@ function renderCom(){
      <li>…el <strong>millor dia</strong> és ${RULE.wait} dies després del primer dia que es passa el llindar, i hi ha bolets del dia ${RULE.wait-RULE.before} al ${RULE.wait+RULE.after}.</li>
      <li>Si el bosc és sobretot obaga, ${RULE.obagaBonus} dia més al final.</li></ul>
      <p><strong>Per què 5 dies i no 10?</strong> Les dues bones sortides que coneixem, totes dues al mateix lloc, van ser 15 dies (2026) i 17 dies (2022) després de la primera pluja forta. La mitjana és 16. La recerca diu el mateix: els ceps surten sobretot 13–15 dies després de la pluja més forta, i cada cep és bo pocs dies abans de fer-se malbé. Per això la finestra és 16 ± 2 dies: cobreix tot el que hem vist amb un dia de marge per banda i passa d'uns 40 dies possibles per temporada a uns 18.</p></div>`:SP==='rov'?rovRecerca():genRecerca()}
-   <div class="card how"><h3>Com de bona és la tanda</h3>
+   <div class="card how"${SP==='rov'?' hidden':''}><h3>Com de bona és la tanda</h3>
      <p>Els dies verds diuen <strong>quan</strong>. La força (de 0 a 100) diu <strong>quants</strong> en podeu esperar, i es fa amb aquestes coses:</p>
      <ul><li><strong>Pluja</strong> de tot l'episodi: amb ${SPECIES[SP].forca.mm[0]} l no n'hi ha gaire; amb ${SPECIES[SP].forca.mm[1]} l o més, ja n'hi ha prou.</li>
      <li><strong>Temperatura</strong> mitjana mentre creixen: ideal entre ${SPECIES[SP].forca.t[1]} i ${SPECIES[SP].forca.t[2]} °C; per sota de ${SPECIES[SP].forca.t[0]} o per sobre de ${SPECIES[SP].forca.t[3]} °C, res.</li>
@@ -1452,7 +1488,7 @@ function renderCom(){
      <p>Pluja estimada per a cada lloc, de models d'alta resolució (d'1 a 3 km), via Open-Meteo. Cada cop que obres l'app es baixen els últims dies i la previsió de 7 dies; sense connexió es fa servir l'última que tenies. Al calendari de cada lloc pots tirar enrere fins al 2016 per veure si la regla hauria encertat.</p></div>
    <div class="card how"><h3>Ajustar la regla</h3>
      <p class="small">Mou els números i mira als calendaris si els dies verds coincideixen amb els dies que vau trobar ${SPECIES[SP].u[1]}.</p>
-     ${[['mm','Pluja mínima','l',10,80],['span','En quants dies','dies',1,7],['minT','Temperatura mínima després de la pluja','°C',0,22],...(RULE.maxT!=null?[['maxT','Temperatura màxima després de la pluja','°C',8,28]]:[]),['wait','Millor dia (dies després de la pluja)','dies',5,30],['before','Marge abans','dies',0,7],['after','Marge després','dies',0,10],['obagaBonus','Dies extra si és obaga','dies',0,6]]
+     ${(SP==='rov'?[['half','Vida mitjana de la humitat','dies',3,20],['lag','Retard entre la pluja i els rovellons','dies',0,10],['hlo','Humitat que no és res','l',5,40],['hhi','Humitat que ja és de sobra','l',30,120]]:[['mm','Pluja mínima','l',10,80],['span','En quants dies','dies',1,7],['minT','Temperatura mínima després de la pluja','°C',0,22],...(RULE.maxT!=null?[['maxT','Temperatura màxima després de la pluja','°C',8,28]]:[]),['wait','Millor dia (dies després de la pluja)','dies',5,30],['before','Marge abans','dies',0,7],['after','Marge després','dies',0,10],['obagaBonus','Dies extra si és obaga','dies',0,6]])
        .map(([k,l,u,a,b])=>`<div class="slider"><label for="r-${k}">${l}</label><output id="o-${k}">${RULE[k]} ${u}</output><input type="range" id="r-${k}" data-k="${k}" data-u="${u}" min="${a}" max="${b}" value="${RULE[k]}"></div>`).join('')}
      <button class="btn ghost" id="rreset" style="align-self:flex-start">Tornar a la regla provisional</button></div>`;
   $('#s-com').querySelectorAll('input[data-k]').forEach(inp=>inp.oninput=()=>{RULE[inp.dataset.k]=+inp.value;$('#o-'+inp.dataset.k).textContent=inp.value+' '+inp.dataset.u;store.set(SPECIES[SP].key,RULE);SITES.forEach(evalAt)});

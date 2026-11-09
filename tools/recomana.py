@@ -106,6 +106,35 @@ def lloc_nom(la, lo):
     except ValueError: return ''
     return A.get('village') or A.get('town') or A.get('hamlet') or A.get('municipality') or A.get('city') or ''
 
+def avalua_rov(R, days, r, t, n, today, hasta):
+    """Rovellons: nota diària (0-100) amb un índex d'humitat de la terra, com a l'app (evalRov).
+    Humitat = pluja que ja ha caigut, que es va assecant (vida mitjana HALF dies); hi compta la de fa LAG dies."""
+    HALF, LAG, LO, HI = 10, 3, 15, 65
+    k = .5 ** (1 / HALF); F = R['forca']
+    nd = (hasta - days[0]).days + 1; i0 = days.index(today) if today in days else len(days) - 1
+    api, a = [], 0
+    for i in range(nd):
+        a = a * k + ((r[i] or 0) if i <= i0 else 0); api.append(a)
+    sc = {}
+    for i in range(LAG, nd):
+        d = days[0] + dt.timedelta(i); hum = api[i - LAG]
+        H = min(1, max(0, (hum - LO) / (HI - LO))) ** .85
+        e = min(i, len(t) - 1); ts = [x for x in t[max(0, e - 9):e + 1] if x is not None]
+        tm = sum(ts) / len(ts) if ts else None; T = .5 if tm is None else trap(tm, *F['t']); M = F['mes'].get(d.month, 0)
+        ns = [x for x in n[max(0, i - 6):min(i, len(n) - 1) + 1] if x is not None]
+        G = 1 - min(.8, sum(1 for x in ns if x <= -2) * F['gel']) if len(ns) >= 3 else 1
+        sc[d] = (round(100 * H * T * M * G), hum, tm)
+    out, cur = [], None
+    for d in sorted(sc):
+        if sc[d][0] >= 35:
+            if cur and cur['b'] == d - dt.timedelta(1):
+                cur['b'] = d
+                if sc[d][0] > cur['v']: cur['peak'], cur['v'], cur['mm'], cur['tg'] = d, sc[d][0], sc[d][1], sc[d][2]
+            else:
+                cur = dict(a=d, b=d, peak=d, v=sc[d][0], mm=sc[d][1], tg=sc[d][2]); out.append(cur)
+    for w in out: w['t1'] = w['a'] - dt.timedelta(LAG); w['prov'] = w['peak'] > today
+    return out, sc
+
 def aparcar(la, lo):
     """On deixar el cotxe: un aparcament a menys de 2 km, o el punt de carretera o pista bona més a prop del bosc."""
     q = f"""[out:json][timeout:60];
@@ -163,7 +192,8 @@ def main():
         W = get(u); W = W if isinstance(W, list) else [W]
         for z, w in zip(ch, W):
             D = w['daily']; days = [dt.date.fromisoformat(x) for x in D['time']]
-            wins, dl = avalua(R, a.sp, days, D['precipitation_sum'], D['temperature_2m_mean'], D['temperature_2m_min'], z['alt'], z['ob'], today)
+            if a.sp == 'rov': wins, _ = avalua_rov(R, days, D['precipitation_sum'], D['temperature_2m_mean'], D['temperature_2m_min'], today, max(dies + [days[-1]])); dl = 0
+            else: wins, dl = avalua(R, a.sp, days, D['precipitation_sum'], D['temperature_2m_mean'], D['temperature_2m_min'], z['alt'], z['ob'], today)
             hit = [w_ for w_ in wins if any(w_['a'] <= d <= w_['b'] for d in dies)]
             z['_w'] = max(hit, key=lambda w_: w_['v']) if hit else None; z['_dl'] = dl
             z['_dies'] = [d for d in dies if z['_w'] and z['_w']['a'] <= d <= z['_w']['b']]
@@ -186,8 +216,12 @@ def main():
         print(f"## {i}. {z['_nom'] or 'Bosc'}: {z['ha']} ha de {z['arbre']} a {z['alt']} m · {nota}")
         print(f"A {z['_km']:.0f} km de {P['name']} en línia recta, cap al {rumb(la0, lo0, z['lat'], z['lng'])}.")
         if w:
-            print(f"☔ {round(w['mm'])} litres a partir del {fdia(w['t1'])} · tanda del {fdia(w['a'])} al {fdia(w['b'])}, millor dia {fdia(w['peak'])}"
-                  + (f" (+{z['_dl']} dies per l'altura)" if z['_dl'] else '') + (' · la temperatura encara pot canviar-ho' if w['prov'] else ''))
+            if a.sp == 'rov':
+                print(f"☔ La terra guarda l'equivalent a {round(w['mm'])} litres de pluja · dies de rovellons del {fdia(w['a'])} al {fdia(w['b'])}, millor dia {fdia(w['peak'])} (nota {w['v']})"
+                      + ('' if not w['prov'] else ' · si no plou més'))
+            else:
+                print(f"☔ {round(w['mm'])} litres a partir del {fdia(w['t1'])} · tanda del {fdia(w['a'])} al {fdia(w['b'])}, millor dia {fdia(w['peak'])}"
+                      + (f" (+{z['_dl']} dies per l'altura)" if z['_dl'] else '') + (' · la temperatura encara pot canviar-ho' if w['prov'] else ''))
             print(f"   Hi cauen: {', '.join(fdia(d) for d in z['_dies'])}.")
         elif z['_r15'] is not None: print(f"☔ {round(z['_r15'])} litres els últims 15 dies.")
         if p:
