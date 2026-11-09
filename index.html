@@ -117,7 +117,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .cal .wd{font-size:11px;color:var(--muted);text-align:center;font-weight:700}
 .day{position:relative;aspect-ratio:1/1.34;border-radius:10px;background:var(--surface2);border:0;padding:3px 0 0;display:flex;flex-direction:column;align-items:center;font-size:12px;min-width:0}
 .fchip{display:inline-block;font-weight:800;font-size:12.5px;border-radius:999px;padding:2px 9px;margin-left:4px;vertical-align:1px;white-space:nowrap}
-.f-bona{background:#E24028;color:#fff}.f-normal{background:#F49628;color:#1C2218}.f-fluixa{background:#F2C94C;color:#1C2218}
+.f-bona{background:#8A5530;color:#fff}.f-normal{background:#C79A6A;color:#2C2218}.f-fluixa{background:#EADFD0;color:#2C2218;box-shadow:inset 0 0 0 1px rgba(62,36,16,.18)}
 .fbar{display:grid;grid-template-columns:92px 1fr auto;gap:8px;align-items:center;font-size:14px}
 .fbar i{height:8px;border-radius:4px;background:var(--surface2);overflow:hidden;display:block}.fbar i b{display:block;height:100%;border-radius:4px;background:var(--go)}
 .day .tm{font:500 10px/1.15 var(--f-data);color:var(--muted)}
@@ -127,12 +127,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 .day .n{font-weight:700;line-height:1.1}
 .day.bol{background:var(--go-soft)}
 .day.bol .n{color:var(--go)}
-.day.s1{background:color-mix(in srgb,#F2C94C 62%,var(--surface2))}.day.s2{background:color-mix(in srgb,#F49628 72%,var(--surface2))}.day.s3{background:color-mix(in srgb,#E24028 88%,var(--surface2))}
-.day.s1 .n,.day.s2 .n{color:#1C2218}.day.s1 .tm,.day.s2 .tm{color:#1C2218;opacity:.7}.day.s3 .n,.day.s3 .tm{color:#fff}.day.s3 .tm{opacity:.85}
+.day.s1{background:#EADFD0;box-shadow:inset 0 0 0 1px rgba(62,36,16,.16)}.day.s2{background:#C79A6A}.day.s3{background:#8A5530}
+.day.s1 .n,.day.s2 .n{color:#2C2218}.day.s1 .tm,.day.s2 .tm{color:#2C2218;opacity:.7}.day.s3 .n,.day.s3 .tm{color:#fff}.day.s3 .tm{opacity:.85}
 .day.hs .n{align-self:flex-start;margin-left:5px}
-.day .sc{position:absolute;right:3px;top:4px;font:500 9px/1 var(--f-data);color:#1C2218}.day .sc.lo{color:var(--muted);opacity:.8}.day.s3 .sc,.day.top .sc{color:#fff}
-.strip i.b.s1{background:#F2C94C;box-shadow:none}.strip i.b.s2{background:#F49628;box-shadow:none}.strip i.b.s3{background:#E24028;box-shadow:none}.strip i.p{background:#8F2615}
-.day.top{background:#8F2615}
+.day .sc{position:absolute;right:3px;top:4px;font:500 9px/1 var(--f-data);color:#2C2218}.day .sc.lo{color:var(--muted);opacity:.8}.day.s3 .sc,.day.top .sc{color:#fff}
+.strip i.b.s1{background:#EADFD0;box-shadow:inset 0 0 0 1px rgba(62,36,16,.2)}.strip i.b.s2{background:#C79A6A;box-shadow:none}.strip i.b.s3{background:#8A5530;box-shadow:none}.strip i.p{background:#3E2410}
+.day.top{background:#3E2410}
 .day.top .n{color:#fff}
 .day.top .drop{opacity:1;filter:brightness(2.2)}
 .day.top .drop span{color:#fff}
@@ -210,7 +210,7 @@ button.site:active{background:var(--surface2)}
 .foot{font-size:12.5px;color:var(--muted);padding:0 4px;line-height:1.5}
 .foot i.k{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin:0 3px 0 1px}
 .nota{display:inline-block;min-width:30px;padding:0 6px;box-sizing:border-box;height:24px;line-height:24px;border-radius:12px;font:500 13px var(--f-data);text-align:center;margin-right:8px;vertical-align:3px}
-.n-bona{background:#E24028;color:#fff}.n-normal{background:#F49628;color:#1C2218}.n-fluixa{background:#F2C94C;color:#1C2218}
+.n-bona{background:#8A5530;color:#fff}.n-normal{background:#C79A6A;color:#2C2218}.n-fluixa{background:#EADFD0;color:#2C2218;box-shadow:inset 0 0 0 1px rgba(62,36,16,.18)}
 .mem{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:15px 16px;display:flex;flex-direction:column;gap:6px}
 .mem h3{font-size:22px;letter-spacing:-.02em}
 .mem .cnt{display:flex;flex-wrap:wrap;gap:4px 14px;font-weight:700;font-size:16px}
@@ -634,7 +634,7 @@ function renderLlocs(){
        <span class="nm"><span>${esc(s.name)}</span></span><span class="when">${s.state!=='wait'&&s.win.f?`<b class="nota n-${s.win.f.nom}" title="Nota de la tanda">${s.win.f.v}</b>`:''}${w}</span>
        <span class="mu">${esc(s.muni||'')}${lv?`${s.muni?' · ':''}última, ${fmt(dnum(lv.d))}`:''}</span><span class="st">${why}</span>
        ${stripHtml(s)}</button>`}).join('')}</div>
-   <p class="foot">Tres setmanes, avui marcat. <i class="k" style="background:#F2C94C"></i>fluixa <i class="k" style="background:#F49628"></i>normal <i class="k" style="background:#E24028"></i>bona <i class="k" style="background:#8F2615"></i>millor <i class="k" style="background:var(--rain);border-radius:50%"></i>pluja<br>${esc(wxInfo)}</p>
+   <p class="foot">Tres setmanes, avui marcat. <i class="k" style="background:#EADFD0;box-shadow:inset 0 0 0 1px rgba(62,36,16,.25)"></i>fluixa <i class="k" style="background:#C79A6A"></i>normal <i class="k" style="background:#8A5530"></i>bona <i class="k" style="background:#3E2410"></i>millor <i class="k" style="background:var(--rain);border-radius:50%"></i>pluja<br>${esc(wxInfo)}</p>
    <button class="planbtn" data-goplan><b>Pla del cap de setmana</b><span>Boscos nous, on aparcar i què pentinar ›</span></button>`}
 
 const AVIS_TEMA='boletus-ceps-x7q2';
@@ -1010,7 +1010,7 @@ function renderFitxa(){
    ${sun?`<div class="sun">${sunIcon}<div><strong>${nextGo===TODAY+1?'Demà':wdn(nextGo)+' '+fmt(nextGo)} surt el sol a les ${sun.sol}</strong>${wetTxt(s,nextGo)}</div></div>`:''}
    ${s.win&&s.win.f?forcaCard(s.win):''}
    <div class="card">${calendar(s)}
-     <div class="legend"><span><i class="sw" style="background:#8F2615"></i>Millor dia</span><span><i class="sw" style="background:#F2C94C"></i>Fluixa</span><span><i class="sw" style="background:#F49628"></i>Normal</span><span><i class="sw" style="background:#E24028"></i>Bona</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>${SPECIES[SP].nom} trobats</span><span><b class="mono" style="font-size:11px">17°</b>Temperatura mitjana</span><span><b class="mono" style="font-size:11px;color:#5B9BE0">9°</b>Massa fred</span><span><i class="sw" style="box-shadow:inset 0 0 0 1.5px #5B9BE0;background:repeating-linear-gradient(135deg,rgba(91,155,224,.25) 0 3px,transparent 3px 6px)"></i>Hi hauria hagut bolets, però ha fet fred</span></div>
+     <div class="legend"><span><i class="sw" style="background:#3E2410"></i>Millor dia</span><span><i class="sw" style="background:#EADFD0;box-shadow:inset 0 0 0 1px rgba(62,36,16,.25)"></i>Fluixa</span><span><i class="sw" style="background:#C79A6A"></i>Normal</span><span><i class="sw" style="background:#8A5530"></i>Bona</span><span>${dropSvg(10,13)}Litres de pluja</span><span style="opacity:.6">${dropSvg(10,13)}Previstos</span><span><i class="sw" style="background:var(--cep);border-radius:50%"></i>${SPECIES[SP].nom} trobats</span><span><b class="mono" style="font-size:11px">17°</b>Temperatura mitjana</span><span><b class="mono" style="font-size:11px;color:#5B9BE0">9°</b>Massa fred</span><span><i class="sw" style="box-shadow:inset 0 0 0 1.5px #5B9BE0;background:repeating-linear-gradient(135deg,rgba(91,155,224,.25) 0 3px,transparent 3px 6px)"></i>Hi hauria hagut bolets, però ha fet fred</span></div>
      <div class="daynote" id="daynote">${dayNote(s,selDay)}</div>
    </div>
    <div class="card">
@@ -1054,7 +1054,7 @@ function buildMap(){
    <div class="mview" role="radiogroup" aria-label="Què vols veure"><button role="radio" data-view="ara" aria-checked="true">Bolets ara</button><button role="radio" data-view="terra" aria-checked="false">Terreny</button><button role="radio" data-view="foto" aria-checked="false">Foto</button></div>
    <button class="planbtn" data-goplan><b>Pla del cap de setmana</b><span>On anar, on aparcar i què pentinar ›</span></button>
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
-     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#F5D746,#F49628,#E24028);border-radius:4px"></i><b id="k-prob-t" style="font-weight:inherit">Tanda: fluixa → bona</b></span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
+     <div class="mapkey" aria-hidden="true"><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#EADFD0,#C79A6A,#8A5530);border-radius:4px"></i><b id="k-prob-t" style="font-weight:inherit">Tanda: fluixa → bona</b></span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
      <div class="mapctl">
        <button class="rbtn" data-onsoc aria-label="On sóc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
        <button class="rbtn" data-capes aria-expanded="false" aria-label="Capes i zones"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
@@ -1112,7 +1112,7 @@ const VIEWS={ara:{bosc:1,prob:1,spots:1,cares:0,acid:0},terra:{bosc:0,prob:0,spo
 function mapView(v){if(!VIEWS[v])v='ara';store.set('vista',v);
   Object.entries(VIEWS[v]).forEach(([k,on])=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);if(b&&(b.getAttribute('aria-pressed')==='true')!==!!on)b.click()});
   $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-checked',b.dataset.view===v));
-  const h=$('.maphint');if(h)h.innerHTML=v==='ara'?`Color només on hi ha ${SP==='ceps'?'roures, alzines o avellaners en terra àcida':'pinar'}. <b style="color:#E2A51E">Groc</b> → <b style="color:#E24028">vermell</b>: tanda fluixa → bona, per la pluja i la temperatura. <b style="color:#9678E6">Lila</b>, aviat.`
+  const h=$('.maphint');if(h)h.innerHTML=v==='ara'?`Color només on hi ha ${SP==='ceps'?'roures, alzines o avellaners en terra àcida':'pinar'}. <b style="color:#E2A51E">Groc</b> → <b style="color:#E24028">vermell</b>: del beix (fluixa) al marró fosc (bona), per la pluja i la temperatura. <b style="color:#9678E6">Lila</b>, aviat.`
     :v==='terra'?'<b style="color:var(--obaga)">Blau</b>, cara nord. <b style="color:var(--solana)">Taronja</b>, cara sud. '+(SP==='ceps'?'Vora lila, terra àcida.':'Blanc, calcària.')
     :'Toca qualsevol punt per saber què hi ha.'}
 function legendSync(){if($('#k-prob-t'))$('#k-prob-t').textContent=(SP==='ceps'?'Bosc de ceps':'Pinar')+': fluixa → bona';if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob');$('#k-bosc').hidden=$('#k-bosc2').hidden=!on('bosc')}
@@ -1131,7 +1131,7 @@ async function drawProb(){
   const val=s=>s.state==='soon'?-1:s.win&&s.win.f?s.win.f.v:40;
   const live=GEV.filter(s=>s.state!=='wait').sort((a,b)=>val(a)-val(b));if(!live.length)return;
   const hiT=SP==='ceps'?60:75,midT=SP==='ceps'?35:55;  // com al calendari: groc fluixa, taronja normal, vermell bona
-  const colOf=s=>{const v=val(s);return s.state==='soon'?'rgba(150,120,230,.75)':v>=hiT?'rgba(226,64,40,.9)':v>=midT?'rgba(244,150,40,.85)':'rgba(245,215,70,.8)'};
+  const colOf=s=>{const v=val(s);return s.state==='soon'?'rgba(150,120,230,.75)':v>=hiT?'rgba(166,95,40,.96)':v>=midT?'rgba(214,160,100,.9)':'rgba(240,226,200,.9)'};
   if(!map.getPane('probP')){const pp=map.createPane('probP');pp.style.zIndex=282;pp.style.pointerEvents='none'}
   // Cada rajola: el color de les caselles del voltant, retallat amb la màscara del bosc que toca (pinar o bosc de ceps)
   const PL=L.GridLayer.extend({createTile(c,done){
@@ -1442,7 +1442,7 @@ function rovDies(){const R=RULE;
      <li>Compta la humitat de fa <strong>${R.lag} dies</strong>, que és el que triguen a sortir.</li>
      <li><strong>Temperatura</strong> mitjana dels últims 10 dies: de 10 a 16 °C és ideal; per sota de 6 o per sobre de 20 °C, res.</li>
      <li><strong>Època</strong>: de setembre a gener, el millor d'octubre i novembre. I les nits de gelada resten punts.</li></ul>
-     <p><strong>Dia de rovellons</strong> és un dia de 35 o més. Els colors són els del mapa: <strong style="color:#C9A21E">groc</strong> (35–54, fluixa), <strong style="color:#E07A10">taronja</strong> (55–74, normal) i <strong style="color:#E24028">vermell</strong> (75 o més, bona).</p>
+     <p><strong>Dia de rovellons</strong> és un dia de 35 o més. Els colors són els del mapa, de més clar a més fosc: <strong>beix</strong> (35–54, fluixa), <strong style="color:#A9784A">marró mitjà</strong> (55–74, normal) i <strong style="color:#8A5530">marró fosc</strong> (75 o més, bona).</p>
      <p class="small">Ajustat amb dues sortides reals: Creixell (8 de novembre de 2026) i l'Artiga de Lin (27 de setembre de 2024). Són poques: apunteu-ne més, també les de zero. No es compta la pluja prevista: només la que ja ha caigut.</p></div>`}
 // Regla de les altres espècies, amb els números de cada una
 function diesCard(){const R=RULE,N=SPECIES[SP].u[1];
