@@ -259,12 +259,15 @@ button.site:active{background:var(--surface2)}
 .lbtn{flex:none;min-width:42px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font:800 14px var(--f-display)}
 .lbtn.x{min-width:36px;color:var(--muted);font-weight:600}
 .recendbig{background:#B23A26;color:#fff}
-.recrow{display:flex;flex-direction:column;gap:6px;padding:14px 4px;border-bottom:1px solid var(--line)}
+.recrow{display:flex;flex-direction:column;gap:8px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:20px}
 .rr-top{display:flex;flex-direction:column}.rr-top span{font-size:13px;color:var(--muted)}
 .rr-st{font:500 14px var(--f-data);color:var(--ink)}
 .rr-pf{display:flex;justify-content:space-between;font:500 10px var(--f-data);color:var(--muted)}
 .rr-act{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.rr-add{padding:7px 12px;font-size:14px}.rr-del{color:var(--muted)}
-.wakeline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0}.wakeline .opt{padding:6px 12px;font-size:13.5px}
+.rtop-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 12px}.rtop-row .bigtime{margin:0}
+.rmini{flex:0 0 130px}.rmap{display:block;background:var(--surface2);border-radius:14px}.rmap.empty{display:grid;place-items:center;font-size:12px;color:var(--muted);text-align:center;padding:0 10px}
+.rr-map{cursor:pointer;margin-bottom:2px}
+.wakeline{display:flex;align-items:center;gap:10px;margin:2px 2px 0}.wakeline .opt{padding:6px 12px;font-size:13px;flex:none}.wakeline .small{line-height:1.3}.wakeline .small.warn{color:var(--soon);font-weight:700}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:14.5px;color:var(--muted)}.steps b{color:var(--ink)}
 details.small summary{cursor:pointer;font-weight:700;color:var(--muted)}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px 18px;margin:0;padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:20px;font-size:15px}
@@ -903,7 +906,8 @@ function fix(good,ms,onUpd){return new Promise(res=>{if(!navigator.geolocation)r
     ()=>fin(),{enableHighAccuracy:true,maximumAge:0,timeout:ms})})}
 const hm=t=>{const d=new Date(t);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')};
 const durTxt=ms=>{const m=Math.round(ms/60000);return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')};
-const clock=ms=>{const m=Math.floor(ms/60000);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')};
+const clock=ms=>{const t=Math.max(0,Math.floor(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t/60)%60,ss=String(t%60).padStart(2,'0');return h?`${h}:${String(m).padStart(2,'0')}:${ss}`:`${m}:${ss}`};   // com Strava: m:ss i, passada l'hora, h:mm:ss
+setInterval(()=>{if(REC&&screen==='ruta'){const e=document.getElementById('rs-time');if(e)e.textContent=clock(Date.now()-REC.t0)}},1000);
 const nTot=r=>r.pts.reduce((a,p)=>a+(p.n||1),0);
 /* La ruta es grava sola: el GPS va continu mentre l'app és oberta (un punt cada 5 m com a mínim). El navegador només deixa el GPS amb l'app al davant i la pantalla encesa. */
 function recWatchStart(){
@@ -911,6 +915,7 @@ function recWatchStart(){
   recW=navigator.geolocation.watchPosition(p=>{
     const c=p.coords,fx={lat:+c.latitude.toFixed(6),lng:+c.longitude.toFixed(6),acc:Math.round(c.accuracy),alt:c.altitude!=null?Math.round(c.altitude):null,t:p.timestamp||Date.now()};
     lastFix=fx;recLast=fx;if(!REC)return;
+    if(/^No tinc permís|^Buscant el GPS/.test(recMsg))recMsg='';   // ja hi ha GPS: fora l'avís d'abans
     if(fx.acc>35){ruLight();return}              // lectura dolenta: no entra a la ruta
     const tr=REC.track||(REC.track=[]),l=tr[tr.length-1];
     if(l){const dm=distKm(l[0],l[1],fx.lat,fx.lng)*1000;
@@ -928,12 +933,27 @@ async function wakeSet(on){
   catch(e){wake=null;wakeMsg="No s'ha pogut mantenir la pantalla encesa: posa el bloqueig automàtic a «Mai» mentre busques."}
   ruLight()}
 // si l'app torna al davant (després de bloquejar el mòbil, per exemple), es torna a engegar el GPS i la pantalla encesa
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&REC){recWatchStop();recWatchStart();wakeSet(wakeWant)}});
+document.addEventListener('visibilitychange',()=>{if(!REC)return;if(document.visibilityState==='visible'){recWatchStop();recWatchStart();wakeSet(wakeWant)}else saveRec()});
+addEventListener('pagehide',()=>{if(REC)saveRec()});
+function routeSvg(r,W,H,live){
+  const tr=r.track||[],bp=r.pts.filter(p=>p.lat!=null),all=tr.map(p=>[p[0],p[1]]).concat(bp.map(p=>[p.lat,p.lng]),r.start?[[r.start.lat,r.start.lng]]:[]);
+  if(!all.length)return `<div class="rmap empty" style="height:${H}px"><span>${live?'Buscant el GPS…':'Sense ruta'}</span></div>`;
+  const k=Math.cos(all[0][0]*Math.PI/180);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;all.forEach(([la,lo])=>{const x=lo*k,y=-la;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)});
+  const m=3e-4;if(x1-x0<m){const c=(x0+x1)/2;x0=c-m/2;x1=c+m/2}if(y1-y0<m){const c=(y0+y1)/2;y0=c-m/2;y1=c+m/2}   // com a mínim uns 30 m
+  const pd=9,sc=Math.min((W-2*pd)/(x1-x0),(H-2*pd)/(y1-y0)),ox=(W-(x1-x0)*sc)/2,oy=(H-(y1-y0)*sc)/2,P=(la,lo)=>[((lo*k-x0)*sc+ox).toFixed(1),((-la-y0)*sc+oy).toFixed(1)];
+  const st=Math.max(1,Math.round(tr.length/400));let d='';tr.forEach((p,i)=>{if(i%st&&i!==tr.length-1)return;const[x,y]=P(p[0],p[1]),gap=i&&p[3]&&tr[i-st]&&tr[i-st][3]&&p[3]-tr[i-st][3]>120e3;d+=(!d||gap?'M':'L')+x+' '+y});
+  const s0=r.start?P(r.start.lat,r.start.lng):tr.length?P(tr[0][0],tr[0][1]):null,last=live&&tr.length?P(tr[tr.length-1][0],tr[tr.length-1][1]):null;
+  return `<svg class="rmap" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Ruta">${d?`<path d="${d}" fill="none" stroke="var(--rain)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`:''}
+    ${s0?`<circle cx="${s0[0]}" cy="${s0[1]}" r="5" fill="#2E8B4B" stroke="var(--surface)" stroke-width="2"/>`:''}
+    ${bp.map(p=>{const[x,y]=P(p.lat,p.lng);return `<circle cx="${x}" cy="${y}" r="4.5" fill="${bCol(p.sp)}" stroke="var(--surface)" stroke-width="1.5"/>`}).join('')}
+    ${last?`<circle cx="${last[0]}" cy="${last[1]}" r="9" fill="var(--rain)" opacity=".25"><animate attributeName="r" values="6;11;6" dur="2s" repeatCount="indefinite"/></circle><circle cx="${last[0]}" cy="${last[1]}" r="4.5" fill="var(--rain)" stroke="var(--surface)" stroke-width="2"/>`:''}</svg>`}
+let mapT=0;
 // actualitza només els números de la pantalla En ruta, sense refer-la (si no, es perdrien els tocs als botons)
 function ruLight(){if(!REC||screen!=='ruta')return;const q=id=>document.getElementById(id);if(!q('rs-time'))return;
   q('rs-time').textContent=clock(Date.now()-REC.t0);q('rs-n').textContent=nTot(REC);
   q('rs-km').textContent=REC.km?(REC.km<1?Math.round(REC.km*1000)+' m':kmTxt(REC.km)):'—';q('rs-gps').textContent=lastFix?'±'+lastFix.acc+' m':'—';q('rs-msg').textContent=recMsg;
-  q('rs-wk').textContent=!wakeWant?'La pantalla es pot apagar: la ruta es talla.':wake?'Pantalla encesa mentre graves.':(wakeMsg||'Mantenint la pantalla encesa…')}
+  if(q('rs-map')&&Date.now()-mapT>3000){mapT=Date.now();q('rs-map').innerHTML=routeSvg(REC,130,92,true)}
+  q('rs-wk').textContent=!wakeWant?"Si la pantalla s'apaga, la ruta es talla.":(wakeMsg&&!wake?wakeMsg:"La ruta es grava mentre l'app és oberta.");q('rs-wk').classList.toggle('warn',!!(wakeWant&&wakeMsg&&!wake))}
 // l'altura del GPS del mòbil salta molt: en acabar, se'n treu del mapa del relleu (Open-Meteo)
 async function demFix(r){const tr=r.track;if(!tr||tr.length<2)return;
   const n=Math.min(100,tr.length),idx=[...Array(n)].map((_,i)=>Math.round(i*(tr.length-1)/Math.max(1,n-1)));
@@ -962,11 +982,10 @@ function renderRuta(){
   const last=REC.pts.map((p,i)=>[p,i]).slice(-5).reverse();
   el.innerHTML=`<div class="ruta-top">
      <p class="kicker"><i class="recdot"></i>En marxa · des de les ${hm(REC.t0)}${REC.who?' · '+esc(REC.who):''}</p>
-     <div class="bigtime mono" id="rs-time">${clock(Date.now()-REC.t0)}</div>
+     <div class="rtop-row"><div class="bigtime mono" id="rs-time">${clock(Date.now()-REC.t0)}</div><div class="rmini" id="rs-map">${routeSvg(REC,130,92,true)}</div></div>
      <div class="rstats"><span><b id="rs-n">${nTot(REC)}</b>bolets</span><span><b id="rs-km">${REC.km?(REC.km<1?Math.round(REC.km*1000)+' m':kmTxt(REC.km)):'—'}</b>recorregut</span><span><b id="rs-gps">${lastFix?'±'+lastFix.acc+' m':'—'}</b>GPS</span></div>
      <p class="rmsg" id="rs-msg" aria-live="polite">${esc(recMsg)}</p></div>
-   <div class="wakeline"><button class="opt" data-wake aria-pressed="${wakeWant}">Pantalla sempre encesa</button><span class="small" id="rs-wk">${esc(!wakeWant?'La pantalla es pot apagar: la ruta es talla.':wake?'Pantalla encesa mentre graves.':(wakeMsg||'Mantenint la pantalla encesa…'))}</span></div>
-   <p class="small" style="margin:0 2px">La ruta es grava sola mentre l'app és oberta. Si bloqueges el mòbil o canvies d'app, es talla.</p>
+   <div class="wakeline"><button class="opt" data-wake aria-pressed="${wakeWant}">Pantalla encesa</button><span class="small${wakeWant&&wakeMsg&&!wake?' warn':''}" id="rs-wk">${esc(!wakeWant?"Si la pantalla s'apaga, la ruta es talla.":(wakeMsg&&!wake?wakeMsg:"La ruta es grava mentre l'app és oberta."))}</span></div>
    <p class="segl">Què has trobat?</p>
    ${altreOpen?`<form class="namef" id="altf"><input id="altn" placeholder="Quin bolet?" aria-label="Quin bolet" maxlength="40" required><button class="btn">Apunta</button></form>`:''}
    <div class="bgrid">${BOLETS.map(([k,n])=>`<button class="bbtn" data-bol="${k}">${cnt[k]?`<i class="bc">${cnt[k]}</i>`:''}${bIcon(k,40)}<span>${n}</span></button>`).join('')}</div>
@@ -1025,6 +1044,7 @@ async function recImport(i,file){
     saveRec()}
   catch(e){r.imsg="No s'ha pogut llegir aquest fitxer. Ha de ser un GPX (la ruta d'Strava, Wikiloc, Komoot…)."}
   if(screen==='diari')renderDiari();else if(screen==='ruta')renderRuta()}
+const demTried=new Set();
 function recCard(){const qui=store.get('qui','');
   return `<div class="card recc">${REC?`<strong style="font-family:var(--f-display);font-size:18px">Sortida en marxa des de les ${hm(REC.t0)}</strong>
      <button class="btn" data-goruta>Obre la pantalla de ruta</button>`
@@ -1034,7 +1054,8 @@ function recCard(){const qui=store.get('qui','');
      <details class="small"><summary>Bateria i pantalla</summary><p style="margin-top:6px">El mòbil no deixa gravar amb la pantalla apagada, així que l'app la manté encesa mentre graves (ho pots canviar a la pantalla de ruta). Gasta bateria: baixa la brillantor i porta bateria externa si surts molta estona. Si bloqueges el mòbil o canvies d'app, la ruta es talla.</p></details>
      <details class="small"><summary>Prefereixo gravar amb Strava</summary><p style="margin-top:6px">Grava la ruta amb Strava, Wikiloc o Komoot, apunta els bolets aquí i, quan acabis, toca <b>+ Ruta (GPX)</b> a la sortida i tria el fitxer. Strava només exporta el GPX des de <b>strava.com</b> (activitat, ⋯, Exporta GPX).</p></details>`}</div>
    <input type="file" id="gpxin" hidden>
-   ${RECS.map((r,i)=>{const st=recStatsTxt(r);return `<div class="recrow"><div class="rr-top"><b>${D(dnum(new Date(r.t0).toLocaleDateString('sv'))).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})} · ${hm(r.t0)}–${hm(r.t1)}</b>
+   ${RECS.map((r,i)=>{const st=recStatsTxt(r);if(r.track&&!r.dem&&!demTried.has(r.id)){demTried.add(r.id);setTimeout(()=>demFix(r),500)}   // sense cobertura al bosc: es torna a provar
+     return `<div class="recrow">${r.track||r.pts.some(p=>p.lat!=null)?`<div class="rr-map" data-recmap="${i}">${routeSvg(r,300,110,false)}</div>`:''}<div class="rr-top"><b>${D(dnum(new Date(r.t0).toLocaleDateString('sv'))).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})} · ${hm(r.t0)}–${hm(r.t1)}</b>
        <span>${esc(r.who||'')} · ${esc(recSum(r))}${r.start?'':' · sense inici'}</span></div>
        ${st?`<div class="rr-st">${esc(st)}</div>${perfil(r.track)}`:''}
        ${r.imsg?`<p class="small" style="color:var(--soon)">${esc(r.imsg)}</p>`:''}
@@ -1051,7 +1072,7 @@ function recMap(r){L1.moved=true;show('mapa');
     r.pts.forEach((p,k)=>{if(p.lat==null)return;all.push([p.lat,p.lng]);L.circle([p.lat,p.lng],{radius:p.acc||10,color:'#fff',weight:1,fillOpacity:.15,interactive:false}).addTo(L1.rec);
       L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${bCol(p.sp)}" title="${esc(bNom(p))}">${k+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
        .on('click',ev=>{L.DomEvent.stopPropagation(ev);$('#mapcard').innerHTML=`<strong>${k+1}. ${esc(bNom(p))}${(p.n||1)>1?' ×'+p.n:''}</strong><p class="small">${hm(p.t)} · ±${p.acc} m${p.alt!=null?' · '+p.alt+' m':''}${p.deRuta?" · posat a la ruta per l'hora":''}</p><div class="row"><a class="btn ghost" href="${gmDir(p.lat,p.lng)}" target="_blank" rel="noopener">Com arribar-hi</a></div>`}).addTo(L1.rec)});
-    const st=recStatsTxt(r);$('#mapcard').innerHTML=`<strong style="font-family:var(--f-display);font-size:18px">Sortida de ${esc(r.who||'')} · ${r.pts.reduce((a,p)=>a+(p.n||1),0)} bolets</strong>${st?`<p>${esc(st)}</p>`:`<p class="small">Sense ruta: afegeix el GPX des del Diari.</p>`}<p class="small">▶ inici · ■ final · els números són els bolets (toca'ls).</p>`;
+    const st=recStatsTxt(r);$('#mapcard').innerHTML=`<strong style="font-family:var(--f-display);font-size:18px">${esc(r.who||'Sortida')} · ${(n=>n+(n===1?' bolet':' bolets'))(r.pts.reduce((a,p)=>a+(p.n||1),0))}</strong>${st?`<p>${esc(st)}</p>`:`<p class="small">Sense ruta: afegeix el GPX des del Diari.</p>`}<p class="small">▶ inici · ■ final · els números són els bolets (toca'ls).</p>`;
     if(all.length)map.fitBounds(L.latLngBounds(all).pad(.25),{maxZoom:17})},80)}
 
 /* ---------- FITXA ---------- */
