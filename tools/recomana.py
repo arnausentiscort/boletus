@@ -193,7 +193,7 @@ def main():
         for z, w in zip(ch, W):
             D = w['daily']; days = [dt.date.fromisoformat(x) for x in D['time']]
             if a.sp == 'rov': wins, _ = avalua_rov(R, days, D['precipitation_sum'], D['temperature_2m_mean'], D['temperature_2m_min'], today, max(dies + [days[-1]])); dl = 0
-            else: wins, dl = avalua(R, a.sp, days, D['precipitation_sum'], D['temperature_2m_mean'], D['temperature_2m_min'], z['alt'], z['ob'], today)
+            else: wins, dl = avalua(R, a.sp, days, D['precipitation_sum'], D['temperature_2m_mean'], D['temperature_2m_min'], z['alt'], z['ob'], today); wins = [w_ for w_ in wins if w_['v'] >= 35]   # les fluixes no valen la pena
             hit = [w_ for w_ in wins if any(w_['a'] <= d <= w_['b'] for d in dies)]
             z['_w'] = max(hit, key=lambda w_: w_['v']) if hit else None; z['_dl'] = dl
             z['_dies'] = [d for d in dies if z['_w'] and z['_w']['a'] <= d <= z['_w']['b']]

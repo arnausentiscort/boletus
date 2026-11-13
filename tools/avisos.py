@@ -24,6 +24,7 @@ SPECIES = {
     'hiv': dict(nom="bolets d'hivern", mm=22, span=4, minT=3, maxT=15, wait=16, before=5, after=8, gap=5, months=[10, 11, 12, 1, 2],
                 forca=dict(mm=[10, 42], t=[-1, 3, 13, 17], mes={10: .5, 11: 1, 12: .9, 1: .5, 2: .2}, gel=.05)),
 }
+MINSHOW = 35  # nota mínima per avisar d'una tanda (com a l'app)
 AVISA = {'ceps', 'rov'}  # els bolets d'hivern es calculen a l'app, però no avisen
 DIES = ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg']
 MESOS = ['gen', 'febr', 'març', 'abr', 'maig', 'juny', 'jul', 'ag', 'set', 'oct', 'nov', 'des']
@@ -105,13 +106,17 @@ def main():
                     good_after = len(g) >= 3 and R['minT'] <= sum(g) / len(g) <= R.get('maxT', 99)
                     # avís de pluja dels ceps: algun dels dies de pluja ha de passar de 12 °C
                     warm_rain = k != 'ceps' or (bool(tt) and max(tt) >= R['minT'])
+                    # només s'avisa si la tanda pot arribar a la nota mínima (pluja de l'episodi x pes del mes): el novembre i el desembre, gairebé mai
+                    F = R['forca']; fp = min(1, max(0, (sm - F['mm'][0]) / (F['mm'][1] - F['mm'][0]))) ** .85
+                    # (el dia després de ploure encara no se sap la temperatura: per això es demana un marge ampli)
+                    if k == 'ceps' and 100 * fp * F['mes'].get(peak.month, 0) < MINSHOW + 15: last = i; continue
                     if day == yesterday and warm_rain:
                         rain.setdefault((k, peak, a, b), []).append((nom_curt(s['name']), sm))
                     if peak == tomorrow and good_after:
                         ep = sum(r[max(0, i - R['span'] + 1):i + 4])
                         gn = [x for x in n[i + 1:i + R['wait'] - 1] if x is not None]
                         v, nom = forca(R, ep, sum(g) / len(g), peak, (sum(1 for x in gn if x <= -2), len(gn)))
-                        demà.setdefault(k, []).append((nom_curt(s['name']), v, nom, sunrise(tomorrow, s['lat'], s['lng'])))
+                        if v >= MINSHOW: demà.setdefault(k, []).append((nom_curt(s['name']), v, nom, sunrise(tomorrow, s['lat'], s['lng'])))
                 last = i
     # Un sol avís de pluja per dia i un sol avís de "demà" per espècie, perquè no n'arribin molts
     if rain:

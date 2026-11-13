@@ -572,7 +572,13 @@ function evalRov(s){
   const cur=wins.find(w=>w.a<=TODAY&&TODAY<=w.b),next=wins.find(w=>w.a>TODAY);
   s.state=cur?'go':next?'soon':'wait';s.win=cur||next||null;
   s.sc=d=>info[d-ser.start]||null;s.bolet=d=>{const x=info[d-ser.start];return !!x&&x.v>=35};s.peak=d=>wins.some(w=>w.peak===d)}
-function evalAt(s){if(SP==='rov')evalRov(s);else evalSite(s)}
+/* Només s'ensenyen les tandes que valen la pena (nota MINSHOW o més). Amb les sortides que tenim: la tanda de 24 (31-10-2026) no va donar ceps; la de 46 (25-10-2022), 20; i als rovellons, la de 47 (l'Artiga de Lin) en va donar 40.
+   Les més fluixes no surten ni al calendari ni als avisos ni al mapa: només un missatge que diu que no val la pena. */
+const MINSHOW=35;
+function keepStrong(s){const all=s.wins,ws=all.filter(w=>w.f.v>=MINSHOW);s.weak=all.find(w=>w.f.v<MINSHOW&&w.b>=TODAY)||null;
+  s.wins=ws;s.bolet=d=>ws.some(w=>d>=w.a&&d<=w.b);s.peak=d=>ws.some(w=>w.peak===d);
+  const cur=ws.find(w=>w.a<=TODAY&&TODAY<=w.b),next=ws.find(w=>w.a>TODAY);s.state=cur?'go':next?'soon':'wait';s.win=cur||next||null}
+function evalAt(s){if(SP==='rov'){evalRov(s);s.weak=null}else{evalSite(s);keepStrong(s)}}
 SITES.forEach(evalAt);
 window.__boletus={SITES,evalSite}; // per revisar des de la consola
 const STATE={go:['s-go','Ara'],soon:['s-soon','Aviat'],wait:['s-wait','Encara no']};
@@ -585,6 +591,7 @@ function whatWin(s){
   if(s.state==='soon')return `Millor dia: <strong>${wdn(s.win.peak)} ${fmt(s.win.peak)}</strong> · del ${fmt(s.win.a)} al ${fmt(s.win.b)}${s.win.prov?(RULE.maxT!=null?' · si no fa fred ni calor':' · si no fa fred'):''}`;
 }
 function whatRest(s){
+  if(s.weak)return `Hi ha pluja, però la tanda seria molt fluixa (${s.weak.f.v}/100, cap al ${fmt(s.weak.peak)}): no val la pena`;
   if(s.cold)return `Va ploure el ${fmt(s.cold.t1)}, però després ha fet ${s.cold.hot?'massa calor':'fred'} (${s.cold.tg.toFixed(0)} °C de mitjana): no surten`;
   let t=0;for(let d=TODAY-9;d<=TODAY;d++)t+=rainOn(s,d)||0;return `Només ${Math.round(t)} litres els últims 10 dies`}
 
@@ -607,7 +614,7 @@ const mesOk=k=>((SPECIES[k].forca.mes||{})[D(TODAY).getUTCMonth()+1]||0)>0;
 function whenOf(s,k){
   if(s.state==='go')return['ara',s.win.b>TODAY?`fins al ${fmt(s.win.b)}`:'últim dia'];
   if(s.state==='soon')return[dayTxt(s.win.peak),`d'aquí a ${s.win.peak-TODAY} ${s.win.peak-TODAY===1?'dia':'dies'}`];
-  return['—',s.cold?(s.cold.hot?'massa calor':'massa fred'):!mesOk(k||SP)?'fora de temporada':'falta aigua']}
+  return['—',s.cold?(s.cold.hot?'massa calor':'massa fred'):s.weak?'tanda molt fluixa':!mesOk(k||SP)?'fora de temporada':'falta aigua']}
 function stripHtml(s){let cells='';
   for(let d=TODAY-7;d<=TODAY+13;d++){const r=rainOn(s,d);const sz=r&&r>=2?Math.min(10,4+Math.sqrt(r)*1.2):0;
     const sx=SP==='rov'&&s.sc?s.sc(d):null,wd=!sx&&s.bolet(d)?s.wins.find(w=>d>=w.a&&d<=w.b):null,lv=sx?(sx.v>=35?(sx.v>=75?'s3':sx.v>=55?'s2':'s1'):''):wd?(wd.f.v>=60?'s3':wd.f.v>=35?'s2':'s1'):'';
@@ -622,7 +629,7 @@ function leadOf(list){
     s:`Millor dia${b.win.prov?(RULE.maxT!=null?', si no fa fred ni calor':', si no fa fred'):''} · ${SP==='rov'?'nota':'tanda'} ${b.win.f.nom}`}}
   const s0=list[0];let t=0;for(let d=TODAY-9;d<=TODAY;d++)t+=rainOn(s0,d)||0;
   return{site:null,h:'De moment, res.',s:s0.cold?`Va ploure el ${fmt(s0.cold.t1)}, però després ha fet ${s0.cold.hot?'massa calor':'fred'}.`
-    :!mesOk(SP)?'Ara no és temporada.':(SP==='rov'?`${Math.round(t)} litres els últims 10 dies: la terra encara està seca.`:`${Math.round(t)} litres els últims 10 dies. En calen ${RULE.mm} en ${RULE.span} dies.`)}}
+    :list.find(x=>x.weak)?`Hi ha pluja, però la tanda seria molt fluixa (${list.find(x=>x.weak).weak.f.v}/100): ara no val la pena.`:!mesOk(SP)?'Ara no és temporada.':(SP==='rov'?`${Math.round(t)} litres els últims 10 dies: la terra encara està seca.`:`${Math.round(t)} litres els últims 10 dies. En calen ${RULE.mm} en ${RULE.span} dies.`)}}
 function renderLlocs(){
   const order={go:0,soon:1,wait:2},N=SPECIES[SP].nom;
   const list=MINE().sort((a,b)=>order[a.state]-order[b.state]||((a.win&&b.win)?a.win.peak-b.win.peak:0));
@@ -1585,7 +1592,7 @@ function renderCom(){
      <li><strong>Temperatura</strong> mitjana mentre creixen: ideal entre ${SPECIES[SP].forca.t[1]} i ${SPECIES[SP].forca.t[2]} °C; per sota de ${SPECIES[SP].forca.t[0]} o per sobre de ${SPECIES[SP].forca.t[3]} °C, res.</li>
      <li><strong>Època</strong>: cada mes té el seu pes (els millors: ${Object.entries(SPECIES[SP].forca.mes).filter(([,v])=>v>=.9).map(([m])=>MESOS_C[m]).join(' i ')}).</li>
      <li><strong>Gelades</strong>: cada nit a −2 °C o menys mentre creixen resta punts (si es tenen les temperatures mínimes d'aquells dies).</li></ul>
-     <p><strong>Bona</strong> (60 o més), <strong>normal</strong> (35–59) o <strong>fluixa</strong> (menys de 35).${SP==='ceps'?` Amb les vostres sortides: la tanda del 2 d'octubre (8 ceps) treu 100, la del 2022 (20 ceps) 46, i la del 18 d'octubre (0 ceps el 31) només 24, perquè va créixer amb 14 °C i ja de novembre.`:' Encara no hi ha sortides de rovellons per comprovar-ho.'}</p></div>
+     <p><strong>Bona</strong> (60 o més), <strong>normal</strong> (35–59) o <strong>fluixa</strong> (menys de 35). Les fluixes no s'ensenyen: no val la pena anar-hi (el 31 d'octubre, amb 24, no hi havia ceps).${SP==='ceps'?` Amb les vostres sortides: la tanda del 2 d'octubre (8 ceps) treu 100, la del 2022 (20 ceps) 46, i la del 18 d'octubre (0 ceps el 31) només 24, perquè va créixer amb 14 °C i ja de novembre.`:' Encara no hi ha sortides de rovellons per comprovar-ho.'}</p></div>
    <div class="card how"><h3>D'on surt la pluja</h3>
      <p>Pluja estimada per a cada lloc, de models d'alta resolució (d'1 a 3 km), via Open-Meteo. Cada cop que obres l'app es baixen els últims dies i la previsió de 7 dies; sense connexió es fa servir l'última que tenies. Al calendari de cada lloc pots tirar enrere fins al 2016 per veure si la regla hauria encertat.</p></div>
    <div class="card how"><h3>Ajustar la regla</h3>
