@@ -296,6 +296,10 @@ details.small summary{cursor:pointer;font-weight:700;color:var(--muted)}
 .tag2{display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:6px 10px;font-weight:700;font-size:15px}
 .t-acid{background:#EBDDF5;color:#5B2580}.t-calc{background:#F3E2DC;color:#8A3B22}.t-unk{background:var(--surface2);color:var(--muted)}
 .t-ob{background:#DCE6FA;color:#244E9C}.t-so{background:#FBE5D2;color:#9A4A0E}.t-pla{background:var(--surface2);color:var(--muted)}
+.mpinw{width:28px;height:28px;display:grid;place-items:center;cursor:pointer}
+.mpin{position:relative;width:14px;height:14px;border-radius:50%;background:var(--c);border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,.55)}
+.mpin em{display:none;position:absolute;left:50%;top:15px;transform:translateX(-50%);font:700 11px var(--f-body);font-style:normal;color:#fff;white-space:nowrap;text-shadow:0 0 3px #000,0 0 6px #000,0 1px 2px #000;pointer-events:none}
+.zlab .mpin em{display:block}
 .pin{display:flex;flex-direction:column;align-items:center}
 .pin svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
 .pin em{font-style:normal;font-weight:700;font-size:12px;background:#fff;color:#1c2218;border-radius:6px;padding:1px 7px 1px 5px;margin-top:2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);display:flex;align-items:center;gap:5px}
@@ -1185,6 +1189,7 @@ function buildMap(){
        <strong>Què es veu</strong>
        <button class="opt" data-lay="bosc" aria-pressed="true">És bosc? (fosc = no)</button>
        <button class="opt" data-lay="prob" aria-pressed="true">On hi ha bolets ara</button>
+       <button class="opt" data-lay="llocs" aria-pressed="true">Els meus llocs</button>
        <button class="opt" data-lay="spots" aria-pressed="true">10 millors spots</button>
        <button class="opt" data-lay="cares" aria-pressed="true">Cara nord / sud</button>
        <button class="opt" data-lay="acid" aria-pressed="true">Terra àcida o calcària</button>
@@ -1219,16 +1224,16 @@ function buildMap(){
       const html=lv===2?`<div class="casa" title="${n}">${homeSvg}</div>`:`<div class="town ${lv?'big':''}">${n}</div>`;
       L.marker([la,lo],{pane:'labels',interactive:false,keyboard:false,icon:L.divIcon({className:'',html,iconSize:lv===2?[20,20]:[160,22],iconAnchor:lv===2?[10,10]:[80,11]})}).addTo(L1.towns)})};
     drawTowns();map.on('zoomend',drawTowns);
-    const on=Object.assign({prob:true,bosc:true},store.get('capes',{cares:true,acid:true,spots:true}));L1.prob=L.layerGroup();['bosc','prob','cares','acid','spots'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()});drawProb();mapView(store.get('vista','ara'))});
+    const on=Object.assign({prob:true,bosc:true,llocs:true},store.get('capes',{cares:true,acid:true,spots:true}));L1.prob=L.layerGroup();if(!L1.llocs)L1.llocs=L.layerGroup();['bosc','prob','cares','acid','spots','llocs'].forEach(k=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);b.setAttribute('aria-pressed',!!on[k]);if(on[k])L1[k].addTo(map);legendSync()});drawProb();mapView(store.get('vista','ara'))});
   L1.topo=L.tileLayer(ICGC+'topogris/GRID3857/{z}/{x}/{y}.png',{maxZoom:18,pane:'topoP',keepBuffer:4,updateWhenZooming:false}).addTo(map);
   map.on('moveend',()=>{clearTimeout(L1.mv);L1.mv=setTimeout(()=>{if(L1.spots)region().then(drawSpots)},250)});
   L1.fit=()=>map.fitBounds(L.latLngBounds(SITES.map(s=>[s.lat,s.lng]).concat([[41.1561,1.1069]])),{padding:[50,60],maxZoom:15});L1.fit();
   drawPins();
   $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
-    if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync()});
+    if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync();syncSiteImg()});
     L1.homeLayer=null;
   $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>mapView(b.dataset.view));
-  map.on('click',onMapClick);map.on('zoomend',probFade);sheetInit();new MutationObserver(paintIcgc).observe($('#mapcard'),{childList:true})}
+  map.on('click',onMapClick);const zl=()=>map.getContainer().classList.toggle('zlab',map.getZoom()>=15);map.on('zoomend',zl);zl();map.on('zoomend',probFade);sheetInit();new MutationObserver(paintIcgc).observe($('#mapcard'),{childList:true})}
 // Vistes: "Bolets ara" (és bosc + on n'hi ha + spots), "Terreny" (cares i terra + spots) i "Només foto"
 const VIEWS={ara:{bosc:1,prob:1,spots:1,cares:0,acid:0},terra:{bosc:0,prob:0,spots:1,cares:1,acid:1},foto:{bosc:0,prob:0,spots:0,cares:0,acid:0}};
 function mapView(v){if(!VIEWS[v])v='ara';store.set('vista',v);
@@ -1454,17 +1459,21 @@ function detailHtml(D){
    ${rocks.length?`<p class="small">Roca: ${rocks.map(([n,v])=>`${esc(n)} (${pc(v)}%)`).join(' · ')}</p>`:''}
    ${D.local&&D.emax>0?`<p><strong>Altura</strong> de <span class="mono">${D.emin}</span> a <span class="mono">${D.emax}</span> m (mitjana <span class="mono">${Math.round(D.esum/D.n)}</span> m) · pendent mitjà <span class="mono">${Math.round(D.ssum/D.n)}°</span></p>`:''}`}
 const siteImg={};
+// Els vostres llocs al mapa: un punt petit (verd ara, ambre aviat, gris encara no). El nom només surt de molt a prop.
+// Tot va en una capa que es pot amagar ("Els meus llocs" a Capes). El relleu de colors de cada lloc només surt a la vista Terreny.
 function drawPins(){
-  Object.values(pins).forEach(p=>map.removeLayer(p));Object.values(zoneLayers).forEach(p=>map.removeLayer(p));
-  const col={go:'#2E8B4B',soon:'#C88A12',wait:'#7E857A'};
-  Object.values(siteImg).forEach(p=>map.removeLayer(p));
+  if(!L1.llocs)L1.llocs=L.layerGroup();if(!L1.siteimg)L1.siteimg=L.layerGroup();
+  L1.llocs.clearLayers();L1.siteimg.clearLayers();Object.keys(pins).forEach(k=>delete pins[k]);
+  const col={go:'#2E8B4B',soon:'#C88A12',wait:'#8A9086'};
+  if(!map.getPane('siteP'))map.createPane('siteP').style.zIndex=285;
   MINE().forEach(s=>{
-    zoneLayers[s.id]=zones[s.id]?L.polygon(zones[s.id],{color:'#1c2218',weight:2.5,fill:false,interactive:false}).addTo(map)
-      :L.circle([s.lat,s.lng],{radius:600,color:'#fff',weight:2,dashArray:'5 6',fill:false,interactive:false}).addTo(map);
-    if(!map.getPane('siteP'))map.createPane('siteP').style.zIndex=285;
-    zoneDetail(s).then(D=>{if(!D)return;if(siteImg[s.id])map.removeLayer(siteImg[s.id]);siteImg[s.id]=L.imageOverlay(D.url,D.bounds,{pane:'siteP',opacity:.9,className:'siteimg'}).addTo(map)});
-    pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="pin">${spPin(SP)}<em><i style="background:${col[s.state]}"></i>${esc(s.name)}</em></div>`,iconSize:[140,70],iconAnchor:[70,44]})})
-      .on('click',e=>{L.DomEvent.stopPropagation(e);pinCard(s)}).addTo(map)})}
+    (zones[s.id]?L.polygon(zones[s.id],{color:'#fff',weight:1.2,opacity:.55,fill:false,interactive:false})
+      :L.circle([s.lat,s.lng],{radius:600,color:'#fff',weight:1.2,opacity:.45,dashArray:'3 6',fill:false,interactive:false})).addTo(L1.llocs);
+    zoneDetail(s).then(D=>{if(!D)return;L.imageOverlay(D.url,D.bounds,{pane:'siteP',opacity:.85,className:'siteimg'}).addTo(L1.siteimg)});
+    pins[s.id]=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="mpinw" title="${esc(s.name)}"><div class="mpin" style="--c:${col[s.state]}"><em>${esc(s.name)}</em></div></div>`,iconSize:[28,28],iconAnchor:[14,14]})})
+      .on('click',e=>{L.DomEvent.stopPropagation(e);pinCard(s)}).addTo(L1.llocs)});
+  syncSiteImg()}
+function syncSiteImg(){if(!L1.siteimg||!map)return;const on=L1.cares&&L1.cares._map&&L1.llocs&&L1.llocs._map;on?L1.siteimg.addTo(map):map.removeLayer(L1.siteimg)}
 function pinCard(s){setTimeout(()=>$('#mapcard').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">${esc(s.name)}</strong><span class="spacer"></span>${chip(s)}</div>
    <p>${what(s)}</p><p class="small">${Math.round(s.zone.st.obaga*100)}% obaga · ${Math.round(s.zone.st.solana*100)}% solana</p>
