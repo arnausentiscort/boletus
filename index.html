@@ -264,6 +264,7 @@ button.site:active{background:var(--surface2)}
 .rr-st{font:500 14px var(--f-data);color:var(--ink)}
 .rr-pf{display:flex;justify-content:space-between;font:500 10px var(--f-data);color:var(--muted)}
 .rr-act{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.rr-add{padding:7px 12px;font-size:14px}.rr-del{color:var(--muted)}
+.wakeline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0}.wakeline .opt{padding:6px 12px;font-size:13.5px}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:14.5px;color:var(--muted)}.steps b{color:var(--ink)}
 details.small summary{cursor:pointer;font-weight:700;color:var(--muted)}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px 18px;margin:0;padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:20px;font-size:15px}
@@ -885,7 +886,7 @@ const ICONS={
     <text x="24" y="25.5" text-anchor="middle" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="13" fill="#fff" opacity=".95">?</text>`};
 let BICN=0;const bIcon=(k,w)=>k==='rov'?rovIcon(w):`<svg width="${w}" height="${w}" viewBox="0 0 48 48" aria-hidden="true">${(ICONS[k]||ICONS.altre)('bi'+(++BICN))}</svg>`;
 const bNom=p=>p.nom||(BOL[p.sp]?BOL[p.sp].n:OLDN[p.sp]||(SPECIES[p.sp]?SPECIES[p.sp].nom:'Bolet'));
-let REC=store.get('rec',null),RECS=store.get('recs',[]),recMsg='',lastFix=null,altreOpen=false;
+let REC=store.get('rec',null),RECS=store.get('recs',[]),recMsg='',lastFix=null,altreOpen=false,recW=null,recLast=null,wake=null,wakeWant=store.get('wake',true),wakeMsg='';
 const saveRec=()=>{store.set('rec',REC);store.set('recs',RECS)};
 // la millor lectura del GPS en uns segons: s'atura quan l'error baixa de "good" metres
 function fix(good,ms,onUpd){return new Promise(res=>{if(!navigator.geolocation)return res(null);let best=null,done=false,w=null;
@@ -897,16 +898,55 @@ const hm=t=>{const d=new Date(t);return d.getHours()+':'+String(d.getMinutes()).
 const durTxt=ms=>{const m=Math.round(ms/60000);return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')};
 const clock=ms=>{const m=Math.floor(ms/60000);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')};
 const nTot=r=>r.pts.reduce((a,p)=>a+(p.n||1),0);
+/* La ruta es grava sola: el GPS va continu mentre l'app és oberta (un punt cada 5 m com a mínim). El navegador només deixa el GPS amb l'app al davant i la pantalla encesa. */
+function recWatchStart(){
+  if(recW!=null||!REC||!navigator.geolocation)return;
+  recW=navigator.geolocation.watchPosition(p=>{
+    const c=p.coords,fx={lat:+c.latitude.toFixed(6),lng:+c.longitude.toFixed(6),acc:Math.round(c.accuracy),alt:c.altitude!=null?Math.round(c.altitude):null,t:p.timestamp||Date.now()};
+    lastFix=fx;recLast=fx;if(!REC)return;
+    if(fx.acc>35){ruLight();return}              // lectura dolenta: no entra a la ruta
+    const tr=REC.track||(REC.track=[]),l=tr[tr.length-1];
+    if(l){const dm=distKm(l[0],l[1],fx.lat,fx.lng)*1000;
+      if(dm<Math.max(5,fx.acc*.6)&&fx.t-l[3]<60e3){ruLight();return}   // quiet: no s'afegeix soroll
+      if(dm>500&&fx.t-l[3]<20e3){ruLight();return}                     // salt impossible: s'ignora
+      REC.km=(REC.km||0)+dm/1000}
+    tr.push([fx.lat,fx.lng,fx.alt,fx.t]);if(tr.length%8===0)saveRec();ruLight()},
+    err=>{recMsg=err&&err.code===1?"No tinc permís per a la ubicació: activa-la a Ajustos.":'Buscant el GPS…';ruLight()},
+    {enableHighAccuracy:true,maximumAge:0,timeout:30000})}
+function recWatchStop(){if(recW!=null&&navigator.geolocation)navigator.geolocation.clearWatch(recW);recW=null}
+async function wakeSet(on){
+  try{if(on){if(!navigator.wakeLock){wakeMsg="Aquest mòbil no deixa mantenir la pantalla encesa: posa el bloqueig automàtic a «Mai» mentre busques.";return}
+      if(!wake){wake=await navigator.wakeLock.request('screen');wake.addEventListener('release',()=>{wake=null;ruLight()});wakeMsg=''}}
+    else if(wake){const w=wake;wake=null;await w.release()}}
+  catch(e){wake=null;wakeMsg="No s'ha pogut mantenir la pantalla encesa: posa el bloqueig automàtic a «Mai» mentre busques."}
+  ruLight()}
+// si l'app torna al davant (després de bloquejar el mòbil, per exemple), es torna a engegar el GPS i la pantalla encesa
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&REC){recWatchStop();recWatchStart();wakeSet(wakeWant)}});
+// actualitza només els números de la pantalla En ruta, sense refer-la (si no, es perdrien els tocs als botons)
+function ruLight(){if(!REC||screen!=='ruta')return;const q=id=>document.getElementById(id);if(!q('rs-time'))return;
+  q('rs-time').textContent=clock(Date.now()-REC.t0);q('rs-n').textContent=nTot(REC);
+  q('rs-km').textContent=REC.km?(REC.km<1?Math.round(REC.km*1000)+' m':kmTxt(REC.km)):'—';q('rs-gps').textContent=lastFix?'±'+lastFix.acc+' m':'—';q('rs-msg').textContent=recMsg;
+  q('rs-wk').textContent=!wakeWant?'La pantalla es pot apagar: la ruta es talla.':wake?'Pantalla encesa mentre graves.':(wakeMsg||'Mantenint la pantalla encesa…')}
+// l'altura del GPS del mòbil salta molt: en acabar, se'n treu del mapa del relleu (Open-Meteo)
+async function demFix(r){const tr=r.track;if(!tr||tr.length<2)return;
+  const n=Math.min(100,tr.length),idx=[...Array(n)].map((_,i)=>Math.round(i*(tr.length-1)/Math.max(1,n-1)));
+  try{const d=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${idx.map(i=>tr[i][0]).join(',')}&longitude=${idx.map(i=>tr[i][1]).join(',')}`).then(x=>x.json());const el=d.elevation;if(!el||el.length!==n)return;
+    for(let k=0;k<n-1;k++){const a=idx[k],b=idx[k+1];for(let i=a;i<=b;i++){const f=b===a?0:(i-a)/(b-a);tr[i][2]=Math.round(el[k]+(el[k+1]-el[k])*f)}}
+    r.dem=true;saveRec();if(screen==='diari')renderDiari()}catch(e){}}
 async function recStart(who){
-  store.set('qui',who);REC={id:'r'+Date.now().toString(36),who,t0:Date.now(),start:null,pts:[]};saveRec();recMsg='Mirant on ets…';show('ruta');
+  store.set('qui',who);REC={id:'r'+Date.now().toString(36),who,t0:Date.now(),start:null,pts:[],track:[],km:0};saveRec();recMsg='Mirant on ets…';recWatchStart();wakeSet(wakeWant);show('ruta');
   const id=REC.id,f=await fix(10,20000,b=>{recMsg=`Afinant l'inici… ±${b.acc} m`;paintRec()});
   if(REC&&REC.id===id){REC.start=f;saveRec();recMsg=f?`Inici apuntat · ±${f.acc} m`:"No s'ha pogut saber on ets: l'inici queda sense punt.";paintRec()}}
 async function recBolet(sp,nom){
   if(!REC)return;const p={t:Date.now(),sp,n:1,lat:null,lng:null,acc:null};if(nom)p.nom=nom;REC.pts.push(p);saveRec();const n=bNom(p);
-  recMsg=`${n}: mirant on ets…`;paintRec();if(navigator.vibrate)navigator.vibrate(40);
+  if(navigator.vibrate)navigator.vibrate(40);
+  const rc=recLast&&Date.now()-recLast.t<15e3&&recLast.acc<=20?recLast:null;       // el GPS continu ja sap on ets: no cal esperar
+  if(rc){Object.assign(p,{lat:rc.lat,lng:rc.lng,acc:rc.acc,alt:rc.alt});saveRec();recMsg=`${n} apuntat · ±${rc.acc} m`;renderRuta();return}
+  recMsg=`${n}: mirant on ets…`;renderRuta();
   const f=await fix(8,15000,b=>{recMsg=`${n}: afinant… ±${b.acc} m`;paintRec()});
-  if(f)Object.assign(p,f);saveRec();recMsg=f?`${n} apuntat · ±${f.acc} m`:`${n} sense GPS (s'ha apuntat l'hora)`;paintRec()}
-function recEnd(){if(!REC)return;REC.t1=Date.now();RECS.unshift(REC);REC=null;recMsg='';saveRec();paintRec();show('diari')}
+  if(f)Object.assign(p,f);saveRec();recMsg=f?`${n} apuntat · ±${f.acc} m`:`${n} sense GPS (s'ha apuntat l'hora)`;if(screen==='ruta')renderRuta();else paintRec()}
+function recEnd(){if(!REC)return;REC.t1=Date.now();recWatchStop();wakeSet(false);const r=REC;if(!r.track||r.track.length<2)delete r.track;delete r.km;
+  RECS.unshift(r);REC=null;recMsg='';saveRec();paintRec();show('diari');if(r.track)demFix(r)}
 function renderRuta(){
   const el=$('#s-ruta');if(!el)return;
   if(!REC){el.innerHTML=`<div class="intro"><p class="kicker">En ruta</p><h2 class="lead">Cap sortida en marxa.</h2></div>${recCard()}`;bindRecForm();return}
@@ -915,10 +955,11 @@ function renderRuta(){
   const last=REC.pts.map((p,i)=>[p,i]).slice(-5).reverse();
   el.innerHTML=`<div class="ruta-top">
      <p class="kicker"><i class="recdot"></i>En marxa · des de les ${hm(REC.t0)}${REC.who?' · '+esc(REC.who):''}</p>
-     <div class="bigtime mono">${clock(Date.now()-REC.t0)}</div>
-     <div class="rstats"><span><b>${nTot(REC)}</b>${nTot(REC)===1?'bolet':'bolets'}</span><span><b>${dk==null?'—':dk<1?Math.round(dk*1000)+' m':dk.toFixed(1).replace('.',',')+' km'}</b>de l'inici</span><span><b>${lastFix?'±'+lastFix.acc+' m':'—'}</b>GPS</span></div>
-     <p class="rmsg" aria-live="polite">${esc(recMsg)}</p></div>
-   <p class="small" style="margin:-4px 2px 0">La ruta la grava Strava. Aquí només apuntes els bolets; al final hi afegiràs el GPX.</p>
+     <div class="bigtime mono" id="rs-time">${clock(Date.now()-REC.t0)}</div>
+     <div class="rstats"><span><b id="rs-n">${nTot(REC)}</b>bolets</span><span><b id="rs-km">${REC.km?(REC.km<1?Math.round(REC.km*1000)+' m':kmTxt(REC.km)):'—'}</b>recorregut</span><span><b id="rs-gps">${lastFix?'±'+lastFix.acc+' m':'—'}</b>GPS</span></div>
+     <p class="rmsg" id="rs-msg" aria-live="polite">${esc(recMsg)}</p></div>
+   <div class="wakeline"><button class="opt" data-wake aria-pressed="${wakeWant}">Pantalla sempre encesa</button><span class="small" id="rs-wk">${esc(!wakeWant?'La pantalla es pot apagar: la ruta es talla.':wake?'Pantalla encesa mentre graves.':(wakeMsg||'Mantenint la pantalla encesa…'))}</span></div>
+   <p class="small" style="margin:0 2px">La ruta es grava sola mentre l'app és oberta. Si bloqueges el mòbil o canvies d'app, es talla.</p>
    <p class="segl">Què has trobat?</p>
    ${altreOpen?`<form class="namef" id="altf"><input id="altn" placeholder="Quin bolet?" aria-label="Quin bolet" maxlength="40" required><button class="btn">Apunta</button></form>`:''}
    <div class="bgrid">${BOLETS.map(([k,n])=>`<button class="bbtn" data-bol="${k}">${cnt[k]?`<i class="bc">${cnt[k]}</i>`:''}${bIcon(k,40)}<span>${n}</span></button>`).join('')}</div>
@@ -928,15 +969,16 @@ function renderRuta(){
    <button class="linkbtn" data-recdiscard style="align-self:center">Descarta la sortida (sense desar-la)</button>`;
   const af=$('#altf');if(af){$('#altn').value=keepV;$('#altn').focus();af.onsubmit=ev=>{ev.preventDefault();const v=$('#altn').value.trim();$('#altn').blur();altreOpen=false;if(v)recBolet('altre',v);else renderRuta()}}}
 function paintRec(){
-  if(screen==='ruta'&&!(document.activeElement&&document.activeElement.id==='altn'))renderRuta();  // no es refà mentre escrius el nom d'un bolet
+  if(screen==='ruta'&&REC)ruLight();   // només els números: refer la pantalla faria perdre els tocs
   let b=$('#recbar');
   if(!REC||screen==='ruta'){if(b)b.hidden=true;return}
   if(!b){document.body.insertAdjacentHTML('beforeend','<button class="recbar" id="recbar" data-goruta></button>');b=$('#recbar')}
   b.hidden=false;b.innerHTML=`<span class="rect"><b><i class="recdot"></i>En marxa · ${durTxt(Date.now()-REC.t0)}</b><span>${nTot(REC)} ${nTot(REC)===1?'bolet':'bolets'}${recMsg?' · '+esc(recMsg):''}</span></span><span class="rgo">${spIcon(24)}Apunta</span>`}
 setInterval(()=>{if(REC)paintRec()},15000);
+const trkSegs=tr=>{const o=[];let c=[];tr.forEach((p,i)=>{if(i&&p[3]&&tr[i-1][3]&&p[3]-tr[i-1][3]>120e3){o.push(c);c=[]}c.push(p)});o.push(c);return o};   // una pausa de més de 2 min parteix la ruta
 function gpx(r){const w=(p,n,d)=>p&&p.lat!=null?`\n <wpt lat="${p.lat}" lon="${p.lng}">${p.alt!=null?`<ele>${p.alt}</ele>`:''}<time>${new Date(p.t).toISOString()}</time><name>${esc(n)}</name><desc>${esc(d)}</desc></wpt>`:'';
   return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Boletus" xmlns="http://www.topografix.com/GPX/1/1">\n <metadata><name>Sortida de ${esc(r.who||'')} · ${new Date(r.t0).toISOString().slice(0,10)}</name><time>${new Date(r.t0).toISOString()}</time></metadata>`
-    +w(r.start&&Object.assign({t:r.t0},r.start),'Inici',r.start?`±${r.start.acc} m`:'')+r.pts.map((p,i)=>w(p,`${i+1}. ${bNom(p)}${(p.n||1)>1?' ×'+p.n:''}`,`±${p.acc} m`)).join('')+`\n</gpx>\n`}
+    +w(r.start&&Object.assign({t:r.t0},r.start),'Inici',r.start?`±${r.start.acc} m`:'')+r.pts.map((p,i)=>w(p,`${i+1}. ${bNom(p)}${(p.n||1)>1?' ×'+p.n:''}`,`±${p.acc} m`)).join('')+(r.track?`\n <trk><name>Ruta</name>${trkSegs(r.track).map(sg=>`<trkseg>${sg.map(p=>`<trkpt lat="${p[0]}" lon="${p[1]}">${p[2]!=null?`<ele>${p[2]}</ele>`:''}${p[3]?`<time>${new Date(p[3]).toISOString()}</time>`:''}</trkpt>`).join('')}</trkseg>`).join('')}</trk>`:'')+`\n</gpx>\n`}
 async function recShare(r){
   const name=`boletus-${new Date(r.t0).toISOString().slice(0,10)}-${(r.who||'sortida').toLowerCase().replace(/[^a-z0-9]+/g,'-')}.gpx`,f=new File([gpx(r)],name,{type:'application/gpx+xml'});
   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sortida Boletus'});return}catch(e){if(e.name==='AbortError')return}}
@@ -980,9 +1022,10 @@ function recCard(){const qui=store.get('qui','');
   return `<div class="card recc">${REC?`<strong style="font-family:var(--f-display);font-size:18px">Sortida en marxa des de les ${hm(REC.t0)}</strong>
      <button class="btn" data-goruta>Obre la pantalla de ruta</button>`
     :`<strong style="font-family:var(--f-display);font-size:18px">Sortim a buscar</strong>
-     <ol class="steps"><li>Obre <b>Strava</b> (o una altra app de rutes) i comença a gravar.</li><li>Torna aquí, posa el teu nom i toca <b>Comença</b>. Cada cop que trobis un bolet, toca'l.</li><li>Quan acabis, toca <b>Acaba</b> i afegeix la ruta a la sortida amb <b>+ Ruta (GPX)</b>.</li></ol>
+     <ol class="steps"><li>Posa el teu nom i toca <b>Comença</b>. L'app grava la ruta amb el GPS mentre sigui oberta.</li><li>Cada cop que trobis un bolet, toca'l.</li><li>Quan acabis, toca <b>Acaba</b>.</li></ol>
      <form class="namef" id="recf"><input id="recwho" value="${esc(qui)}" placeholder="Qui ets?" aria-label="Qui ets" maxlength="30" required><button class="btn">Comença</button></form>
-     <details class="small"><summary>Com trec el GPX d'Strava?</summary><p style="margin-top:6px">Strava el deixa exportar des de <b>strava.com</b> al navegador: obre l'activitat, toca <b>⋯</b> i <b>Exporta GPX</b>. Wikiloc i Komoot l'exporten des de la seva app. Quan el tinguis, a la sortida toca <b>+ Ruta (GPX)</b> i tria el fitxer.</p></details>`}</div>
+     <details class="small"><summary>Bateria i pantalla</summary><p style="margin-top:6px">El mòbil no deixa gravar amb la pantalla apagada, així que l'app la manté encesa mentre graves (ho pots canviar a la pantalla de ruta). Gasta bateria: baixa la brillantor i porta bateria externa si surts molta estona. Si bloqueges el mòbil o canvies d'app, la ruta es talla.</p></details>
+     <details class="small"><summary>Prefereixo gravar amb Strava</summary><p style="margin-top:6px">Grava la ruta amb Strava, Wikiloc o Komoot, apunta els bolets aquí i, quan acabis, toca <b>+ Ruta (GPX)</b> a la sortida i tria el fitxer. Strava només exporta el GPX des de <b>strava.com</b> (activitat, ⋯, Exporta GPX).</p></details>`}</div>
    <input type="file" id="gpxin" hidden>
    ${RECS.map((r,i)=>{const st=recStatsTxt(r);return `<div class="recrow"><div class="rr-top"><b>${D(dnum(new Date(r.t0).toLocaleDateString('sv'))).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})} · ${hm(r.t0)}–${hm(r.t1)}</b>
        <span>${esc(r.who||'')} · ${esc(recSum(r))}${r.start?'':' · sense inici'}</span></div>
@@ -993,8 +1036,10 @@ function bindRecForm(){const rf=$('#recf');if(rf)rf.onsubmit=ev=>{ev.preventDefa
   const gi=$('#gpxin');if(gi)gi.onchange=()=>{const f=gi.files[0],i=+gi.dataset.i;gi.value='';if(f)recImport(i,f)}}
 function recMap(r){L1.moved=true;show('mapa');
   setTimeout(()=>{map.invalidateSize();if(L1.rec)map.removeLayer(L1.rec);L1.rec=L.layerGroup().addTo(map);const all=[];
-    if(r.track){const ll=r.track.map(p=>[p[0],p[1]]);L.polyline(ll,{color:'#fff',weight:7,opacity:.9,interactive:false}).addTo(L1.rec);L.polyline(ll,{color:'#2F67A6',weight:4,interactive:false}).addTo(L1.rec);ll.forEach(x=>all.push(x));
-      const e=ll[ll.length-1];L.marker(e,{icon:L.divIcon({className:'',html:'<div class="parkp" style="background:#3E2410">■</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.rec)}
+    if(r.track){const sg=trkSegs(r.track);sg.forEach((c,k)=>{const ll=c.map(p=>[p[0],p[1]]);ll.forEach(x=>all.push(x));
+        L.polyline(ll,{color:'#fff',weight:7,opacity:.9,interactive:false}).addTo(L1.rec);L.polyline(ll,{color:'#2F67A6',weight:4,interactive:false}).addTo(L1.rec);
+        if(k){const a=sg[k-1][sg[k-1].length-1],b=c[0];L.polyline([[a[0],a[1]],[b[0],b[1]]],{color:'#2F67A6',weight:3,dashArray:'4 8',opacity:.8,interactive:false}).addTo(L1.rec)}});   // pausa (mòbil bloquejat): línia discontínua
+      const e=[r.track[r.track.length-1][0],r.track[r.track.length-1][1]];L.marker(e,{icon:L.divIcon({className:'',html:'<div class="parkp" style="background:#3E2410">■</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.rec)}
     if(r.start){all.push([r.start.lat,r.start.lng]);L.marker([r.start.lat,r.start.lng],{icon:L.divIcon({className:'',html:'<div class="parkp" style="background:#2E8B4B">▶</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.rec)}
     r.pts.forEach((p,k)=>{if(p.lat==null)return;all.push([p.lat,p.lng]);L.circle([p.lat,p.lng],{radius:p.acc||10,color:'#fff',weight:1,fillOpacity:.15,interactive:false}).addTo(L1.rec);
       L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:`<div class="spotn" style="background:${bCol(p.sp)}" title="${esc(bNom(p))}">${k+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
@@ -1555,7 +1600,8 @@ function renderCom(){
 let mapBuilt=false,lastTab='llocs',screen='llocs';
 function show(t){
   screen=t;document.body.dataset.screen=t;
-  if(t!=='ruta'){const rr=$('#s-ruta');if(rr)rr.innerHTML=''}   // la pantalla En ruta no es deixa amagada (duplicaria botons)
+  if(t!=='ruta'){const rr=$('#s-ruta');if(rr)rr.innerHTML=''}
+  wakeSet(!!REC&&wakeWant);   // la pantalla En ruta no es deixa amagada (duplicaria botons)
   document.querySelectorAll('.screen').forEach(s=>s.hidden=s.id!=='s-'+t);
   if(t==='llocs'||t==='mapa'||t==='diari'){lastTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t))}
   if(t==='llocs')renderLlocs();
@@ -1563,6 +1609,7 @@ function show(t){
   if(t==='mapa'){const first=!mapBuilt;if(!mapBuilt){buildMap();mapBuilt=true}else drawPins();setTimeout(()=>{map.invalidateSize();if(first&&!L1.moved)L1.fit()},30)}
   if(t==='com')renderCom();
   if(t==='plan')renderPlan();
+  if(t==='ruta')renderRuta();
   paintRec();
   if(t==='buscar')renderBuscar();
   window.scrollTo(0,0)}
@@ -1588,9 +1635,10 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#howbtn')){show('com');return}
   if(e.target.closest('[data-goplan]')){show('plan');return}
   const bo=e.target.closest('[data-bol]');if(bo){if(bo.dataset.bol==='altre'){altreOpen=!altreOpen;renderRuta()}else recBolet(bo.dataset.bol);return}
-  const bn=e.target.closest('[data-boln]');if(bn&&REC){const p=REC.pts[+bn.dataset.boln];p.n=(p.n||1)+1;saveRec();recMsg=`${bNom(p)} ×${p.n}`;paintRec();return}
-  const bd=e.target.closest('[data-boldel]');if(bd&&REC){const[p]=REC.pts.splice(+bd.dataset.boldel,1);saveRec();recMsg=`Esborrat: ${bNom(p)}`;paintRec();return}
+  const bn=e.target.closest('[data-boln]');if(bn&&REC){const p=REC.pts[+bn.dataset.boln];p.n=(p.n||1)+1;saveRec();recMsg=`${bNom(p)} ×${p.n}`;renderRuta();return}
+  const bd=e.target.closest('[data-boldel]');if(bd&&REC){const[p]=REC.pts.splice(+bd.dataset.boldel,1);saveRec();recMsg=`Esborrat: ${bNom(p)}`;renderRuta();return}
   if(e.target.closest('[data-goruta]')){show('ruta');return}
+  if(e.target.closest('[data-wake]')){wakeWant=!wakeWant;store.set('wake',wakeWant);wakeMsg='';e.target.closest('[data-wake]').setAttribute('aria-pressed',wakeWant);wakeSet(wakeWant);return}
   if(e.target.closest('[data-recmapnow]')){if(REC)recMap(REC);return}
   const re=e.target.closest('[data-recend]');if(re){if(re.dataset.sure){recEnd()}else{re.dataset.sure='1';re.textContent='Segur?';setTimeout(()=>{if(re.isConnected){delete re.dataset.sure;re.textContent='Acaba'}},4000)}return}
   const rg=e.target.closest('[data-recgpx]');if(rg){const gi=$('#gpxin');if(gi){gi.dataset.i=rg.dataset.recgpx;gi.click()}return}
@@ -1630,7 +1678,7 @@ document.addEventListener('click',e=>{
     ex.push({sp:[SP],id:'x'+Date.now().toString(36),name:`Zona a ${distKm(H.lat,H.lng,z.lat,z.lng).toFixed(0)} km (${bearing(H.lat,H.lng,z.lat,z.lng)})`,muni:'',lat:z.lat,lng:z.lng});store.set('extra',ex);store.set('obre','llocs');location.reload();return}
   const dr=e.target.closest('[data-draw]');if(dr){const s=SITES.find(x=>x.id===dr.dataset.draw);map.setView([s.lat,s.lng],15);startDraw(s.id);return}
 });
-show('llocs');store.set('obre','');paintRec();
+show('llocs');store.set('obre','');if(REC)recWatchStart();paintRec();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
