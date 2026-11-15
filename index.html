@@ -271,6 +271,20 @@ button.site:active{background:var(--surface2)}
 .rlast.flash{animation:rflash 1.2s ease-out}@keyframes rflash{0%{background:var(--acc);color:#fff}100%{background:var(--surface2)}}
 @media (prefers-reduced-motion:reduce){.rlast.flash{animation:none}}
 .recfb{display:flex;gap:6px;flex-wrap:wrap}.spotn.grp{width:34px;height:34px;line-height:29px;font-size:13px;margin:-3px 0 0 -3px;box-shadow:0 0 0 4px rgba(199,154,106,.45),0 1px 4px rgba(0,0,0,.6)}a.opt{text-decoration:none;color:inherit}.recfb .opt{padding:6px 12px;font-size:13.5px}
+.rr-map{position:relative}.m3d{position:absolute;right:8px;top:8px;font:800 12px var(--f-display);color:#fff;background:rgba(0,0,0,.55);border-radius:8px;padding:3px 8px}
+.mapbox.recmode .leaflet-container{background:#1b2416}
+.opt.d3{background:var(--acc);color:#fff;border-color:var(--acc)}
+body.no-scroll{overflow:hidden}
+.v3d{position:fixed;inset:0;z-index:3000;background:#0b0f09}.v3d .m{position:absolute;inset:0}
+.v3d .bar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 26px;background:linear-gradient(rgba(0,0,0,.65),transparent);color:#fff;pointer-events:none}
+.v3d .bar>*{pointer-events:auto}.v3d .bar .t{display:flex;flex-direction:column;min-width:0}.v3d .bar b{font:800 17px var(--f-display)}.v3d .bar span{font-size:12.5px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v3d .x{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:17px;flex:none}
+.v3d .bot{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;justify-content:center;padding:26px 14px calc(env(safe-area-inset-bottom,0px) + 16px);background:linear-gradient(transparent,rgba(0,0,0,.6));pointer-events:none}
+.v3d .bot button{pointer-events:auto;border:0;border-radius:999px;padding:10px 16px;font:800 14px var(--f-display);background:rgba(255,255,255,.92);color:#1C2218}
+.v3d .bot button[data-v3fly]{background:var(--acc);color:#fff}
+.v3d .maplibregl-ctrl-bottom-right{bottom:calc(env(safe-area-inset-bottom,0px) + 64px)}
+.v3d .msg{position:absolute;left:0;right:0;top:45%;text-align:center;color:#ddd;font-size:14px}
+.v3d .maplibregl-popup-content{font:13px var(--f-body);color:#1C2218;border-radius:10px;padding:8px 10px}
 .rr-in{font-size:14px;color:var(--ink)}
 .pfw{position:relative}.pfd{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;border:1.5px solid var(--surface)}
 .wakeline{display:flex;align-items:center;gap:10px;margin:2px 2px 0}.wakeline .opt{padding:6px 12px;font-size:13px;flex:none}.wakeline .small{line-height:1.3}.wakeline .small.warn{color:var(--soon);font-weight:700}
@@ -716,16 +730,17 @@ function renderDiari(){
    ${recCard()}
    ${ghOpen?ghCard():''}
    ${L.map(o=>{const s=SITES.find(x=>x.id===o.site),dd=D(dnum(o.d)),key=o.d+'|'+o.site,X=DIARI[key]||{},F=X.fotos||[];
-     const it=o.it.sort((a,b)=>(b.n||0)-(a.n||0));
+     const it=o.it.sort((a,b)=>(b.n||0)-(a.n||0)),ri=RECS.findIndex(r=>r.track&&new Date(r.t0).toLocaleDateString('sv')===o.d),rr=ri>=0?RECS[ri]:null;
      return `<article class="mem${it.some(v=>v.n)?'':' zero'}">
        ${F.length?`<div class="ph n${Math.min(F.length,4)}">${F.slice(0,4).map((f,i)=>`<img src="${LOCALPH[f]||f}" alt="" loading="lazy" data-zoom="${key}" data-i="${i}">${i===3&&F.length>4?`<span class="more">+${F.length-4}</span>`:''}`).join('')}</div>`:''}
+       ${rr?`<div class="rr-map" data-rec3d="${ri}" role="button" aria-label="Veure la ruta en 3D">${routeSvg(rr,300,110,false)}<span class="m3d">3D</span></div>`:''}
        <p class="kicker">${dd.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})}</p>
        <h3>${esc(s?s.name:o.site)}</h3><p class="cnt">${it.map(v=>`<span>${spIcon(22,v.sp||'ceps')}${qTxt(v.sp||'ceps',v.n)}</span>`).join('')}</p>
        ${X.amb&&dEdit!==key?`<p class="amb">Amb ${esc(X.amb)}</p>`:''}
        ${o.notes.length?`<p class="nt">${o.notes.map(esc).join(' ')}</p>`:''}
        ${dEdit===key?`<form class="namef" data-ambf="${key}"><input value="${esc(X.amb||'')}" maxlength="120" placeholder="L'Arnau, el Berni i…" aria-label="Amb qui hi vau anar"><button class="btn">Desa</button></form>`:''}
        ${dMsg[key]?`<p class="small">${esc(dMsg[key])}</p>`:''}
-       <div class="memact"><button class="linkbtn" data-addph="${key}">+ Fotos</button>${dEdit===key?'':`<button class="linkbtn" data-ambed="${key}">${X.amb?'Amb qui':'+ Amb qui'}</button>`}<span class="spacer"></span>${s?`<button class="linkbtn" data-open="${s.id}" data-from="diari">${esc(s.name)} ›</button>`:''}</div></article>`}).join('')||'<p class="sub">Encara no hi ha cap sortida. Apunta-les des de cada lloc.</p>'}
+       <div class="memact"><button class="linkbtn" data-addph="${key}">+ Fotos</button>${dEdit===key?'':`<button class="linkbtn" data-ambed="${key}">${X.amb?'Amb qui':'+ Amb qui'}</button>`}<span class="spacer"></span>${rr?`<button class="linkbtn" data-recmap="${ri}">Ruta</button><button class="linkbtn" data-rec3d="${ri}">3D</button>`:s?`<button class="linkbtn" data-open="${s.id}" data-from="diari">${esc(s.name)} ›</button>`:''}</div></article>`}).join('')||'<p class="sub">Encara no hi ha cap sortida. Apunta-les des de cada lloc.</p>'}
    <input type="file" id="phin" accept="image/*" multiple hidden>`;
   const gf=$('#ghf');if(gf)gf.onsubmit=async ev=>{ev.preventDefault();const t=$('#ghi').value.trim();store.set('ghtok',t);$('#ghm').textContent='Comprovant…';
     try{await GH.get('data/llocs.json');ghOpen=false;renderDiari()}catch(e){store.set('ghtok','');$('#ghm').textContent='Aquesta clau no funciona. Mira que tingui Contents: Read and write al repositori boletus.'}};
@@ -1108,11 +1123,14 @@ function recCard(){const qui=store.get('qui','');
        <span>${esc(r.who||'')} · ${esc(recSum(r))}${r.start?'':' · sense inici'}</span></div>
        ${st?`<div class="rr-st">${esc(st)}</div>`:''}${(A=>{const t=recInsight(r,A);return (t?`<p class="rr-in">${esc(t)}.</p>`:'')+(r.track?perfil(r.track,A):'')})(recAnalyze(r))}
        ${r.imsg?`<p class="small" style="color:var(--soon)">${esc(r.imsg)}</p>`:''}
-       <div class="rr-act"><button class="linkbtn" data-recmap="${i}">Mapa</button>${r.track?`<button class="linkbtn" data-recgpx="${i}">Canvia la ruta</button>`:`<button class="btn ghost rr-add" data-recgpx="${i}">+ Ruta (GPX)</button>`}<button class="linkbtn" data-recsend="${i}">Envia</button><span class="spacer"></span><button class="linkbtn rr-del" data-recdel="${i}">Esborra</button></div></div>`}).join('')}`}
+       <div class="rr-act"><button class="linkbtn" data-recmap="${i}">Mapa</button>${r.track?`<button class="linkbtn" data-rec3d="${i}">3D</button>`:''}${r.track?`<button class="linkbtn" data-recgpx="${i}">Canvia la ruta</button>`:`<button class="btn ghost rr-add" data-recgpx="${i}">+ Ruta (GPX)</button>`}<button class="linkbtn" data-recsend="${i}">Envia</button><span class="spacer"></span><button class="linkbtn rr-del" data-recdel="${i}">Esborra</button></div></div>`}).join('')}`}
 function bindRecForm(){const rf=$('#recf');if(rf)rf.onsubmit=ev=>{ev.preventDefault();recStart($('#recwho').value.trim()||'Jo')};
   const gi=$('#gpxin');if(gi)gi.onchange=()=>{const f=gi.files[0],i=+gi.dataset.i;gi.value='';if(f)recImport(i,f)}}
+function recMode(on){if(!map)return;const K=['topo','towns','bosc','prob','cares','acid','spots','llocs','siteimg'];
+  if(on&&!L1.recOn){L1.recOn=K.filter(k=>L1[k]&&L1[k]._map);L1.recOn.forEach(k=>map.removeLayer(L1[k]));const c=L1.orto&&L1.orto.getContainer();if(c)c.classList.remove('gris');$('#s-mapa .mapbox').classList.add('recmode')}
+  else if(!on&&L1.recOn){L1.recOn.forEach(k=>L1[k].addTo(map));L1.recOn=null;const c=L1.orto&&L1.orto.getContainer();if(c)c.classList.add('gris');if(L1.rec){map.removeLayer(L1.rec);L1.rec=null}$('#s-mapa .mapbox').classList.remove('recmode')}}
 function recMap(r){L1.moved=true;show('mapa');
-  setTimeout(()=>{map.invalidateSize();if(L1.rec)map.removeLayer(L1.rec);L1.rec=L.layerGroup().addTo(map);const all=[];
+  setTimeout(()=>{map.invalidateSize();if(L1.rec)map.removeLayer(L1.rec);recMode(true);L1.rec=L.layerGroup().addTo(map);const all=[];
     if(r.track){const sg=trkSegs(r.track);sg.forEach((c,k)=>{const ll=c.map(p=>[p[0],p[1]]);ll.forEach(x=>all.push(x));
         L.polyline(ll,{color:'#fff',weight:7,opacity:.9,interactive:false}).addTo(L1.rec);L.polyline(ll,{color:'#2F67A6',weight:4,interactive:false}).addTo(L1.rec);
         if(k){const a=sg[k-1][sg[k-1].length-1],b=c[0];L.polyline([[a[0],a[1]],[b[0],b[1]]],{color:'#2F67A6',weight:3,dashArray:'4 8',opacity:.8,interactive:false}).addTo(L1.rec)}});   // pausa (mòbil bloquejat): línia discontínua
@@ -1136,11 +1154,59 @@ function recMap(r){L1.moved=true;show('mapa');
     L1.recB={bolets:fb.length?L.latLngBounds(fb).pad(fb.length>1?.06:0):null,tot:all.length?L.latLngBounds(all).pad(.2):null,zona:A.zone,r};
     const st=recStatsTxt(r),ins=recInsight(r,A);
     $('#mapcard').innerHTML=`<strong style="font-family:var(--f-display);font-size:17px">${A.total} ${A.total===1?'bolet':'bolets'}${st?` · <span class="muted" style="font-size:14px">${esc(st)}</span>`:''}</strong>${ins?`<p class="small">${esc(ins)}.</p>`:''}
-      <div class="recfb">${fb.length?'<button class="opt" data-recfocus="bolets">Bolets</button>':''}<button class="opt" data-recfocus="tot">Tot</button>${A.zone?`<button class="opt" data-addhere="${A.zone.lat.toFixed(6)},${A.zone.lng.toFixed(6)}">Desa la zona</button>`:''}</div>`;
+      <div class="recfb">${r.track?`<button class="opt d3" data-rec3d="${RECS.indexOf(r)}">Veure en 3D</button>`:''}${fb.length?'<button class="opt" data-recfocus="bolets">Bolets</button>':''}<button class="opt" data-recfocus="tot">Tot</button>${A.zone?`<button class="opt" data-addhere="${A.zone.lat.toFixed(6)},${A.zone.lng.toFixed(6)}">Desa la zona</button>`:''}</div>`;
     const B=L1.recB.bolets&&fb.length>1?L1.recB.bolets:L1.recB.tot;setTimeout(()=>recFit(B),30)},80)}
 // enfoca deixant lloc a la targeta de sota, que no tapi els bolets
 function recFit(B){if(!B)return;const ch=($('#mapcard')||{}).offsetHeight||0;map.fitBounds(B,{maxZoom:18,paddingTopLeft:[20,20],paddingBottomRight:[20,ch+16]})}
 
+
+/* ---------- 3D: la sortida sobre la foto de satèl·lit i el relleu (MapLibre; només es baixa quan s'obre) ---------- */
+let mlP=null,v3=null;
+function loadML(){return mlP||(mlP=new Promise((ok,ko)=>{const l=document.createElement('link');l.rel='stylesheet';l.href='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';document.head.appendChild(l);
+  const x=document.createElement('script');x.src='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';x.onload=()=>ok(window.maplibregl);x.onerror=()=>{mlP=null;ko(new Error('ml'))};document.head.appendChild(x)}))}
+function close3D(){if(!v3)return;cancelAnimationFrame(v3.raf);try{v3.m.remove()}catch(e){}v3.el.remove();v3=null;document.body.classList.remove('no-scroll')}
+async function open3D(r){
+  close3D();const A=recAnalyze(r),st=recStatsTxt(r);
+  const el=document.createElement('div');el.className='v3d';
+  el.innerHTML=`<div class="m" id="m3d"></div><div class="bar"><button class="x" data-v3close aria-label="Tanca">✕</button><div class="t"><b>${A.total} ${(A.F.length&&A.F.every(f=>f.p.sp===A.F[0].p.sp&&!f.p.nom))?nomN(A.F[0].p,A.total):A.total===1?'bolet':'bolets'}${r.who?' · '+esc(r.who):''}</b><span>${new Date(r.t0).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short'})}${st?' · '+esc(st):''}</span></div></div>
+    <div class="msg" id="m3msg">Carregant el relleu…</div>
+    <div class="bot"><button data-v3fly>▶ Recorregut</button><button data-v3view="dalt">Des de dalt</button><button data-v3view="3d">3D</button></div>`;
+  document.body.appendChild(el);document.body.classList.add('no-scroll');v3={el,r,raf:0};
+  let ML;try{ML=await loadML()}catch(e){$('#m3msg').textContent="No s'ha pogut carregar el 3D: cal connexió.";return}
+  if(!v3||v3.r!==r)return;
+  const tr=r.track,sg=trkSegs(tr),ll=tr.map(p=>[p[1],p[0]]),b=ll.reduce((B,c)=>B.extend(c),new ML.LngLatBounds(ll[0],ll[0]));
+  const m=new ML.Map({container:'m3d',attributionControl:{compact:true},maxPitch:80,
+    style:{version:8,sources:{sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:18,attribution:'Esri, Maxar, Earthstar Geographics'},
+      dem:{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:15,attribution:'Terrain Tiles'}},
+      layers:[{id:'sat',type:'raster',source:'sat'}],terrain:{source:'dem',exaggeration:1.5}},
+    bounds:b,fitBoundsOptions:{padding:60},pitch:60,bearing:-15});
+  v3.m=m;
+  m.on('load',()=>{const msg=$('#m3msg');if(msg)msg.remove();
+    m.addSource('ruta',{type:'geojson',data:{type:'Feature',geometry:{type:'MultiLineString',coordinates:sg.map(c=>c.map(p=>[p[1],p[0]]))}}});
+    m.addLayer({id:'ruta-v',type:'line',source:'ruta',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#fff','line-width':7,'line-opacity':.9}});
+    m.addLayer({id:'ruta',type:'line',source:'ruta',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#3D8BFF','line-width':4}});
+    const mk=(html,lng,lat,pop)=>{const d=document.createElement('div');d.innerHTML=html;const x=new ML.Marker({element:d.firstChild}).setLngLat([lng,lat]);if(pop)x.setPopup(new ML.Popup({offset:18,closeButton:false}).setHTML(pop));x.addTo(m)};
+    if(r.start)mk('<div class="parkp" style="background:#2E8B4B">▶</div>',r.start.lng,r.start.lat);
+    mk('<div class="parkp" style="background:#3E2410">■</div>',ll[ll.length-1][0],ll[ll.length-1][1]);
+    // bolets: els que són a menys de 12 m van junts
+    const grp=[];A.F.slice().sort((x,y)=>x.p.t-y.p.t).forEach(f=>{const g=grp.find(g=>distKm(g[0].p.lat,g[0].p.lng,f.p.lat,f.p.lng)<=.012);g?g.push(f):grp.push([f])});
+    grp.forEach(g=>{const tot=g.reduce((a,f)=>a+(f.p.n||1),0),cs={};g.forEach(f=>{cs[f.p.sp]=(cs[f.p.sp]||0)+(f.p.n||1)});const main=Object.entries(cs).sort((a,b)=>b[1]-a[1])[0][0];
+      const la=g.reduce((a,f)=>a+f.p.lat,0)/g.length,lo=g.reduce((a,f)=>a+f.p.lng,0)/g.length,names=Object.entries(cs).map(([k,v])=>`${esc(bNom(g.find(f=>f.p.sp===k).p))}${v>1?' ×'+v:''}`).join(', ');
+      mk(`<div class="spotn${g.length>1?' grp':''}" style="background:${bCol(main)}">${g.length>1?'×'+tot:r.pts.indexOf(g[0].p)+1}</div>`,lo,la,`<b>${names}</b><br>${hm(g[0].p.t)}${g[0].ele!=null?' · '+Math.round(g[0].ele)+' m':''}`)})});
+  // vol seguint la ruta: uns 25 s, mirant cap endavant
+  const cum=cumKm(tr),tot=cum[cum.length-1]||0;
+  const at=d=>{let i=cum.findIndex(c=>c>=d);if(i<=0)return[tr[Math.max(0,i)][1],tr[Math.max(0,i)][0]];const f=(d-cum[i-1])/((cum[i]-cum[i-1])||1);return[tr[i-1][1]+(tr[i][1]-tr[i-1][1])*f,tr[i-1][0]+(tr[i][0]-tr[i-1][0])*f]};
+  const flyBtn=on=>{const b=v3&&v3.el.querySelector('[data-v3fly]');if(b)b.textContent=on?'❚❚ Atura':'▶ Recorregut'};
+  v3.fly=()=>{if(v3.raf){cancelAnimationFrame(v3.raf);v3.raf=0;flyBtn(false);return}flyBtn(true);const T=Math.max(15000,Math.min(40000,tot*16000)),t0=performance.now();let br=m.getBearing();
+    const step=now=>{if(!v3)return;const k=Math.min(1,(now-t0)/T),d=k*tot,c=at(d),ah=at(Math.min(tot,d+.04));
+      const want=Math.atan2((ah[0]-c[0])*Math.cos(c[1]*Math.PI/180),ah[1]-c[1])*180/Math.PI;let dlt=((want-br+540)%360)-180;br+=dlt*.04;
+      m.jumpTo({center:c,bearing:br,pitch:68,zoom:17.2});if(k<1)v3.raf=requestAnimationFrame(step);else{v3.raf=0;flyBtn(false);m.fitBounds(b,{padding:60,pitch:60,bearing:-15,duration:1500})}};
+    v3.raf=requestAnimationFrame(step)};
+}
+document.addEventListener('click',e=>{if(!v3)return;
+  if(e.target.closest('[data-v3close]')){close3D();return}
+  if(e.target.closest('[data-v3fly]')){v3.fly&&v3.fly();return}
+  const vv=e.target.closest('[data-v3view]');if(vv&&v3.m){cancelAnimationFrame(v3.raf);v3.raf=0;const fb=v3.el.querySelector('[data-v3fly]');if(fb)fb.textContent='▶ Recorregut';v3.m.easeTo(vv.dataset.v3view==='dalt'?{pitch:0,bearing:0,duration:1200}:{pitch:60,bearing:-15,duration:1200})}});
 
 /* ---------- FITXA ---------- */
 let cur=null,calOff=0,selDay=null,form=null;
@@ -1295,7 +1361,7 @@ function buildMap(){
   $('#s-mapa').querySelectorAll('[data-lay]').forEach(b=>b.onclick=()=>{const k=b.dataset.lay,on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
     if(!L1[k])return;on?L1[k].addTo(map):map.removeLayer(L1[k]);if(k!=='orto'){const c=store.get('capes',{cares:true,acid:true,spots:true});c[k]=on;store.set('capes',c)}legendSync();syncSiteImg()});
     L1.homeLayer=null;
-  $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>mapView(b.dataset.view));
+  $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{if(L1.recOn){recMode(false);$('#mapcard').innerHTML=''}mapView(b.dataset.view)});
   map.on('click',onMapClick);const zl=()=>map.getContainer().classList.toggle('zlab',map.getZoom()>=15);map.on('zoomend',zl);zl();map.on('zoomend',probFade);sheetInit();new MutationObserver(paintIcgc).observe($('#mapcard'),{childList:true})}
 // Vistes: "Bolets ara" (és bosc + on n'hi ha + spots), "Terreny" (cares i terra + spots) i "Només foto"
 const VIEWS={ara:{bosc:1,prob:1,spots:1,cares:0,acid:0},terra:{bosc:0,prob:0,spots:1,cares:1,acid:1},foto:{bosc:0,prob:0,spots:0,cares:0,acid:0}};
@@ -1701,6 +1767,7 @@ let mapBuilt=false,lastTab='llocs',screen='llocs';
 function show(t){
   screen=t;document.body.dataset.screen=t;
   if(t!=='ruta'){const rr=$('#s-ruta');if(rr)rr.innerHTML=''}
+  if(t!=='mapa'&&typeof L1!=='undefined'&&L1.recOn){recMode(false);const mc=$('#mapcard');if(mc)mc.innerHTML=''}
   wakeSet(!!REC&&wakeWant);   // la pantalla En ruta no es deixa amagada (duplicaria botons)
   document.querySelectorAll('.screen').forEach(s=>s.hidden=s.id!=='s-'+t);
   if(t==='llocs'||t==='mapa'||t==='diari'){lastTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t))}
@@ -1728,7 +1795,8 @@ document.addEventListener('click',e=>{
     navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];os.classList.remove('busy');L1.moved=true;map.setView(ll,12);
       if(L1.me)map.removeLayer(L1.me);L1.me=L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#2F67A6',fillOpacity:1}).addTo(map)},
       ()=>{os.classList.remove('busy');$('#mapcard').innerHTML="<p>No s'ha pogut saber on ets. Mira que el mòbil deixi fer servir la ubicació.</p>"},{enableHighAccuracy:true,timeout:15000});return}
-  if(e.target.closest('[data-mclose]')){$('#mapcard').innerHTML='';if(tap){map.removeLayer(tap);tap=null}return}
+  if(e.target.closest('[data-mclose]')){$('#mapcard').innerHTML='';if(tap){map.removeLayer(tap);tap=null}if(L1.recOn)recMode(false);return}
+  const r3=e.target.closest('[data-rec3d]');if(r3){const r=RECS[+r3.dataset.rec3d];if(r)open3D(r);return}
   const cp=e.target.closest('[data-capes]');if(cp){const pn=$('#s-mapa .laypanel');pn.hidden=!pn.hidden;cp.setAttribute('aria-expanded',!pn.hidden);return}
   if(e.target.closest('[data-gomap]')){show('mapa');return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
