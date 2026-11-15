@@ -684,6 +684,10 @@ const AVIS_TEMA='boletus-ceps-x7q2';
    Des del mòbil es poden pujar amb una clau de GitHub que només es desa en aquell mòbil. */
 const qTxt=(k,n)=>{const[u1,u2]=SPECIES[k].u;return n==null?'alguns '+u2:n===0?'cap '+u1:n===1?'1 '+u1:`${n} ${u2}`};
 let DIARI={};try{DIARI=await fetch('data/diari.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{})}catch(e){}
+// Rutes pujades amb l'app (data/rutes.json): així la sortida es veu des de l'ordinador o un altre mòbil, no només des del que la va gravar
+let RUTES=[];try{RUTES=await fetch('data/rutes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[])}catch(e){}
+// una sortida per número (les d'aquest mòbil) o per id (també les pujades)
+const getRec=v=>v==null?null:/^\d+$/.test(v)?RECS[+v]:(RECS.find(r=>r.id===v)||RUTES.find(r=>r.id===v)||null);
 const LOCALPH={};let dEdit=null,dMsg={},ghOpen=false;
 /* GitHub: llegir i escriure fitxers del repositori de l'app */
 const GH={repo:'arnausentiscort/boletus',tok:()=>store.get('ghtok',''),
@@ -730,7 +734,7 @@ function renderDiari(){
    ${recCard()}
    ${ghOpen?ghCard():''}
    ${L.map(o=>{const s=SITES.find(x=>x.id===o.site),dd=D(dnum(o.d)),key=o.d+'|'+o.site,X=DIARI[key]||{},F=X.fotos||[];
-     const it=o.it.sort((a,b)=>(b.n||0)-(a.n||0)),ri=RECS.findIndex(r=>r.track&&new Date(r.t0).toLocaleDateString('sv')===o.d),rr=ri>=0?RECS[ri]:null;
+     const it=o.it.sort((a,b)=>(b.n||0)-(a.n||0)),rr=RECS.find(r=>r.track&&new Date(r.t0).toLocaleDateString('sv')===o.d)||RUTES.find(r=>r.d===o.d&&r.site===o.site)||null,ri=rr&&rr.id;
      return `<article class="mem${it.some(v=>v.n)?'':' zero'}">
        ${F.length?`<div class="ph n${Math.min(F.length,4)}">${F.slice(0,4).map((f,i)=>`<img src="${LOCALPH[f]||f}" alt="" loading="lazy" data-zoom="${key}" data-i="${i}">${i===3&&F.length>4?`<span class="more">+${F.length-4}</span>`:''}`).join('')}</div>`:''}
        ${rr?`<div class="rr-map" data-rec3d="${ri}" role="button" aria-label="Veure la ruta en 3D">${routeSvg(rr,300,110,false)}<span class="m3d">3D</span></div>`:''}
@@ -1154,7 +1158,7 @@ function recMap(r){L1.moved=true;show('mapa');
     L1.recB={bolets:fb.length?L.latLngBounds(fb).pad(fb.length>1?.06:0):null,tot:all.length?L.latLngBounds(all).pad(.2):null,zona:A.zone,r};
     const st=recStatsTxt(r),ins=recInsight(r,A);
     $('#mapcard').innerHTML=`<strong style="font-family:var(--f-display);font-size:17px">${A.total} ${A.total===1?'bolet':'bolets'}${st?` · <span class="muted" style="font-size:14px">${esc(st)}</span>`:''}</strong>${ins?`<p class="small">${esc(ins)}.</p>`:''}
-      <div class="recfb">${r.track?`<button class="opt d3" data-rec3d="${RECS.indexOf(r)}">Veure en 3D</button>`:''}${fb.length?'<button class="opt" data-recfocus="bolets">Bolets</button>':''}<button class="opt" data-recfocus="tot">Tot</button>${A.zone?`<button class="opt" data-addhere="${A.zone.lat.toFixed(6)},${A.zone.lng.toFixed(6)}">Desa la zona</button>`:''}</div>`;
+      <div class="recfb">${r.track?`<button class="opt d3" data-rec3d="${r.id}">Veure en 3D</button>`:''}${fb.length?'<button class="opt" data-recfocus="bolets">Bolets</button>':''}<button class="opt" data-recfocus="tot">Tot</button>${A.zone?`<button class="opt" data-addhere="${A.zone.lat.toFixed(6)},${A.zone.lng.toFixed(6)}">Desa la zona</button>`:''}</div>`;
     const B=L1.recB.bolets&&fb.length>1?L1.recB.bolets:L1.recB.tot;setTimeout(()=>recFit(B),30)},80)}
 // enfoca deixant lloc a la targeta de sota, que no tapi els bolets
 function recFit(B){if(!B)return;const ch=($('#mapcard')||{}).offsetHeight||0;map.fitBounds(B,{maxZoom:18,paddingTopLeft:[20,20],paddingBottomRight:[20,ch+16]})}
@@ -1181,7 +1185,9 @@ async function open3D(r){
       layers:[{id:'sat',type:'raster',source:'sat'}],terrain:{source:'dem',exaggeration:1.5}},
     bounds:b,fitBoundsOptions:{padding:60},pitch:60,bearing:-15});
   v3.m=m;
-  m.on('load',()=>{const msg=$('#m3msg');if(msg)msg.remove();
+  // encuadre amb la mida real de la pantalla (mòbil o ordinador), deixant lloc a la barra de dalt i als botons de baix
+  const fit=(dur)=>{m.resize();m.fitBounds(b,{padding:{top:90,bottom:110,left:50,right:50},pitch:55,bearing:-15,duration:dur||0,maxZoom:18})};v3.fit=fit;
+  m.on('load',()=>{const msg=$('#m3msg');if(msg)msg.remove();fit();
     m.addSource('ruta',{type:'geojson',data:{type:'Feature',geometry:{type:'MultiLineString',coordinates:sg.map(c=>c.map(p=>[p[1],p[0]]))}}});
     m.addLayer({id:'ruta-v',type:'line',source:'ruta',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#fff','line-width':7,'line-opacity':.9}});
     m.addLayer({id:'ruta',type:'line',source:'ruta',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#3D8BFF','line-width':4}});
@@ -1200,13 +1206,13 @@ async function open3D(r){
   v3.fly=()=>{if(v3.raf){cancelAnimationFrame(v3.raf);v3.raf=0;flyBtn(false);return}flyBtn(true);const T=Math.max(15000,Math.min(40000,tot*16000)),t0=performance.now();let br=m.getBearing();
     const step=now=>{if(!v3)return;const k=Math.min(1,(now-t0)/T),d=k*tot,c=at(d),ah=at(Math.min(tot,d+.04));
       const want=Math.atan2((ah[0]-c[0])*Math.cos(c[1]*Math.PI/180),ah[1]-c[1])*180/Math.PI;let dlt=((want-br+540)%360)-180;br+=dlt*.04;
-      m.jumpTo({center:c,bearing:br,pitch:68,zoom:17.2});if(k<1)v3.raf=requestAnimationFrame(step);else{v3.raf=0;flyBtn(false);m.fitBounds(b,{padding:60,pitch:60,bearing:-15,duration:1500})}};
+      m.jumpTo({center:c,bearing:br,pitch:68,zoom:17.2});if(k<1)v3.raf=requestAnimationFrame(step);else{v3.raf=0;flyBtn(false);fit(1500)}};
     v3.raf=requestAnimationFrame(step)};
 }
 document.addEventListener('click',e=>{if(!v3)return;
   if(e.target.closest('[data-v3close]')){close3D();return}
   if(e.target.closest('[data-v3fly]')){v3.fly&&v3.fly();return}
-  const vv=e.target.closest('[data-v3view]');if(vv&&v3.m){cancelAnimationFrame(v3.raf);v3.raf=0;const fb=v3.el.querySelector('[data-v3fly]');if(fb)fb.textContent='▶ Recorregut';v3.m.easeTo(vv.dataset.v3view==='dalt'?{pitch:0,bearing:0,duration:1200}:{pitch:60,bearing:-15,duration:1200})}});
+  const vv=e.target.closest('[data-v3view]');if(vv&&v3.m){cancelAnimationFrame(v3.raf);v3.raf=0;const fb=v3.el.querySelector('[data-v3fly]');if(fb)fb.textContent='▶ Recorregut';if(vv.dataset.v3view==='dalt')v3.m.easeTo({pitch:0,bearing:0,duration:1200});else v3.fit&&v3.fit(1200)}});
 
 /* ---------- FITXA ---------- */
 let cur=null,calOff=0,selDay=null,form=null;
@@ -1796,7 +1802,7 @@ document.addEventListener('click',e=>{
       if(L1.me)map.removeLayer(L1.me);L1.me=L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#2F67A6',fillOpacity:1}).addTo(map)},
       ()=>{os.classList.remove('busy');$('#mapcard').innerHTML="<p>No s'ha pogut saber on ets. Mira que el mòbil deixi fer servir la ubicació.</p>"},{enableHighAccuracy:true,timeout:15000});return}
   if(e.target.closest('[data-mclose]')){$('#mapcard').innerHTML='';if(tap){map.removeLayer(tap);tap=null}if(L1.recOn)recMode(false);return}
-  const r3=e.target.closest('[data-rec3d]');if(r3){const r=RECS[+r3.dataset.rec3d];if(r)open3D(r);return}
+  const r3=e.target.closest('[data-rec3d]');if(r3){const r=getRec(r3.dataset.rec3d);if(r)open3D(r);return}
   const cp=e.target.closest('[data-capes]');if(cp){const pn=$('#s-mapa .laypanel');pn.hidden=!pn.hidden;cp.setAttribute('aria-expanded',!pn.hidden);return}
   if(e.target.closest('[data-gomap]')){show('mapa');return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
@@ -1813,7 +1819,7 @@ document.addEventListener('click',e=>{
   const rd=e.target.closest('[data-recdel]');if(rd){if(rd.dataset.sure){RECS.splice(+rd.dataset.recdel,1);saveRec();if(screen==='diari')renderDiari();else renderRuta()}else{rd.dataset.sure='1';rd.textContent='Segur?';rd.style.color='var(--soon)';setTimeout(()=>{if(rd.isConnected){delete rd.dataset.sure;rd.textContent='Esborra';rd.style.color=''}},4000)}return}
   const rx=e.target.closest('[data-recdiscard]');if(rx){if(rx.dataset.sure){REC=null;recMsg='';saveRec();paintRec();show('diari')}else{rx.dataset.sure='1';rx.textContent="Segur? Es perden els bolets d'aquesta sortida";setTimeout(()=>{if(rx.isConnected){delete rx.dataset.sure;rx.textContent='Descarta la sortida (sense desar-la)'}},4000)}return}
   const rf=e.target.closest('[data-recfocus]');if(rf&&L1.recB){recFit(L1.recB[rf.dataset.recfocus]);return}
-  const rm=e.target.closest('[data-recmap]');if(rm){recMap(RECS[+rm.dataset.recmap]);return}
+  const rm=e.target.closest('[data-recmap]');if(rm){const r=getRec(rm.dataset.recmap);if(r)recMap(r);return}
   const rs=e.target.closest('[data-recsend]');if(rs){recShare(RECS[+rs.dataset.recsend]);return}
   const pd=e.target.closest('[data-pld]');if(pd){const d=+pd.dataset.pld;PLAN.days=PLAN.days.includes(d)?PLAN.days.filter(x=>x!==d):[...PLAN.days,d].sort();renderPlan();return}
   const pk=e.target.closest('[data-plkm]');if(pk){PLAN.km=+pk.dataset.plkm;renderPlan();return}
