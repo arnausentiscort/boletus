@@ -271,7 +271,19 @@ button.site:active{background:var(--surface2)}
 .rlast.flash{animation:rflash 1.2s ease-out}@keyframes rflash{0%{background:var(--acc);color:#fff}100%{background:var(--surface2)}}
 @media (prefers-reduced-motion:reduce){.rlast.flash{animation:none}}
 .recfb{display:flex;gap:6px;flex-wrap:wrap}.spotn.grp{width:34px;height:34px;line-height:29px;font-size:13px;margin:-3px 0 0 -3px;box-shadow:0 0 0 4px rgba(199,154,106,.45),0 1px 4px rgba(0,0,0,.6)}a.opt{text-decoration:none;color:inherit}.recfb .opt{padding:6px 12px;font-size:13.5px}
-.rr-map{position:relative}.m3d{position:absolute;right:8px;top:8px;font:800 12px var(--f-display);color:#fff;background:rgba(0,0,0,.55);border-radius:8px;padding:3px 8px}
+.rr-map{position:relative}
+.rthumb{position:relative;display:block;width:100%;padding:0;border:0;border-radius:14px;overflow:hidden;background:var(--surface2);cursor:pointer;margin:0 0 6px;color:inherit}
+.rthumb-i{display:block;aspect-ratio:300/130}.rthumb-i img,.rthumb-i svg{display:block;width:100%;height:100%;object-fit:cover}.rthumb-i .rmap{border-radius:0}
+.rthumb-i img{animation:fadein .4s ease-out}@keyframes fadein{from{opacity:0}to{opacity:1}}
+.rplay{position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:7px;padding:7px 13px 7px 11px;border-radius:999px;background:rgba(10,14,8,.74);color:#fff;font:800 13.5px var(--f-display);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.rthumb:active{transform:scale(.99)}
+.mem .rr-st{font:500 13.5px var(--f-data);color:var(--ink)}.mem .rr-in{font-size:13.5px;color:var(--muted);line-height:1.45}
+details.more{position:relative}details.more summary{list-style:none;cursor:pointer;width:40px;height:32px;display:grid;place-items:center;border-radius:10px;font-size:20px;line-height:1;color:var(--muted)}
+details.more summary::-webkit-details-marker{display:none}details.more[open] summary{background:var(--surface2)}
+details.more .menu{position:absolute;right:0;bottom:calc(100% + 6px);z-index:5;min-width:220px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.4);padding:6px;display:flex;flex-direction:column}
+details.more .menu button{border:0;background:none;color:var(--ink);text-align:left;padding:11px 12px;border-radius:10px;font:600 14.5px var(--f-body);cursor:pointer}details.more .menu button:hover,details.more .menu button:active{background:var(--surface2)}
+details.more .menu .del{color:#D0664B}
+.v3d .bar .in{font-size:12px;opacity:.8;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:620px}.m3d{position:absolute;right:8px;top:8px;font:800 12px var(--f-display);color:#fff;background:rgba(0,0,0,.55);border-radius:8px;padding:3px 8px}
 .mapbox.recmode .leaflet-container{background:#1b2416}
 .opt.d3{background:var(--acc);color:#fff;border-color:var(--acc)}
 body.no-scroll{overflow:hidden}
@@ -283,6 +295,9 @@ body.no-scroll{overflow:hidden}
 .v3d .bot button{pointer-events:auto;border:0;border-radius:999px;padding:10px 16px;font:800 14px var(--f-display);background:rgba(255,255,255,.92);color:#1C2218}
 .v3d .bot button[data-v3fly]{background:var(--acc);color:#fff}
 .v3d .maplibregl-ctrl-bottom-right{bottom:calc(env(safe-area-inset-bottom,0px) + 64px)}
+.headdot{width:16px;height:16px;border-radius:50%;background:#3D8BFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(61,139,255,.35),0 1px 4px rgba(0,0,0,.6)}
+.v3d .spotn.pop{animation:spop .5s cubic-bezier(.2,1.6,.4,1)}@keyframes spop{0%{transform:scale(.2)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.v3d .spotn.pop{animation:none}}
 .v3d .msg{position:absolute;left:0;right:0;top:45%;text-align:center;color:#ddd;font-size:14px}
 .v3d .maplibregl-popup-content{font:13px var(--f-body);color:#1C2218;border-radius:10px;padding:8px 10px}
 .rr-in{font-size:14px;color:var(--ink)}
@@ -725,27 +740,61 @@ function ghCard(){return `<div class="card how" id="ghcard"><h3>Clau per pujar f
      <li><b>Generate token</b>, copia-la i enganxa-la aquí.</li></ol>
    <form class="namef" id="ghf"><input id="ghi" type="password" autocomplete="off" placeholder="github_pat_…" aria-label="Clau de GitHub" required><button class="btn">Desa</button></form>
    <p class="small" id="ghm"></p></div>`}
+// Portada de la sortida: foto de satèl·lit de veritat amb la ruta i els bolets dibuixats (es fa un cop i es desa)
+const THB={},dot=(g,x,y,r,c)=>{g.beginPath();g.arc(x,y,r,0,7);g.fillStyle=c;g.fill();g.lineWidth=2.5;g.strokeStyle='#fff';g.stroke()};
+async function satThumb(r,W,H){
+  const k='thb-'+r.id+'-'+(r.track?r.track.length:0)+'-'+r.pts.length;if(THB[k])return THB[k];const sv=store.get(k,null);if(sv)return THB[k]=sv;
+  const pts=(r.track||[]).map(p=>[p[0],p[1]]).concat(r.pts.filter(p=>p.lat!=null).map(p=>[p.lat,p.lng]),r.start?[[r.start.lat,r.start.lng]]:[]);if(!pts.length)return null;
+  const dpr=2,CW=W*dpr,CH=H*dpr,px=(la,lo,z)=>{const n=256*2**z,q=Math.sin(la*Math.PI/180);return[(lo+180)/360*n,(.5-Math.log((1+q)/(1-q))/(4*Math.PI))*n]};
+  let z=18;for(;z>12;z--){const P=pts.map(p=>px(p[0],p[1],z)),xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);if(Math.max(...xs)-Math.min(...xs)<=CW*.8&&Math.max(...ys)-Math.min(...ys)<=CH*.74)break}
+  const P=pts.map(p=>px(p[0],p[1],z)),xs=P.map(p=>p[0]),ys=P.map(p=>p[1]),ox=(Math.min(...xs)+Math.max(...xs))/2-CW/2,oy=(Math.min(...ys)+Math.max(...ys))/2-CH/2;
+  const c=document.createElement('canvas');c.width=CW;c.height=CH;const g=c.getContext('2d'),jobs=[];
+  for(let ty=Math.floor(oy/256);ty<=Math.floor((oy+CH)/256);ty++)for(let tx=Math.floor(ox/256);tx<=Math.floor((ox+CW)/256);tx++)
+    jobs.push(new Promise(res=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{g.drawImage(im,tx*256-ox,ty*256-oy);res(1)};im.onerror=()=>res(0);im.src=`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}`}));
+  if(!(await Promise.all(jobs)).some(Boolean))return null;     // sense connexió: es queda el dibuix senzill
+  g.fillStyle='rgba(0,0,0,.14)';g.fillRect(0,0,CW,CH);
+  const L=(la,lo)=>{const q=px(la,lo,z);return[q[0]-ox,q[1]-oy]};g.lineJoin=g.lineCap='round';
+  if(r.track)trkSegs(r.track).forEach(sg=>{g.beginPath();sg.forEach((p,i)=>{const[x,y]=L(p[0],p[1]);i?g.lineTo(x,y):g.moveTo(x,y)});g.strokeStyle='rgba(255,255,255,.92)';g.lineWidth=8;g.stroke();g.strokeStyle='#3D8BFF';g.lineWidth=4.5;g.stroke()});
+  if(r.start){const[x,y]=L(r.start.lat,r.start.lng);dot(g,x,y,9,'#2E8B4B')}
+  r.pts.forEach(p=>{if(p.lat==null)return;const[x,y]=L(p.lat,p.lng);dot(g,x,y,7.5,bCol(p.sp))});
+  const u=c.toDataURL('image/jpeg',.8);THB[k]=u;store.set(k,u);return u}
+const ptsCnt=r=>{const c={};r.pts.forEach(p=>{const k=p.nom||p.sp;(c[k]=c[k]||{p,v:0}).v+=(p.n||1)});return Object.values(c).sort((a,b)=>b.v-a.v)};
 function renderDiari(){
   const g={};visits.filter(v=>SHOW.includes(v.sp||'ceps')).forEach(v=>{const k=v.d+'|'+v.site;(g[k]=g[k]||{d:v.d,site:v.site,it:[],notes:[]}).it.push(v);if(v.nota)g[k].notes.push(v.nota)});
-  const L=Object.values(g).sort((a,b)=>b.d.localeCompare(a.d));
-  const tot=k=>visits.filter(v=>(v.sp||'ceps')===k).reduce((a,v)=>a+(v.n||0),0);
+  // les sortides gravades (d'aquest mòbil i les pujades) s'ajunten amb la targeta del mateix dia; si no n'hi ha, en fan una de nova
+  const recs=RECS.filter(r=>r.t1).slice();RUTES.forEach(r=>{if(!recs.some(x=>x.id===r.id))recs.push(r)});
+  const dOf=r=>r.d||new Date(r.t0).toLocaleDateString('sv'),used=new Set();
+  const near=r=>{const q=r.start||(r.track&&r.track.length?{lat:r.track[0][0],lng:r.track[0][1]}:null);if(!q)return null;let b=null,bd=3;SITES.forEach(x=>{const d=distKm(q.lat,q.lng,x.lat,x.lng);if(d<bd){bd=d;b=x}});return b};
+  Object.values(g).forEach(o=>{const r=recs.find(r=>!used.has(r.id)&&dOf(r)===o.d&&(!r.site||r.site===o.site));if(r){o.r=r;used.add(r.id)}});
+  recs.filter(r=>!used.has(r.id)).forEach(r=>{const x=near(r),d=dOf(r);g[d+'|'+r.id]={d,site:x?x.id:null,it:[],notes:[],r,key:d+'|'+r.id}});
+  const L=Object.values(g).sort((a,b)=>b.d.localeCompare(a.d)||((b.r&&b.r.t0)||0)-((a.r&&a.r.t0)||0));
+  const tot=k=>visits.filter(v=>(v.sp||'ceps')===k).reduce((a,v)=>a+(v.n||0),0)+L.filter(o=>o.key).reduce((a,o)=>a+o.r.pts.filter(p=>p.sp===k&&!p.nom).reduce((x,p)=>x+(p.n||1),0),0);
+  RECS.forEach(r=>{if(r.track&&!r.dem&&!demTried.has(r.id)){demTried.add(r.id);setTimeout(()=>demFix(r),500)}});   // sense cobertura al bosc: es torna a provar
+  const play='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z" fill="currentColor"/></svg>';
   $('#s-diari').innerHTML=`<div class="intro"><p class="kicker">Diari</p><h2 class="lead">${L.length} ${L.length===1?'sortida':'sortides'}.</h2>
      <p class="sub">${SHOW.map(k=>qTxt(k,tot(k))).join(' · ')} en total</p></div>
    ${recCard()}
    ${ghOpen?ghCard():''}
-   ${L.map(o=>{const s=SITES.find(x=>x.id===o.site),dd=D(dnum(o.d)),key=o.d+'|'+o.site,X=DIARI[key]||{},F=X.fotos||[];
-     const it=o.it.sort((a,b)=>(b.n||0)-(a.n||0)),rr=RECS.find(r=>r.track&&new Date(r.t0).toLocaleDateString('sv')===o.d)||RUTES.find(r=>r.d===o.d&&r.site===o.site)||null,ri=rr&&rr.id;
-     return `<article class="mem${it.some(v=>v.n)?'':' zero'}">
+   ${L.map(o=>{const s=SITES.find(x=>x.id===o.site),dd=D(dnum(o.d)),key=o.key||o.d+'|'+o.site,X=DIARI[key]||{},F=X.fotos||[],r=o.r||null,local=r&&RECS.some(x=>x.id===r.id);
+     const it=o.it.sort((a,b)=>(b.n||0)-(a.n||0)),st=r?recStatsTxt(r):'',ins=r?recInsight(r):'',zero=it.length?!it.some(v=>v.n):!(r&&r.pts.length);
+     const cnt=it.length?it.map(v=>`<span>${spIcon(22,v.sp||'ceps')}${qTxt(v.sp||'ceps',v.n)}</span>`).join(''):r&&r.pts.length?ptsCnt(r).map(({p,v})=>`<span>${bIcon(p.sp,22)}${v} ${nomN(p,v)}</span>`).join(''):'<span>cap bolet</span>';
+     const menu=r?`<details class="more"><summary aria-label="Més opcions">⋯</summary><div class="menu">
+         ${local?`<button data-recgpx="${r.id}">${r.track?'Canvia la ruta (GPX)':'Afegeix la ruta (GPX)'}</button>`:''}<button data-recsend="${r.id}">Envia el GPX</button>
+         ${s?`<button data-open="${s.id}" data-from="diari">Fitxa de ${esc(s.name)}</button>`:''}${local?`<button class="del" data-recdel="${r.id}">Esborra la gravació</button>`:''}</div></details>`:'';
+     return `<article class="mem${zero?' zero':''}">
        ${F.length?`<div class="ph n${Math.min(F.length,4)}">${F.slice(0,4).map((f,i)=>`<img src="${LOCALPH[f]||f}" alt="" loading="lazy" data-zoom="${key}" data-i="${i}">${i===3&&F.length>4?`<span class="more">+${F.length-4}</span>`:''}`).join('')}</div>`:''}
-       ${rr?`<div class="rr-map" data-rec3d="${ri}" role="button" aria-label="Veure la ruta en 3D">${routeSvg(rr,300,110,false)}<span class="m3d">3D</span></div>`:''}
-       <p class="kicker">${dd.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})}</p>
-       <h3>${esc(s?s.name:o.site)}</h3><p class="cnt">${it.map(v=>`<span>${spIcon(22,v.sp||'ceps')}${qTxt(v.sp||'ceps',v.n)}</span>`).join('')}</p>
+       ${r&&(r.track||r.pts.some(p=>p.lat!=null))?`<button class="rthumb" data-rec3d="${r.id}" aria-label="Veure la sortida"><span class="rthumb-i" data-tid="${r.id}">${routeSvg(r,300,130,false)}</span><span class="rplay">${play}Veure la sortida</span></button>`:''}
+       <p class="kicker">${dd.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})}${r?' · '+hm(r.t0)+'–'+hm(r.t1):''}</p>
+       <h3>${esc(s?s.name:'Sortida')}</h3><p class="cnt">${cnt}</p>
+       ${st?`<p class="rr-st">${esc(st)}</p>`:''}${ins?`<p class="rr-in">${esc(ins)}.</p>`:''}
        ${X.amb&&dEdit!==key?`<p class="amb">Amb ${esc(X.amb)}</p>`:''}
        ${o.notes.length?`<p class="nt">${o.notes.map(esc).join(' ')}</p>`:''}
+       ${r&&r.imsg?`<p class="small" style="color:var(--soon)">${esc(r.imsg)}</p>`:''}
        ${dEdit===key?`<form class="namef" data-ambf="${key}"><input value="${esc(X.amb||'')}" maxlength="120" placeholder="L'Arnau, el Berni i…" aria-label="Amb qui hi vau anar"><button class="btn">Desa</button></form>`:''}
        ${dMsg[key]?`<p class="small">${esc(dMsg[key])}</p>`:''}
-       <div class="memact"><button class="linkbtn" data-addph="${key}">+ Fotos</button>${dEdit===key?'':`<button class="linkbtn" data-ambed="${key}">${X.amb?'Amb qui':'+ Amb qui'}</button>`}<span class="spacer"></span>${rr?`<button class="linkbtn" data-recmap="${ri}">Ruta</button><button class="linkbtn" data-rec3d="${ri}">3D</button>`:s?`<button class="linkbtn" data-open="${s.id}" data-from="diari">${esc(s.name)} ›</button>`:''}</div></article>`}).join('')||'<p class="sub">Encara no hi ha cap sortida. Apunta-les des de cada lloc.</p>'}
+       <div class="memact"><button class="linkbtn" data-addph="${key}">+ Fotos</button>${dEdit===key?'':`<button class="linkbtn" data-ambed="${key}">${X.amb?'Amb qui':'+ Amb qui'}</button>`}<span class="spacer"></span>${r?menu:s?`<button class="linkbtn" data-open="${s.id}" data-from="diari">${esc(s.name)} ›</button>`:''}</div></article>`}).join('')||'<p class="sub">Encara no hi ha cap sortida.</p>'}
    <input type="file" id="phin" accept="image/*" multiple hidden>`;
+  $('#s-diari').querySelectorAll('[data-tid]').forEach(el=>{const r=getRec(el.dataset.tid);if(r)satThumb(r,300,130).then(u=>{if(u&&el.isConnected)el.innerHTML=`<img alt="" src="${u}">`})});
   const gf=$('#ghf');if(gf)gf.onsubmit=async ev=>{ev.preventDefault();const t=$('#ghi').value.trim();store.set('ghtok',t);$('#ghm').textContent='Comprovant…';
     try{await GH.get('data/llocs.json');ghOpen=false;renderDiari()}catch(e){store.set('ghtok','');$('#ghm').textContent='Aquesta clau no funciona. Mira que tingui Contents: Read and write al repositori boletus.'}};
   bindRecForm();
@@ -1085,7 +1134,7 @@ const km1=k=>k.toFixed(1).replace('.',',');
 const altTxt=z=>z.emin!=null?`, a ${z.emin===z.emax?z.emin:z.emin+'–'+z.emax} m d'altura`:'';
 function recInsight(r,A){A=A||recAnalyze(r);const o=[];
   const sp1=A.F.length&&A.F.every(f=>f.p.sp===A.F[0].p.sp&&!f.p.nom)?A.F[0].p:null;
-  if(A.first&&A.last&&A.total>1)o.push(`${A.total} ${sp1?nomN(sp1,A.total):'bolets'} en ${durTxt(A.last.p.t-A.first.p.t)} (de ${hm(A.first.p.t)} a ${hm(A.last.p.t)})`);
+  if(A.first&&A.last&&A.total>1&&A.last.p.t-A.first.p.t>=120e3)o.push(`${A.total} ${sp1?nomN(sp1,A.total):'bolets'} en ${durTxt(A.last.p.t-A.first.p.t)} (de ${hm(A.first.p.t)} a ${hm(A.last.p.t)})`);
   if(A.first){const m=A.first.km!=null?A.first.km*1000:r.start?distKm(r.start.lat,r.start.lng,A.first.p.lat,A.first.p.lng)*1000:null;
     if(m!=null)o.push(`el primer, a ${m<1000?Math.round(m/10)*10+' m':km1(m/1000)+' km'} de l'inici`)}
   const z=A.zone;
@@ -1101,7 +1150,7 @@ function perfil(tr,A){const el=tr.map(p=>p[2]);if(!el.some(v=>v!=null))return'';
 const kmTxt=k=>k.toFixed(k<10?1:0).replace('.',',')+' km';
 function recStatsTxt(r){if(!r.track)return'';const t=trackStats(r.track);return [kmTxt(t.km),t.ms!=null?durTxt(t.ms):null,t.up!=null?`+${t.up} m`:null,t.down>=1?`−${t.down} m`:null].filter(Boolean).join(' · ')}
 async function recImport(i,file){
-  const r=RECS[i];if(!r||!file)return;
+  const r=RECS.find(x=>x.id===i)||RECS[+i];if(!r||!file)return;
   try{const tr=parseGpx(await file.text());r.track=tr;
     if(!r.start)r.start={lat:tr[0][0],lng:tr[0][1],acc:15,alt:tr[0][2]};
     // els bolets que no van agafar GPS es posen a la ruta segons l'hora (si la ruta té hores)
@@ -1120,16 +1169,10 @@ function recCard(){const qui=store.get('qui','');
      <ol class="steps"><li>Posa el teu nom i toca <b>Comença</b>. L'app grava la ruta amb el GPS mentre sigui oberta.</li><li>Cada cop que trobis un bolet, toca'l.</li><li>Quan acabis, toca <b>Acaba</b>.</li></ol>
      <form class="namef" id="recf"><input id="recwho" value="${esc(qui)}" placeholder="Qui ets?" aria-label="Qui ets" maxlength="30" required><button class="btn">Comença</button></form>
      <details class="small"><summary>Bateria i pantalla</summary><p style="margin-top:6px">El mòbil no deixa gravar amb la pantalla apagada, així que l'app la manté encesa mentre graves (ho pots canviar a la pantalla de ruta). Gasta bateria: baixa la brillantor i porta bateria externa si surts molta estona. Si bloqueges el mòbil o canvies d'app, la ruta es talla.</p></details>
-     <details class="small"><summary>Prefereixo gravar amb Strava</summary><p style="margin-top:6px">Grava la ruta amb Strava, Wikiloc o Komoot, apunta els bolets aquí i, quan acabis, toca <b>+ Ruta (GPX)</b> a la sortida i tria el fitxer. Strava només exporta el GPX des de <b>strava.com</b> (activitat, ⋯, Exporta GPX).</p></details>`}</div>
-   <input type="file" id="gpxin" hidden>
-   ${RECS.map((r,i)=>{const st=recStatsTxt(r);if(r.track&&!r.dem&&!demTried.has(r.id)){demTried.add(r.id);setTimeout(()=>demFix(r),500)}   // sense cobertura al bosc: es torna a provar
-     return `<div class="recrow">${r.track||r.pts.some(p=>p.lat!=null)?`<div class="rr-map" data-recmap="${i}">${routeSvg(r,300,110,false)}</div>`:''}<div class="rr-top"><b>${D(dnum(new Date(r.t0).toLocaleDateString('sv'))).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})} · ${hm(r.t0)}–${hm(r.t1)}</b>
-       <span>${esc(r.who||'')} · ${esc(recSum(r))}${r.start?'':' · sense inici'}</span></div>
-       ${st?`<div class="rr-st">${esc(st)}</div>`:''}${(A=>{const t=recInsight(r,A);return (t?`<p class="rr-in">${esc(t)}.</p>`:'')+(r.track?perfil(r.track,A):'')})(recAnalyze(r))}
-       ${r.imsg?`<p class="small" style="color:var(--soon)">${esc(r.imsg)}</p>`:''}
-       <div class="rr-act"><button class="linkbtn" data-recmap="${i}">Mapa</button>${r.track?`<button class="linkbtn" data-rec3d="${i}">3D</button>`:''}${r.track?`<button class="linkbtn" data-recgpx="${i}">Canvia la ruta</button>`:`<button class="btn ghost rr-add" data-recgpx="${i}">+ Ruta (GPX)</button>`}<button class="linkbtn" data-recsend="${i}">Envia</button><span class="spacer"></span><button class="linkbtn rr-del" data-recdel="${i}">Esborra</button></div></div>`}).join('')}`}
+     <details class="small"><summary>Prefereixo gravar amb Strava</summary><p style="margin-top:6px">Grava la ruta amb Strava, Wikiloc o Komoot, apunta els bolets aquí i, quan acabis, a la sortida toca <b>⋯</b> i <b>Afegeix la ruta (GPX)</b>. Strava només exporta el GPX des de <b>strava.com</b> (activitat, ⋯, Exporta GPX).</p></details>`}</div>
+   <input type="file" id="gpxin" hidden>`}
 function bindRecForm(){const rf=$('#recf');if(rf)rf.onsubmit=ev=>{ev.preventDefault();recStart($('#recwho').value.trim()||'Jo')};
-  const gi=$('#gpxin');if(gi)gi.onchange=()=>{const f=gi.files[0],i=+gi.dataset.i;gi.value='';if(f)recImport(i,f)}}
+  const gi=$('#gpxin');if(gi)gi.onchange=()=>{const f=gi.files[0],i=gi.dataset.i;gi.value='';if(f)recImport(i,f)}}
 function recMode(on){if(!map)return;const K=['topo','towns','bosc','prob','cares','acid','spots','llocs','siteimg'];
   if(on&&!L1.recOn){L1.recOn=K.filter(k=>L1[k]&&L1[k]._map);L1.recOn.forEach(k=>map.removeLayer(L1[k]));const c=L1.orto&&L1.orto.getContainer();if(c)c.classList.remove('gris');$('#s-mapa .mapbox').classList.add('recmode')}
   else if(!on&&L1.recOn){L1.recOn.forEach(k=>L1[k].addTo(map));L1.recOn=null;const c=L1.orto&&L1.orto.getContainer();if(c)c.classList.add('gris');if(L1.rec){map.removeLayer(L1.rec);L1.rec=null}$('#s-mapa .mapbox').classList.remove('recmode')}}
@@ -1172,11 +1215,11 @@ function close3D(){if(!v3)return;cancelAnimationFrame(v3.raf);try{v3.m.remove()}
 async function open3D(r){
   close3D();const A=recAnalyze(r),st=recStatsTxt(r);
   const el=document.createElement('div');el.className='v3d';
-  el.innerHTML=`<div class="m" id="m3d"></div><div class="bar"><button class="x" data-v3close aria-label="Tanca">✕</button><div class="t"><b>${A.total} ${(A.F.length&&A.F.every(f=>f.p.sp===A.F[0].p.sp&&!f.p.nom))?nomN(A.F[0].p,A.total):A.total===1?'bolet':'bolets'}${r.who?' · '+esc(r.who):''}</b><span>${new Date(r.t0).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short'})}${st?' · '+esc(st):''}</span></div></div>
+  el.innerHTML=`<div class="m" id="m3d"></div><div class="bar"><button class="x" data-v3close aria-label="Tanca">✕</button><div class="t"><b>${A.total} ${(A.F.length&&A.F.every(f=>f.p.sp===A.F[0].p.sp&&!f.p.nom))?nomN(A.F[0].p,A.total):A.total===1?'bolet':'bolets'}${r.who?' · '+esc(r.who):''}</b><span>${new Date(r.t0).toLocaleDateString('ca-ES',{weekday:'short',day:'numeric',month:'short'})}${st?' · '+esc(st):''}</span>${(t=>t?`<span class="in">${esc(t)}.</span>`:'')(recInsight(r,A))}</div></div>
     <div class="msg" id="m3msg">Carregant el relleu…</div>
-    <div class="bot"><button data-v3fly>▶ Recorregut</button><button data-v3view="dalt">Des de dalt</button><button data-v3view="3d">3D</button></div>`;
+    <div class="bot"><button data-v3fly>▶ Reviu la sortida</button><button data-v3view>Des de dalt</button></div>`;
   document.body.appendChild(el);document.body.classList.add('no-scroll');v3={el,r,raf:0};
-  let ML;try{ML=await loadML()}catch(e){$('#m3msg').textContent="No s'ha pogut carregar el 3D: cal connexió.";return}
+  let ML;try{ML=await loadML()}catch(e){close3D();recMap(r);return}   // sense connexió per al 3D: el mapa de sempre
   if(!v3||v3.r!==r)return;
   const tr=r.track,sg=trkSegs(tr),ll=tr.map(p=>[p[1],p[0]]),b=ll.reduce((B,c)=>B.extend(c),new ML.LngLatBounds(ll[0],ll[0]));
   const m=new ML.Map({container:'m3d',attributionControl:{compact:true},maxPitch:80,
@@ -1186,33 +1229,51 @@ async function open3D(r){
     bounds:b,fitBoundsOptions:{padding:60},pitch:60,bearing:-15});
   v3.m=m;
   // encuadre amb la mida real de la pantalla (mòbil o ordinador), deixant lloc a la barra de dalt i als botons de baix
-  const fit=(dur)=>{m.resize();m.fitBounds(b,{padding:{top:90,bottom:110,left:50,right:50},pitch:55,bearing:-15,duration:dur||0,maxZoom:18})};v3.fit=fit;
+  const fit=(dur,top)=>{m.resize();m.fitBounds(b,{padding:{top:110,bottom:110,left:50,right:50},pitch:top?0:55,bearing:top?0:-15,duration:dur||0,maxZoom:18})};v3.fit=fit;
   m.on('load',()=>{const msg=$('#m3msg');if(msg)msg.remove();fit();
     m.addSource('ruta',{type:'geojson',data:{type:'Feature',geometry:{type:'MultiLineString',coordinates:sg.map(c=>c.map(p=>[p[1],p[0]]))}}});
     m.addLayer({id:'ruta-v',type:'line',source:'ruta',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#fff','line-width':7,'line-opacity':.9}});
     m.addLayer({id:'ruta',type:'line',source:'ruta',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#3D8BFF','line-width':4}});
-    const mk=(html,lng,lat,pop)=>{const d=document.createElement('div');d.innerHTML=html;const x=new ML.Marker({element:d.firstChild}).setLngLat([lng,lat]);if(pop)x.setPopup(new ML.Popup({offset:18,closeButton:false}).setHTML(pop));x.addTo(m)};
+    const mk=(html,lng,lat,pop)=>{const d=document.createElement('div');d.innerHTML=html;const x=new ML.Marker({element:d.firstChild}).setLngLat([lng,lat]);if(pop)x.setPopup(new ML.Popup({offset:18,closeButton:false}).setHTML(pop));x.addTo(m);return x};v3.G=[];
     if(r.start)mk('<div class="parkp" style="background:#2E8B4B">▶</div>',r.start.lng,r.start.lat);
     mk('<div class="parkp" style="background:#3E2410">■</div>',ll[ll.length-1][0],ll[ll.length-1][1]);
     // bolets: els que són a menys de 12 m van junts
     const grp=[];A.F.slice().sort((x,y)=>x.p.t-y.p.t).forEach(f=>{const g=grp.find(g=>distKm(g[0].p.lat,g[0].p.lng,f.p.lat,f.p.lng)<=.012);g?g.push(f):grp.push([f])});
     grp.forEach(g=>{const tot=g.reduce((a,f)=>a+(f.p.n||1),0),cs={};g.forEach(f=>{cs[f.p.sp]=(cs[f.p.sp]||0)+(f.p.n||1)});const main=Object.entries(cs).sort((a,b)=>b[1]-a[1])[0][0];
       const la=g.reduce((a,f)=>a+f.p.lat,0)/g.length,lo=g.reduce((a,f)=>a+f.p.lng,0)/g.length,names=Object.entries(cs).map(([k,v])=>`${esc(bNom(g.find(f=>f.p.sp===k).p))}${v>1?' ×'+v:''}`).join(', ');
-      mk(`<div class="spotn${g.length>1?' grp':''}" style="background:${bCol(main)}">${g.length>1?'×'+tot:r.pts.indexOf(g[0].p)+1}</div>`,lo,la,`<b>${names}</b><br>${hm(g[0].p.t)}${g[0].ele!=null?' · '+Math.round(g[0].ele)+' m':''}`)})});
-  // vol seguint la ruta: uns 25 s, mirant cap endavant
-  const cum=cumKm(tr),tot=cum[cum.length-1]||0;
-  const at=d=>{let i=cum.findIndex(c=>c>=d);if(i<=0)return[tr[Math.max(0,i)][1],tr[Math.max(0,i)][0]];const f=(d-cum[i-1])/((cum[i]-cum[i-1])||1);return[tr[i-1][1]+(tr[i][1]-tr[i-1][1])*f,tr[i-1][0]+(tr[i][0]-tr[i-1][0])*f]};
-  const flyBtn=on=>{const b=v3&&v3.el.querySelector('[data-v3fly]');if(b)b.textContent=on?'❚❚ Atura':'▶ Recorregut'};
-  v3.fly=()=>{if(v3.raf){cancelAnimationFrame(v3.raf);v3.raf=0;flyBtn(false);return}flyBtn(true);const T=Math.max(15000,Math.min(40000,tot*16000)),t0=performance.now();let br=m.getBearing();
-    const step=now=>{if(!v3)return;const k=Math.min(1,(now-t0)/T),d=k*tot,c=at(d),ah=at(Math.min(tot,d+.04));
-      const want=Math.atan2((ah[0]-c[0])*Math.cos(c[1]*Math.PI/180),ah[1]-c[1])*180/Math.PI;let dlt=((want-br+540)%360)-180;br+=dlt*.04;
-      m.jumpTo({center:c,bearing:br,pitch:68,zoom:17.2});if(k<1)v3.raf=requestAnimationFrame(step);else{v3.raf=0;flyBtn(false);fit(1500)}};
+      const lab=`<b>${names}</b><br>${hm(g[0].p.t)}${g[0].ele!=null?' · '+Math.round(g[0].ele)+' m':''}`;
+      const x=mk(`<div class="spotn${g.length>1?' grp':''}" style="background:${bCol(main)}">${g.length>1?'×'+tot:r.pts.indexOf(g[0].p)+1}</div>`,lo,la,lab);
+      // on és a la ruta: el punt de la ruta a l'hora del bolet (o el més a prop, si la ruta no té hores)
+      let ix=tr.findIndex(q=>q[3]&&q[3]>=g[0].p.t);if(ix<0){let bd=1e9;tr.forEach((q,i)=>{const d=distKm(q[0],q[1],la,lo);if(d<bd){bd=d;ix=i}})}
+      v3.G.push({x,ix,lab,lng:lo,lat:la})});v3.G.sort((a,b)=>a.ix-b.ix)});
+  // Reviu la sortida: la càmera queda quieta, la ruta es va dibuixant amb un punt on éreu, i a cada bolet s'atura i diu quin era
+  const cum=cumKm(tr),tot=cum[cum.length-1]||0,segI=[];{let a0=0;for(let i=1;i<=tr.length;i++)if(i===tr.length||(tr[i][3]&&tr[i-1][3]&&tr[i][3]-tr[i-1][3]>120e3)){segI.push([a0,i-1]);a0=i}}
+  const upTo=(i,f)=>{const L=[];for(const[a0,b0]of segI){if(a0>i)break;const c=[];for(let k=a0;k<=Math.min(b0,i);k++)c.push([tr[k][1],tr[k][0]]);
+      if(i<b0&&f>0)c.push([tr[i][1]+(tr[i+1][1]-tr[i][1])*f,tr[i][0]+(tr[i+1][0]-tr[i][0])*f]);if(c.length>1)L.push(c)}return{type:'Feature',geometry:{type:'MultiLineString',coordinates:L}}};
+  const btn=on=>{const x=v3&&v3.el.querySelector('[data-v3fly]');if(x)x.textContent=on?'❚❚ Atura':'▶ Reviu la sortida'};
+  const stop=()=>{if(!v3)return;cancelAnimationFrame(v3.raf);v3.raf=0;btn(false);if(v3.pop){v3.pop.remove();v3.pop=null}if(v3.head){v3.head.remove();v3.head=null}
+    if(m.getSource('ruta'))m.getSource('ruta').setData(upTo(tr.length-1,0));(v3.G||[]).forEach(g=>g.x.getElement().style.visibility='')};
+  v3.stop=stop;
+  v3.fly=()=>{if(v3.raf){stop();return}if(!m.getSource('ruta')||!tot)return;btn(true);
+    (v3.G||[]).forEach(g=>g.x.getElement().style.visibility='hidden');m.getSource('ruta').setData(upTo(0,0));
+    const hd=document.createElement('div');hd.className='headdot';v3.head=new ML.Marker({element:hd}).setLngLat([tr[0][1],tr[0][0]]).addTo(m);
+    const D=Math.max(10000,Math.min(22000,8000+tot*6000));let d=0,i=0,gi=0,last=performance.now(),wait=0;
+    const step=now=>{if(!v3||!v3.raf)return;
+      if(now<wait){v3.raf=requestAnimationFrame(step);return}
+      if(v3.pop&&now>=wait&&wait){v3.pop.remove();v3.pop=null;wait=0;last=now}
+      d=Math.min(tot,d+tot*(now-last)/D);last=now;while(i<tr.length-1&&cum[i+1]<=d)i++;
+      const f=i<tr.length-1?(d-cum[i])/((cum[i+1]-cum[i])||1):0;m.getSource('ruta').setData(upTo(i,f));
+      const pos=i<tr.length-1?[tr[i][1]+(tr[i+1][1]-tr[i][1])*f,tr[i][0]+(tr[i+1][0]-tr[i][0])*f]:[tr[i][1],tr[i][0]];v3.head.setLngLat(pos);
+      const G=v3.G||[];if(gi<G.length&&i>=G[gi].ix){const g=G[gi++],el=g.x.getElement();el.style.visibility='';el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+        v3.pop=new ML.Popup({offset:20,closeButton:false,closeOnClick:false}).setLngLat([g.lng,g.lat]).setHTML(g.lab).addTo(m);wait=now+1100}
+      if(d>=tot&&gi>=G.length&&!wait){v3.raf=0;setTimeout(stop,1200);return}
+      v3.raf=requestAnimationFrame(step)};
     v3.raf=requestAnimationFrame(step)};
 }
 document.addEventListener('click',e=>{if(!v3)return;
   if(e.target.closest('[data-v3close]')){close3D();return}
   if(e.target.closest('[data-v3fly]')){v3.fly&&v3.fly();return}
-  const vv=e.target.closest('[data-v3view]');if(vv&&v3.m){cancelAnimationFrame(v3.raf);v3.raf=0;const fb=v3.el.querySelector('[data-v3fly]');if(fb)fb.textContent='▶ Recorregut';if(vv.dataset.v3view==='dalt')v3.m.easeTo({pitch:0,bearing:0,duration:1200});else v3.fit&&v3.fit(1200)}});
+  const vv=e.target.closest('[data-v3view]');if(vv&&v3.m){v3.top=!v3.top;vv.textContent=v3.top?'En 3D':'Des de dalt';v3.fit&&v3.fit(1100,v3.top)}});
 
 /* ---------- FITXA ---------- */
 let cur=null,calOff=0,selDay=null,form=null;
@@ -1796,13 +1857,14 @@ function setSpecies(k){
 $('#spsw').innerHTML=SHOW.map(k=>`<button data-sp="${k}" aria-pressed="${k===SP}">${spIcon(22,k)}${SPECIES[k].nom}</button>`).join('');
 setSpecies(SP);
 document.addEventListener('click',e=>{
+  document.querySelectorAll('details.more[open]').forEach(d=>{if(!d.contains(e.target))d.removeAttribute('open')});   // el menú ⋯ es tanca en tocar fora
   const spb=e.target.closest('[data-sp]');if(spb){setSpecies(spb.dataset.sp);return}
   const os=e.target.closest('[data-onsoc]');if(os){if(!navigator.geolocation){$('#mapcard').innerHTML='<p>Aquest mòbil no deixa saber on ets.</p>';return}os.classList.add('busy');
     navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];os.classList.remove('busy');L1.moved=true;map.setView(ll,12);
       if(L1.me)map.removeLayer(L1.me);L1.me=L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#2F67A6',fillOpacity:1}).addTo(map)},
       ()=>{os.classList.remove('busy');$('#mapcard').innerHTML="<p>No s'ha pogut saber on ets. Mira que el mòbil deixi fer servir la ubicació.</p>"},{enableHighAccuracy:true,timeout:15000});return}
   if(e.target.closest('[data-mclose]')){$('#mapcard').innerHTML='';if(tap){map.removeLayer(tap);tap=null}if(L1.recOn)recMode(false);return}
-  const r3=e.target.closest('[data-rec3d]');if(r3){const r=getRec(r3.dataset.rec3d);if(r)open3D(r);return}
+  const r3=e.target.closest('[data-rec3d]');if(r3){const r=getRec(r3.dataset.rec3d);if(r)(r.track?open3D(r):recMap(r));return}
   const cp=e.target.closest('[data-capes]');if(cp){const pn=$('#s-mapa .laypanel');pn.hidden=!pn.hidden;cp.setAttribute('aria-expanded',!pn.hidden);return}
   if(e.target.closest('[data-gomap]')){show('mapa');return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
@@ -1816,11 +1878,11 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-recmapnow]')){if(REC)recMap(REC);return}
   const re=e.target.closest('[data-recend]');if(re){if(re.dataset.sure){recEnd()}else{re.dataset.sure='1';re.textContent='Segur?';setTimeout(()=>{if(re.isConnected){delete re.dataset.sure;re.textContent='Acaba'}},4000)}return}
   const rg=e.target.closest('[data-recgpx]');if(rg){const gi=$('#gpxin');if(gi){gi.dataset.i=rg.dataset.recgpx;gi.click()}return}
-  const rd=e.target.closest('[data-recdel]');if(rd){if(rd.dataset.sure){RECS.splice(+rd.dataset.recdel,1);saveRec();if(screen==='diari')renderDiari();else renderRuta()}else{rd.dataset.sure='1';rd.textContent='Segur?';rd.style.color='var(--soon)';setTimeout(()=>{if(rd.isConnected){delete rd.dataset.sure;rd.textContent='Esborra';rd.style.color=''}},4000)}return}
+  const rd=e.target.closest('[data-recdel]');if(rd){rd.closest('details')&&rd.closest('details').setAttribute('open','');if(rd.dataset.sure){const k=RECS.findIndex(x=>x.id===rd.dataset.recdel);if(k>=0)RECS.splice(k,1);saveRec();if(screen==='diari')renderDiari();else renderRuta()}else{rd.dataset.sure='1';rd.textContent='Segur?';rd.style.color='var(--soon)';setTimeout(()=>{if(rd.isConnected){delete rd.dataset.sure;rd.textContent='Esborra';rd.style.color=''}},4000)}return}
   const rx=e.target.closest('[data-recdiscard]');if(rx){if(rx.dataset.sure){REC=null;recMsg='';saveRec();paintRec();show('diari')}else{rx.dataset.sure='1';rx.textContent="Segur? Es perden els bolets d'aquesta sortida";setTimeout(()=>{if(rx.isConnected){delete rx.dataset.sure;rx.textContent='Descarta la sortida (sense desar-la)'}},4000)}return}
   const rf=e.target.closest('[data-recfocus]');if(rf&&L1.recB){recFit(L1.recB[rf.dataset.recfocus]);return}
   const rm=e.target.closest('[data-recmap]');if(rm){const r=getRec(rm.dataset.recmap);if(r)recMap(r);return}
-  const rs=e.target.closest('[data-recsend]');if(rs){recShare(RECS[+rs.dataset.recsend]);return}
+  const rs=e.target.closest('[data-recsend]');if(rs){const r=getRec(rs.dataset.recsend);if(r)recShare(r);return}
   const pd=e.target.closest('[data-pld]');if(pd){const d=+pd.dataset.pld;PLAN.days=PLAN.days.includes(d)?PLAN.days.filter(x=>x!==d):[...PLAN.days,d].sort();renderPlan();return}
   const pk=e.target.closest('[data-plkm]');if(pk){PLAN.km=+pk.dataset.plkm;renderPlan();return}
   if(e.target.closest('[data-plgeo]')){if(!navigator.geolocation){PLAN.msg='Aquest mòbil no deixa saber on ets.';renderPlan();return}PLAN.msg='Buscant on ets…';renderPlan();
