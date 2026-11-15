@@ -963,11 +963,12 @@ function routeSvg(r,W,H,live){
     ${s0?`<circle cx="${s0[0]}" cy="${s0[1]}" r="5" fill="#2E8B4B" stroke="var(--surface)" stroke-width="2"/>`:''}
     ${bp.map(p=>{const[x,y]=P(p.lat,p.lng);return `<circle cx="${x}" cy="${y}" r="4.5" fill="${bCol(p.sp)}" stroke="var(--surface)" stroke-width="1.5"/>`}).join('')}
     ${last?`<circle cx="${last[0]}" cy="${last[1]}" r="9" fill="var(--rain)" opacity=".25"><animate attributeName="r" values="6;11;6" dur="2s" repeatCount="indefinite"/></circle><circle cx="${last[0]}" cy="${last[1]}" r="4.5" fill="var(--rain)" stroke="var(--surface)" stroke-width="2"/>`:''}</svg>`}
-let mapT=0;
+let mapT=0,kmT=0;
 // actualitza només els números de la pantalla En ruta, sense refer-la (si no, es perdrien els tocs als botons)
 function ruLight(){if(!REC||screen!=='ruta')return;const q=id=>document.getElementById(id);if(!q('rs-time'))return;
   q('rs-time').textContent=clock(Date.now()-REC.t0);q('rs-n').textContent=nTot(REC);
-  q('rs-km').textContent=REC.km?(REC.km<1?Math.round(REC.km*1000)+' m':kmTxt(REC.km)):'—';q('rs-gps').textContent=lastFix?'±'+lastFix.acc+' m':'—';q('rs-msg').textContent=recMsg;
+  if(Date.now()-kmT>3000){kmT=Date.now();REC.kmS=trackKm(REC.track)}const kk=REC.kmS!=null?REC.kmS:REC.km;
+  q('rs-km').textContent=kk?(kk<1?Math.round(kk*1000)+' m':kmTxt(kk)):'—';q('rs-gps').textContent=lastFix?'±'+lastFix.acc+' m':'—';q('rs-msg').textContent=recMsg;
   if(q('rs-map')&&Date.now()-mapT>3000){mapT=Date.now();q('rs-map').innerHTML=routeSvg(REC,130,92,true)}
   q('rs-wk').textContent=!wakeWant?"Si la pantalla s'apaga, la ruta es talla.":(wakeMsg&&!wake?wakeMsg:"La ruta es grava mentre l'app és oberta.");q('rs-wk').classList.toggle('warn',!!(wakeWant&&wakeMsg&&!wake))}
 // l'altura del GPS del mòbil salta molt: en acabar, se'n treu del mapa del relleu (Open-Meteo)
@@ -999,7 +1000,7 @@ function renderRuta(){
   el.innerHTML=`<div class="ruta-top">
      <p class="kicker"><i class="recdot"></i>En marxa · des de les ${hm(REC.t0)}${REC.who?' · '+esc(REC.who):''}</p>
      <div class="rtop-row"><div class="bigtime mono" id="rs-time">${clock(Date.now()-REC.t0)}</div><div class="rmini" id="rs-map">${routeSvg(REC,130,92,true)}</div></div>
-     <div class="rstats"><span><b id="rs-n">${nTot(REC)}</b>bolets</span><span><b id="rs-km">${REC.km?(REC.km<1?Math.round(REC.km*1000)+' m':kmTxt(REC.km)):'—'}</b>recorregut</span><span><b id="rs-gps">${lastFix?'±'+lastFix.acc+' m':'—'}</b>GPS</span></div>
+     <div class="rstats"><span><b id="rs-n">${nTot(REC)}</b>bolets</span><span><b id="rs-km">${(k=>k?(k<1?Math.round(k*1000)+' m':kmTxt(k)):'—')(REC.kmS!=null?REC.kmS:REC.km)}</b>recorregut</span><span><b id="rs-gps">${lastFix?'±'+lastFix.acc+' m':'—'}</b>GPS</span></div>
      <p class="rlast" id="rs-last">${lastTxt()}</p>
      <p class="rmsg" id="rs-msg" aria-live="polite">${esc(recMsg)}</p></div>
    <div class="wakeline"><button class="opt" data-wake aria-pressed="${wakeWant}">Pantalla encesa</button><span class="small${wakeWant&&wakeMsg&&!wake?' warn':''}" id="rs-wk">${esc(!wakeWant?"Si la pantalla s'apaga, la ruta es talla.":(wakeMsg&&!wake?wakeMsg:"La ruta es grava mentre l'app és oberta."))}</span></div>
@@ -1026,7 +1027,9 @@ async function recShare(r){
   const name=`boletus-${new Date(r.t0).toISOString().slice(0,10)}-${(r.who||'sortida').toLowerCase().replace(/[^a-z0-9]+/g,'-')}.gpx`,f=new File([gpx(r)],name,{type:'application/gpx+xml'});
   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sortida Boletus'});return}catch(e){if(e.name==='AbortError')return}}
   const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove()}
-function recSum(r){const c={};r.pts.forEach(p=>{const k=bNom(p);c[k]=(c[k]||0)+(p.n||1)});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${v} ${k.toLowerCase()}`).join(', ')||'cap bolet'}
+const PLUR={ceps:'ceps',rov:'rovellons',oureig:'ous de reig',rossinyol:'rossinyols',camagroc:'camagrocs',fredolic:'fredolics',llenega:'llenegues',murgola:'múrgoles'};
+const nomN=(p,v)=>v===1||p.nom||!PLUR[p.sp]?bNom(p).toLowerCase():PLUR[p.sp];   // "1 rovelló", "23 rovellons"
+function recSum(r){const c={};r.pts.forEach(p=>{const k=p.nom||p.sp;(c[k]=c[k]||{p,v:0}).v+=(p.n||1)});return Object.values(c).sort((a,b)=>b.v-a.v).map(({p,v})=>`${v} ${nomN(p,v)}`).join(', ')||'cap bolet'}
 /* La ruta la grava Strava (o una altra app) i aquí s'hi afegeix el GPX: es veu al mapa amb els bolets, i amb km, temps i desnivell */
 function parseGpx(txt){
   const x=new DOMParser().parseFromString(txt,'application/xml');if(x.getElementsByTagName('parsererror').length)throw new Error('format');
@@ -1036,32 +1039,41 @@ function parseGpx(txt){
   if(pts.length<2)throw new Error('buit');
   const out=[pts[0]];for(let i=1;i<pts.length-1;i++){const l=out[out.length-1];if(distKm(l[0],l[1],pts[i][0],pts[i][1])*1000>=6)out.push(pts[i])}out.push(pts[pts.length-1]);  // un punt cada 6 m com a mínim
   return out.map(p=>[+p[0].toFixed(5),+p[1].toFixed(5),p[2],p[3]])}
-function trackStats(tr){let km=0,up=0,down=0,ref=null;for(let i=1;i<tr.length;i++)km+=distKm(tr[i-1][0],tr[i-1][1],tr[i][0],tr[i][1]);
+function cumKm(tr){const gap=i=>i>0&&tr[i][3]&&tr[i-1][3]&&tr[i][3]-tr[i-1][3]>120e3;
+  const S=tr.map((p,i)=>{let la=p[0],lo=p[1],c=1;for(let j=i-1;j>=Math.max(0,i-2)&&!gap(j+1);j--){la+=tr[j][0];lo+=tr[j][1];c++}for(let j=i+1;j<=Math.min(tr.length-1,i+2)&&!gap(j);j++){la+=tr[j][0];lo+=tr[j][1];c++}return[la/c,lo/c]});
+  const cum=[0];for(let i=1;i<tr.length;i++)cum.push(cum[i-1]+(gap(i)?distKm(tr[i-1][0],tr[i-1][1],tr[i][0],tr[i][1]):distKm(S[i-1][0],S[i-1][1],S[i][0],S[i][1])));return cum}
+const trackKm=tr=>tr&&tr.length>1?cumKm(tr)[tr.length-1]:0;
+function trackStats(tr){let km=trackKm(tr),up=0,down=0,ref=null;
   // l'altura del GPS salta uns metres: s'aplana una mica i només compten els canvis de 3 m o més
   const el=tr.map(p=>p[2]),sm=el.map((v,i)=>{if(v==null)return null;let sx=0,c=0;for(let j=Math.max(0,i-2);j<=Math.min(el.length-1,i+2);j++)if(el[j]!=null){sx+=el[j];c++}return sx/c});
   sm.forEach(v=>{if(v==null)return;if(ref==null){ref=v;return}if(v>=ref+3){up+=v-ref;ref=v}else if(v<=ref-3){down+=ref-v;ref=v}});
   const t0=tr.find(p=>p[3]!=null),t1=[...tr].reverse().find(p=>p[3]!=null),has=el.some(v=>v!=null);
   return{km,up:has?Math.round(up):null,down:has?Math.round(down):null,ms:t0&&t1?t1[3]-t0[3]:null}}
 function recAnalyze(r){
-  const tr=r.track||[],cum=[0];for(let i=1;i<tr.length;i++)cum.push(cum[i-1]+distKm(tr[i-1][0],tr[i-1][1],tr[i][0],tr[i][1]));
+  const tr=r.track||[],cum=tr.length>1?cumKm(tr):[0];
   const F=r.pts.filter(p=>p.lat!=null).map(p=>{let bi=-1,bd=1e9;tr.forEach((q,i)=>{const d=distKm(q[0],q[1],p.lat,p.lng);if(d<bd){bd=d;bi=i}});
     return{p,km:bi>=0&&bd<.15?cum[bi]:null,ele:bi>=0&&bd<.15&&tr[bi][2]!=null?tr[bi][2]:p.alt}});
-  // zona bona: el grup més gran de bolets a menys de 60 m l'un de l'altre
-  const n=F.length,seen=new Array(n).fill(false);let best=[];
-  for(let i=0;i<n;i++){if(seen[i])continue;const g=[i];seen[i]=true;for(let q=0;q<g.length;q++)for(let j=0;j<n;j++)if(!seen[j]&&distKm(F[g[q]].p.lat,F[g[q]].p.lng,F[j].p.lat,F[j].p.lng)<=.06){seen[j]=true;g.push(j)}
-    const c=g.reduce((a,x)=>a+(F[x].p.n||1),0),cb=best.reduce((a,x)=>a+(F[x].p.n||1),0);if(c>cb)best=g}
-  let zone=null;const zn=best.reduce((a,x)=>a+(F[x].p.n||1),0);
-  if(zn>=2){const la=best.reduce((a,x)=>a+F[x].p.lat,0)/best.length,lo=best.reduce((a,x)=>a+F[x].p.lng,0)/best.length,el=best.map(x=>F[x].ele).filter(v=>v!=null);
-    zone={lat:la,lng:lo,rad:Math.max(20,...best.map(x=>distKm(la,lo,F[x].p.lat,F[x].p.lng)*1000))+15,n:zn,emin:el.length?Math.round(Math.min(...el)):null,emax:el.length?Math.round(Math.max(...el)):null}}
-  const first=F.slice().sort((a,b)=>a.p.t-b.p.t)[0]||null;
-  return{F,cum,zone,first,total:r.pts.reduce((a,p)=>a+(p.n||1),0)}}
+  // racons bons: bolets a menys de 20 m l'un de l'altre (amb la sortida real del 14-11 surten tres racons: 10, 4 i 3)
+  const n=F.length,seen=new Array(n).fill(false),gs=[],cnt=g=>g.reduce((a,x)=>a+(F[x].p.n||1),0);
+  for(let i=0;i<n;i++){if(seen[i])continue;const g=[i];seen[i]=true;for(let q=0;q<g.length;q++)for(let j=0;j<n;j++)if(!seen[j]&&distKm(F[g[q]].p.lat,F[g[q]].p.lng,F[j].p.lat,F[j].p.lng)<=.02){seen[j]=true;g.push(j)}gs.push(g)}
+  const spot=g=>{const la=g.reduce((a,x)=>a+F[x].p.lat,0)/g.length,lo=g.reduce((a,x)=>a+F[x].p.lng,0)/g.length,el=g.map(x=>F[x].ele).filter(v=>v!=null),ts=g.map(x=>F[x].p.t);
+    return{lat:la,lng:lo,rad:Math.max(12,...g.map(x=>distKm(la,lo,F[x].p.lat,F[x].p.lng)*1000))+8,n:cnt(g),t0:Math.min(...ts),t1:Math.max(...ts),emin:el.length?Math.round(Math.min(...el)):null,emax:el.length?Math.round(Math.max(...el)):null}};
+  const spots=gs.filter(g=>cnt(g)>=3).sort((a,b)=>cnt(b)-cnt(a)).slice(0,3).map(spot);
+  const zone=spots[0]||(gs.length&&cnt(gs.sort((a,b)=>cnt(b)-cnt(a))[0])>=2?spot(gs[0]):null);
+  const byT=F.slice().sort((a,b)=>a.p.t-b.p.t),first=byT[0]||null,last=byT[byT.length-1]||null;
+  return{F,cum,zone,spots,first,last,total:r.pts.reduce((a,p)=>a+(p.n||1),0)}}
 const km1=k=>k.toFixed(1).replace('.',',');
+const altTxt=z=>z.emin!=null?`, a ${z.emin===z.emax?z.emin:z.emin+'–'+z.emax} m d'altura`:'';
 function recInsight(r,A){A=A||recAnalyze(r);const o=[];
-  if(A.first)o.push(`Primer bolet a les ${hm(A.first.p.t)}${A.first.km!=null?`, al km ${km1(A.first.km)}`:''}`);
-  if(A.zone&&A.zone.n<A.total)o.push(`la zona bona: ${A.zone.n} de ${A.total} en ${Math.round(A.zone.rad*2/10)*10} m${A.zone.emin!=null?`, a ${A.zone.emin===A.zone.emax?A.zone.emin:A.zone.emin+'–'+A.zone.emax} m d'altura`:''}`);
-  else if(A.zone)o.push(`tots en ${Math.round(A.zone.rad*2/10)*10} m${A.zone.emin!=null?`, a ${A.zone.emin===A.zone.emax?A.zone.emin:A.zone.emin+'–'+A.zone.emax} m d'altura`:''}`);
+  const sp1=A.F.length&&A.F.every(f=>f.p.sp===A.F[0].p.sp&&!f.p.nom)?A.F[0].p:null;
+  if(A.first&&A.last&&A.total>1)o.push(`${A.total} ${sp1?nomN(sp1,A.total):'bolets'} en ${durTxt(A.last.p.t-A.first.p.t)} (de ${hm(A.first.p.t)} a ${hm(A.last.p.t)})`);
+  if(A.first){const m=A.first.km!=null?A.first.km*1000:r.start?distKm(r.start.lat,r.start.lng,A.first.p.lat,A.first.p.lng)*1000:null;
+    if(m!=null)o.push(`el primer, a ${m<1000?Math.round(m/10)*10+' m':km1(m/1000)+' km'} de l'inici`)}
+  const z=A.zone;
+  if(z&&z.n<A.total)o.push(`el millor racó: ${z.n} en ${Math.round(z.rad*2/5)*5} m${z.t1-z.t0>60e3?` (${hm(z.t0)}–${hm(z.t1)})`:''}${altTxt(z)}${A.spots.length>1?`; i ${A.spots.length-1} ${A.spots.length===2?'racó':'racons'} més`:''}`);
+  else if(z)o.push(`tots en ${Math.round(z.rad*2/5)*5} m${altTxt(z)}`);
   return o.join('; ')}
-function perfil(tr,A){const el=tr.map(p=>p[2]);if(!el.some(v=>v!=null))return'';let d=0;const xs=[0];for(let i=1;i<tr.length;i++){d+=distKm(tr[i-1][0],tr[i-1][1],tr[i][0],tr[i][1]);xs.push(d)}
+function perfil(tr,A){const el=tr.map(p=>p[2]);if(!el.some(v=>v!=null))return'';const xs=A&&A.cum&&A.cum.length===tr.length?A.cum:cumKm(tr),d=xs[xs.length-1];
   const vs=el.map((v,i)=>v==null?null:[xs[i],v]).filter(Boolean),st=Math.max(1,Math.round(vs.length/160)),q=vs.filter((_,i)=>i%st===0||i===vs.length-1);
   const mn=Math.min(...q.map(p=>p[1])),mx=Math.max(...q.map(p=>p[1])),W=300,H=44,sx=W/(d||1),sy=(H-6)/((mx-mn)||1);
   const pts=q.map(p=>`${(p[0]*sx).toFixed(1)},${(H-3-(p[1]-mn)*sy).toFixed(1)}`).join(' ');
@@ -1107,7 +1119,7 @@ function recMap(r){L1.moved=true;show('mapa');
       const e=[r.track[r.track.length-1][0],r.track[r.track.length-1][1]];L.marker(e,{icon:L.divIcon({className:'',html:'<div class="parkp" style="background:#3E2410">■</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.rec)}
     if(r.start){all.push([r.start.lat,r.start.lng]);L.marker([r.start.lat,r.start.lng],{icon:L.divIcon({className:'',html:'<div class="parkp" style="background:#2E8B4B">▶</div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(L1.rec)}
     const A=recAnalyze(r),fb=[];
-    if(A.zone){L.circle([A.zone.lat,A.zone.lng],{radius:A.zone.rad,color:'#C79A6A',weight:2,dashArray:'5 6',fillColor:'#C79A6A',fillOpacity:.18,interactive:false}).addTo(L1.rec)}
+    (A.spots.length?A.spots:A.zone?[A.zone]:[]).forEach((z,k)=>L.circle([z.lat,z.lng],{radius:z.rad,color:'#C79A6A',weight:k?1.5:2.5,dashArray:'5 6',fillColor:'#C79A6A',fillOpacity:k?.1:.22,interactive:false}).addTo(L1.rec));
     // els bolets a menys de 12 m es dibuixen junts (si no, s'amunteguen): una marca amb el total
     const grp=[];A.F.slice().sort((x,y)=>x.p.t-y.p.t).forEach(f=>{const g=grp.find(g=>distKm(g[0].p.lat,g[0].p.lng,f.p.lat,f.p.lng)<=.012);g?g.push(f):grp.push([f])});
     grp.forEach(g=>{const f0=g[0],tot=g.reduce((a,f)=>a+(f.p.n||1),0),cs={};g.forEach(f=>{cs[f.p.sp]=(cs[f.p.sp]||0)+(f.p.n||1)});
@@ -1121,13 +1133,13 @@ function recMap(r){L1.moved=true;show('mapa');
            <p>${hm(t0)}${t1-t0>60e3?'–'+hm(t1):''}${f0.km!=null?` · al km ${km1(f0.km)} de la ruta`:''}${ele!=null?` · ${Math.round(ele)} m d'altura`:''}</p>
            <p class="small">GPS ±${Math.min(...g.map(f=>f.p.acc||99))} m${g.some(f=>f.p.deRuta)?" · algun posat a la ruta per l'hora":''}</p>
            <div class="recfb"><a class="opt" href="${gmDir(la,lo)}" target="_blank" rel="noopener">Com arribar-hi</a><button class="opt" data-recfocus="bolets">Bolets</button><button class="opt" data-recfocus="tot">Tot</button></div>`}).addTo(L1.rec)});
-    L1.recB={bolets:fb.length?L.latLngBounds(fb).pad(fb.length>1?.35:0):null,tot:all.length?L.latLngBounds(all).pad(.2):null,zona:A.zone,r};
+    L1.recB={bolets:fb.length?L.latLngBounds(fb).pad(fb.length>1?.06:0):null,tot:all.length?L.latLngBounds(all).pad(.2):null,zona:A.zone,r};
     const st=recStatsTxt(r),ins=recInsight(r,A);
     $('#mapcard').innerHTML=`<strong style="font-family:var(--f-display);font-size:17px">${A.total} ${A.total===1?'bolet':'bolets'}${st?` · <span class="muted" style="font-size:14px">${esc(st)}</span>`:''}</strong>${ins?`<p class="small">${esc(ins)}.</p>`:''}
       <div class="recfb">${fb.length?'<button class="opt" data-recfocus="bolets">Bolets</button>':''}<button class="opt" data-recfocus="tot">Tot</button>${A.zone?`<button class="opt" data-addhere="${A.zone.lat.toFixed(6)},${A.zone.lng.toFixed(6)}">Desa la zona</button>`:''}</div>`;
     const B=L1.recB.bolets&&fb.length>1?L1.recB.bolets:L1.recB.tot;setTimeout(()=>recFit(B),30)},80)}
 // enfoca deixant lloc a la targeta de sota, que no tapi els bolets
-function recFit(B){if(!B)return;const ch=($('#mapcard')||{}).offsetHeight||0;map.fitBounds(B,{maxZoom:18,paddingTopLeft:[24,24],paddingBottomRight:[24,ch+24]})}
+function recFit(B){if(!B)return;const ch=($('#mapcard')||{}).offsetHeight||0;map.fitBounds(B,{maxZoom:18,paddingTopLeft:[20,20],paddingBottomRight:[20,ch+16]})}
 
 
 /* ---------- FITXA ---------- */
