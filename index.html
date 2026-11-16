@@ -277,6 +277,47 @@ button.site:active{background:var(--surface2)}
 .rthumb-i img{animation:fadein .4s ease-out}@keyframes fadein{from{opacity:0}to{opacity:1}}
 .rplay{position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:7px;padding:7px 13px 7px 11px;border-radius:999px;background:rgba(10,14,8,.74);color:#fff;font:800 13.5px var(--f-display);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .rthumb:active{transform:scale(.99)}
+.media{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;margin:-3px -4px 6px;border-radius:14px;scrollbar-width:none}
+.media::-webkit-scrollbar{display:none}
+.media>*{flex:0 0 100%;min-width:0;scroll-snap-align:start;aspect-ratio:36/25;border-radius:14px;overflow:hidden;margin:0}
+.media.multi>*{flex-basis:86%}
+.media .mph{object-fit:cover;display:block;cursor:zoom-in}
+.media .rthumb-i{position:absolute;inset:0;aspect-ratio:auto;--rain:#7FB2FF;--surface:#fff}
+.media .rthumb-i svg{background:linear-gradient(160deg,#35462F,#19221A)}
+.media .rthumb::after{content:"";position:absolute;left:0;right:0;bottom:0;height:52%;background:linear-gradient(transparent,rgba(6,10,4,.8));pointer-events:none}
+.rov{position:absolute;left:14px;right:12px;bottom:11px;z-index:1;display:flex;align-items:flex-end;gap:16px;color:#fff;text-align:left}
+.rov>span{display:flex;flex-direction:column;gap:1px;font:500 11.5px var(--f-body);color:rgba(255,255,255,.82)}
+.rov b{font:800 19px/1.1 var(--f-display);letter-spacing:-.01em;color:#fff;white-space:nowrap}
+.rov .go{margin-left:auto;flex:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#141A10;display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.rov .go svg{width:15px;height:15px;margin-left:2px}
+.namef.slim{align-items:center}.recq{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.recq strong{font:800 18px var(--f-display)}.recq span{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site2{display:grid;grid-template-columns:60px minmax(0,1fr);gap:12px 14px;align-items:center;width:100%;box-sizing:border-box;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:16px 16px 15px;color:inherit;font:inherit}
+.site2:first-child{border-top:0}
+.ring{position:relative;width:60px;height:60px;display:grid;place-items:center}.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke:var(--surface2);stroke-width:6}.ring .arc{stroke-linecap:round;stroke:#8A5530}.ring.r-normal .arc{stroke:#C79A6A}.ring.r-fluixa .arc{stroke:#D8C4A8}
+.ring b{position:relative;font:800 21px var(--f-display);letter-spacing:-.02em}.site2.wait .ring b{color:var(--muted);font-weight:600}
+.s2-t{display:flex;flex-direction:column;gap:2px;min-width:0}.s2-t>b{font:700 18px/1.2 var(--f-display);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s2-w{font-size:14.5px;font-weight:600}.site2.wait .s2-w{color:var(--muted);font-weight:500}.s2-m{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.days{grid-column:1/-1;display:grid;grid-template-columns:repeat(7,1fr);justify-items:center}
+.days i{display:flex;flex-direction:column;align-items:center;gap:4px;font-style:normal}
+.days u{text-decoration:none;font:500 11px var(--f-body);color:var(--muted)}.days i.we u{font-weight:700;color:var(--ink)}
+.days b{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:600 12.5px var(--f-data);box-shadow:inset 0 0 0 1.5px var(--line);background:none;color:transparent}
+.days i[class*="n-"]{background:none;box-shadow:none}
+.days .n-bona b{background:#8A5530;color:#fff;box-shadow:none}.days .n-normal b{background:#C79A6A;color:#2C2218;box-shadow:none}.days .n-fluixa b{background:#EADFD0;color:#2C2218;box-shadow:inset 0 0 0 1px rgba(62,36,16,.18)}
+@media (prefers-reduced-motion:no-preference){.ring .arc{animation:ringin .7s cubic-bezier(.2,.8,.2,1) both}@keyframes ringin{from{stroke-dasharray:0 157.08}}}
+.wk{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px 16px 13px}
+.wk-t{font:600 13px var(--f-body);color:var(--muted);margin-bottom:8px}
+.wk-r{display:grid;grid-template-columns:1fr 1fr}
+.wk-c{display:flex;flex-direction:column;gap:5px;min-width:0;min-height:44px;text-align:left;background:none;border:0;padding:0 12px 0 0;color:inherit;font:inherit}
+.wk-c+.wk-c{padding:0 0 0 14px;border-left:1px solid var(--line)}
+.wk-d{font:700 15px var(--f-display)}.wk-d::first-letter{text-transform:uppercase}
+.wk-v{display:flex;align-items:center;min-width:0;font-size:14px;color:var(--muted)}.wk-v .nota{flex:none;vertical-align:0}.wk-v span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk-c.no .wk-d{color:var(--muted)}
+.axis{display:grid;grid-template-columns:repeat(21,1fr);gap:2px;padding:0 16px 9px;margin-top:-9px;font:600 9.5px var(--f-body);color:var(--muted);text-align:center}.axis i{font-style:normal}
+.lastout{display:flex;align-items:center;gap:13px;width:100%;box-sizing:border-box;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:10px 14px 10px 10px;color:inherit;font:inherit}
+.lastout img{flex:none;width:64px;height:64px;border-radius:13px;object-fit:cover}
+.lo-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;padding-left:4px}.lo-k{font:600 12.5px var(--f-body);color:var(--muted)}.lo-t b{font:700 17px/1.2 var(--f-display)}
+.lo-s{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lastout i{font-style:normal;color:var(--muted);font-size:20px}
 .mem .rr-st{font:500 13.5px var(--f-data);color:var(--ink)}.mem .rr-in{font-size:13.5px;color:var(--muted);line-height:1.45}
 details.more{position:relative}details.more summary{list-style:none;cursor:pointer;width:40px;height:32px;display:grid;place-items:center;border-radius:10px;font-size:20px;line-height:1;color:var(--muted)}
 details.more summary::-webkit-details-marker{display:none}details.more[open] summary{background:var(--surface2)}
@@ -680,17 +721,37 @@ function renderLlocs(){
      <p class="sub">Al mapa, toca un número o qualsevol punt i desa'l com a lloc.</p></div>
      <button class="btn" data-gomap>Obrir el mapa</button>`;return}
   const L0=leadOf(list),sun=L0.site?sunTimes(L0.day,L0.site.lat,L0.site.lng):null;
+  // nota d'un lloc un dia concret (com al calendari), per dir què hi haurà dissabte i diumenge
+  const dayV=(x,d)=>{if(SP==='rov'&&x.sc){const q=x.sc(d);return q&&q.v>=35?q.v:null}if(!x.bolet(d))return null;const w=x.wins.find(w=>d>=w.a&&d<=w.b);return w&&w.f?w.f.v:null};
+  const nNom=v=>SP==='rov'?(v>=75?'bona':v>=55?'normal':'fluixa'):(v>=60?'bona':v>=35?'normal':'fluixa');
+  // la nota gran és la d'avui (no la del millor dia), perquè quadri amb les rodones de sota
+  {const b=L0.site,tv=b&&b.state==='go'?dayV(b,TODAY):null;if(tv!=null)L0.s=`Avui, nota ${nNom(tv)} (${tv})${b.win.peak>TODAY?` · millor dia, ${wdl(b.win.peak)}`:''}`}
+  const wk=[];for(let d=TODAY;wk.length<2&&d<=TODAY+13;d++){const w=D(d).getUTCDay();if(w===6||w===0)wk.push(d)}
+  const wkHtml=wk.map(d=>{let b=null,bv=0;list.forEach(x=>{const v=dayV(x,d);if(v!=null&&v>bv){bv=v;b=x}});
+    const lab=d===TODAY?'avui':d===TODAY+1?'demà':`${wdl(d)} ${D(d).getUTCDate()}`;
+    return b?`<button class="wk-c" data-open="${b.id}"><span class="wk-d">${lab}</span><span class="wk-v"><b class="nota n-${nNom(bv)}">${bv}</b><span>${esc(b.name)}</span></span></button>`
+            :`<div class="wk-c no"><span class="wk-d">${lab}</span><span class="wk-v"><span>res</span></span></div>`}).join('');
+  let ax='';for(let d=TODAY-7;d<=TODAY+13;d++){const w=D(d).getUTCDay();ax+=`<i>${w===6?'ds':w===0?'dg':''}</i>`}
+  // l'última sortida, amb la foto: el record a la mateixa pantalla que la previsió
+  const lv0=visits.slice().sort((a,b)=>b.d.localeCompare(a.d))[0];let lastHtml='';
+  if(lv0){const same=visits.filter(v=>v.d===lv0.d&&v.site===lv0.site).sort((a,b)=>(b.n||0)-(a.n||0)),x=SITES.find(q=>q.id===lv0.site),X=DIARI[lv0.d+'|'+lv0.site]||{},f=(X.fotos||[])[0],n=TODAY-dnum(lv0.d);
+    lastHtml=`<button class="lastout" data-godiari>${f?`<img src="${LOCALPH[f]||f}" alt="" loading="lazy">`:''}<span class="lo-t"><span class="lo-k">Última sortida · ${n<=0?'avui':n===1?'ahir':n<21?`fa ${n} dies`:fmt(dnum(lv0.d),{year:'numeric'})}</span><b>${esc(x?x.name:'Sortida')}</b>
+      <span class="lo-s">${same.map(v=>qTxt(v.sp||'ceps',v.n)).join(' · ')}${X.amb?` · amb ${esc(X.amb)}`:''}</span></span><i aria-hidden="true">›</i></button>`}
   $('#s-llocs').innerHTML=`
    <div class="intro"><p class="kicker">${kick}</p><h2 class="lead">${L0.h}</h2>
      <p class="sub">${L0.s}${sun?` · ${L0.day===TODAY+1?'demà':wdn(L0.day)} el sol surt a les ${sun.sol}`:''}</p></div>
-   <div class="list">${list.map(s=>{const[w,why]=whenOf(s);
+   <div class="wk"><p class="wk-t">Cap de setmana</p><div class="wk-r">${wkHtml}</div></div>
+   <div class="list">${list.map(s=>{const[w,why]=whenOf(s),tv=s.state==='go'?dayV(s,TODAY):null,v=tv!=null?tv:s.state!=='wait'&&s.win.f?s.win.f.v:null,nm=v!=null?nNom(v):'';
      const lv=visits.filter(v=>v.site===s.id&&ofSp(v)).sort((a,b)=>b.d.localeCompare(a.d))[0];
-     return `<button class="site ${s.state}" data-open="${s.id}">
-       <span class="nm"><span>${esc(s.name)}</span></span><span class="when">${s.state!=='wait'&&s.win.f?`<b class="nota n-${s.win.f.nom}" title="Nota de la tanda">${s.win.f.v}</b>`:''}${w}</span>
-       <span class="mu">${esc(s.muni||'')}${lv?`${s.muni?' · ':''}última, ${fmt(dnum(lv.d))}`:''}</span><span class="st">${why}</span>
-       ${stripHtml(s)}</button>`}).join('')}</div>
-   <p class="foot">Tres setmanes, avui marcat. <i class="k" style="background:#EADFD0;box-shadow:inset 0 0 0 1px rgba(62,36,16,.25)"></i>fluixa <i class="k" style="background:#C79A6A"></i>normal <i class="k" style="background:#8A5530"></i>bona <i class="k" style="background:#3E2410"></i>millor <i class="k" style="background:var(--rain);border-radius:50%"></i>pluja<br>${esc(wxInfo)}</p>
-   <button class="planbtn" data-goplan><b>Pla del cap de setmana</b><span>Boscos nous, on aparcar i què pentinar ›</span></button>`}
+     let days='';for(let d=TODAY;d<TODAY+7;d++){const q=dayV(s,d),wd=D(d).getUTCDay();days+=`<i class="${q!=null?'n-'+nNom(q):''}${wd===6||wd===0?' we':''}"><u>${d===TODAY?'avui':wdn(d)}</u><b>${q!=null?q:''}</b></i>`}
+     return `<button class="site2 ${s.state}" data-open="${s.id}">
+       <span class="ring r-${nm}"><svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="25"/>${v!=null?`<circle class="arc" cx="30" cy="30" r="25" stroke-dasharray="${(v/100*157.08).toFixed(1)} 157.08"/>`:''}</svg><b>${v!=null?v:'–'}</b></span>
+       <span class="s2-t"><b>${esc(s.name)}</b><span class="s2-w">${s.state==='go'?`Ara n'hi ha · ${why}`:s.state==='soon'?`Millor dia: ${w}`:`Ara no · ${why}`}</span>
+         <span class="s2-m">${esc(s.muni||'')}${lv?`${s.muni?' · ':''}última, ${fmt(dnum(lv.d))}`:''}</span></span>
+       <span class="days" aria-hidden="true">${days}</span></button>`}).join('')}</div>
+   <p class="foot">Nota de 0 a 100 de cada dia: <i class="k" style="background:#EADFD0;box-shadow:inset 0 0 0 1px rgba(62,36,16,.25);border-radius:50%"></i>fluixa <i class="k" style="background:#C79A6A;border-radius:50%"></i>normal <i class="k" style="background:#8A5530;border-radius:50%"></i>bona · ${esc(wxInfo)}</p>
+   ${lastHtml}
+   <button class="planbtn" data-goplan><b>Boscos nous per al cap de setmana</b><span>On aparcar i què pentinar ›</span></button>`}
 
 const AVIS_TEMA='boletus-ceps-x7q2';
 
@@ -743,21 +804,30 @@ function ghCard(){return `<div class="card how" id="ghcard"><h3>Clau per pujar f
 // Portada de la sortida: foto de satèl·lit de veritat amb la ruta i els bolets dibuixats (es fa un cop i es desa)
 const THB={},dot=(g,x,y,r,c)=>{g.beginPath();g.arc(x,y,r,0,7);g.fillStyle=c;g.fill();g.lineWidth=2.5;g.strokeStyle='#fff';g.stroke()};
 async function satThumb(r,W,H){
-  const k='thb-'+r.id+'-'+(r.track?r.track.length:0)+'-'+r.pts.length;if(THB[k])return THB[k];const sv=store.get(k,null);if(sv)return THB[k]=sv;
+  const k='thd-'+r.id+'-'+(r.track?r.track.length:0)+'-'+r.pts.length;if(THB[k])return THB[k];const sv=store.get(k,null);if(sv)return THB[k]=sv;
   const pts=(r.track||[]).map(p=>[p[0],p[1]]).concat(r.pts.filter(p=>p.lat!=null).map(p=>[p.lat,p.lng]),r.start?[[r.start.lat,r.start.lng]]:[]);if(!pts.length)return null;
   const dpr=2,CW=W*dpr,CH=H*dpr,px=(la,lo,z)=>{const n=256*2**z,q=Math.sin(la*Math.PI/180);return[(lo+180)/360*n,(.5-Math.log((1+q)/(1-q))/(4*Math.PI))*n]};
-  let z=18;for(;z>12;z--){const P=pts.map(p=>px(p[0],p[1],z)),xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);if(Math.max(...xs)-Math.min(...xs)<=CW*.8&&Math.max(...ys)-Math.min(...ys)<=CH*.74)break}
-  const P=pts.map(p=>px(p[0],p[1],z)),xs=P.map(p=>p[0]),ys=P.map(p=>p[1]),ox=(Math.min(...xs)+Math.max(...xs))/2-CW/2,oy=(Math.min(...ys)+Math.max(...ys))/2-CH/2;
+  // el zoom més gran on hi cap tot, deixant lloc a baix per a les xifres
+  let z=18;for(;z>12;z--){const P=pts.map(p=>px(p[0],p[1],z)),xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);if(Math.max(...xs)-Math.min(...xs)<=CW*.76&&Math.max(...ys)-Math.min(...ys)<=CH*.56)break}
+  const P=pts.map(p=>px(p[0],p[1],z)),xs=P.map(p=>p[0]),ys=P.map(p=>p[1]),ox=(Math.min(...xs)+Math.max(...xs))/2-CW/2,oy=(Math.min(...ys)+Math.max(...ys))/2-CH*.43;
   const c=document.createElement('canvas');c.width=CW;c.height=CH;const g=c.getContext('2d'),jobs=[];
+  // "?thb": una adreça diferent de la del mapa. Safari, si ja té la tessel·la del mapa desada sense permís CORS, la reutilitza i falla
   for(let ty=Math.floor(oy/256);ty<=Math.floor((oy+CH)/256);ty++)for(let tx=Math.floor(ox/256);tx<=Math.floor((ox+CW)/256);tx++)
-    jobs.push(new Promise(res=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{g.drawImage(im,tx*256-ox,ty*256-oy);res(1)};im.onerror=()=>res(0);im.src=`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}`}));
-  if(!(await Promise.all(jobs)).some(Boolean))return null;     // sense connexió: es queda el dibuix senzill
-  g.fillStyle='rgba(0,0,0,.14)';g.fillRect(0,0,CW,CH);
+    jobs.push(new Promise(res=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{g.drawImage(im,tx*256-ox,ty*256-oy);res(1)};im.onerror=()=>res(0);im.src=`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}?thb`}));
+  const ok=await Promise.all(jobs);if(ok.filter(Boolean).length<ok.length*.6)return null;     // sense connexió: es queda el dibuix senzill
+  g.fillStyle='rgba(6,12,4,.2)';g.fillRect(0,0,CW,CH);
   const L=(la,lo)=>{const q=px(la,lo,z);return[q[0]-ox,q[1]-oy]};g.lineJoin=g.lineCap='round';
-  if(r.track)trkSegs(r.track).forEach(sg=>{g.beginPath();sg.forEach((p,i)=>{const[x,y]=L(p[0],p[1]);i?g.lineTo(x,y):g.moveTo(x,y)});g.strokeStyle='rgba(255,255,255,.92)';g.lineWidth=8;g.stroke();g.strokeStyle='#3D8BFF';g.lineWidth=4.5;g.stroke()});
-  if(r.start){const[x,y]=L(r.start.lat,r.start.lng);dot(g,x,y,9,'#2E8B4B')}
-  r.pts.forEach(p=>{if(p.lat==null)return;const[x,y]=L(p.lat,p.lng);dot(g,x,y,7.5,bCol(p.sp))});
-  const u=c.toDataURL('image/jpeg',.8);THB[k]=u;store.set(k,u);return u}
+  if(r.track){const segs=trkSegs(r.track),line=(col,w,sh)=>{g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=sh;g.strokeStyle=col;g.lineWidth=w;segs.forEach(sg=>{g.beginPath();sg.forEach((p,i)=>{const[x,y]=L(p[0],p[1]);i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke()});g.shadowBlur=0};
+    line('#fff',11,10);line('#2F7BFF',6,0)}
+  const ring=(x,y,rad,col)=>{g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=8;g.beginPath();g.arc(x,y,rad,0,7);g.fillStyle='#fff';g.fill();g.shadowBlur=0;g.beginPath();g.arc(x,y,rad-4.5,0,7);g.fillStyle=col;g.fill()};
+  const s0=r.start||(r.track&&r.track.length?{lat:r.track[0][0],lng:r.track[0][1]}:null);if(s0){const[x,y]=L(s0.lat,s0.lng);ring(x,y,13,'#2E8B4B')}
+  // els bolets que queden enganxats es dibuixen com un de sol amb el número
+  const cl=[];r.pts.forEach(p=>{if(p.lat==null)return;const[x,y]=L(p.lat,p.lng),n=p.n||1;const o=cl.find(q=>Math.hypot(q.x-x,q.y-y)<24);if(o){o.x=(o.x*o.n+x*n)/(o.n+n);o.y=(o.y*o.n+y*n)/(o.n+n);o.n+=n}else cl.push({x,y,n,sp:p.sp})});
+  cl.sort((a,b)=>a.n-b.n).forEach(q=>{const rad=q.n>1?Math.min(27,18+q.n*.8):13;ring(q.x,q.y,rad,bCol(q.sp));
+    if(q.n>1){g.fillStyle='#fff';g.font=`800 ${q.n>9?19:21}px system-ui,-apple-system,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(q.n,q.x,q.y+1)}});
+  const u=c.toDataURL('image/jpeg',.82);THB[k]=u;
+  try{Object.keys(localStorage).forEach(x=>{if(/^rc3-th[bc]-/.test(x))localStorage.removeItem(x)})}catch(e){}
+  store.set(k,u);return u}
 const ptsCnt=r=>{const c={};r.pts.forEach(p=>{const k=p.nom||p.sp;(c[k]=c[k]||{p,v:0}).v+=(p.n||1)});return Object.values(c).sort((a,b)=>b.v-a.v)};
 function renderDiari(){
   const g={};visits.filter(v=>SHOW.includes(v.sp||'ceps')).forEach(v=>{const k=v.d+'|'+v.site;(g[k]=g[k]||{d:v.d,site:v.site,it:[],notes:[]}).it.push(v);if(v.nota)g[k].notes.push(v.nota)});
@@ -782,11 +852,16 @@ function renderDiari(){
          ${local?`<button data-recgpx="${r.id}">${r.track?'Canvia la ruta (GPX)':'Afegeix la ruta (GPX)'}</button>`:''}<button data-recsend="${r.id}">Envia el GPX</button>
          ${s?`<button data-open="${s.id}" data-from="diari">Fitxa de ${esc(s.name)}</button>`:''}${local?`<button class="del" data-recdel="${r.id}">Esborra la gravació</button>`:''}</div></details>`:'';
      return `<article class="mem${zero?' zero':''}">
-       ${F.length?`<div class="ph n${Math.min(F.length,4)}">${F.slice(0,4).map((f,i)=>`<img src="${LOCALPH[f]||f}" alt="" loading="lazy" data-zoom="${key}" data-i="${i}">${i===3&&F.length>4?`<span class="more">+${F.length-4}</span>`:''}`).join('')}</div>`:''}
-       ${r&&(r.track||r.pts.some(p=>p.lat!=null))?`<button class="rthumb" data-rec3d="${r.id}" aria-label="Veure la sortida"><span class="rthumb-i" data-tid="${r.id}">${routeSvg(r,300,130,false)}</span><span class="rplay">${play}Veure la sortida</span></button>`:''}
+       ${(()=>{const hasR=r&&(r.track||r.pts.some(p=>p.lat!=null));
+         if(!hasR)return F.length?`<div class="ph n${Math.min(F.length,4)}">${F.slice(0,4).map((f,i)=>`<img src="${LOCALPH[f]||f}" alt="" loading="lazy" data-zoom="${key}" data-i="${i}">${i===3&&F.length>4?`<span class="more">+${F.length-4}</span>`:''}`).join('')}</div>`:'';
+         const T=r.track?trackStats(r.track):null,nb=r.pts.reduce((a,p)=>a+(p.n||1),0);
+         const sts=T?[[kmTxt(T.km),'distància'],T.ms!=null?[durTxt(T.ms),'temps']:null,T.up!=null?[`+${T.up} m`,'pujada']:null].filter(Boolean):[[String(nb),nb===1?'bolet':'bolets']];
+         return `<div class="media${F.length?' multi':''}"><button class="rthumb" data-rec3d="${r.id}" aria-label="Veure la sortida al mapa"><span class="rthumb-i" data-tid="${r.id}">${routeSvg(r,360,250,false)}</span>
+           <span class="rov">${sts.map(([v,l])=>`<span><b>${v}</b>${l}</span>`).join('')}<i class="go">${play}</i></span></button>
+           ${F.map((f,i)=>`<img class="mph" src="${LOCALPH[f]||f}" alt="" loading="lazy" data-zoom="${key}" data-i="${i}">`).join('')}</div>`})()}
        <p class="kicker">${dd.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})}${r?' · '+hm(r.t0)+'–'+hm(r.t1):''}</p>
        <h3>${esc(s?s.name:'Sortida')}</h3><p class="cnt">${cnt}</p>
-       ${st?`<p class="rr-st">${esc(st)}</p>`:''}${ins?`<p class="rr-in">${esc(ins)}.</p>`:''}
+       ${ins?`<p class="rr-in">${esc(ins)}.</p>`:''}
        ${X.amb&&dEdit!==key?`<p class="amb">Amb ${esc(X.amb)}</p>`:''}
        ${o.notes.length?`<p class="nt">${o.notes.map(esc).join(' ')}</p>`:''}
        ${r&&r.imsg?`<p class="small" style="color:var(--soon)">${esc(r.imsg)}</p>`:''}
@@ -794,7 +869,7 @@ function renderDiari(){
        ${dMsg[key]?`<p class="small">${esc(dMsg[key])}</p>`:''}
        <div class="memact"><button class="linkbtn" data-addph="${key}">+ Fotos</button>${dEdit===key?'':`<button class="linkbtn" data-ambed="${key}">${X.amb?'Amb qui':'+ Amb qui'}</button>`}<span class="spacer"></span>${r?menu:s?`<button class="linkbtn" data-open="${s.id}" data-from="diari">${esc(s.name)} ›</button>`:''}</div></article>`}).join('')||'<p class="sub">Encara no hi ha cap sortida.</p>'}
    <input type="file" id="phin" accept="image/*" multiple hidden>`;
-  $('#s-diari').querySelectorAll('[data-tid]').forEach(el=>{const r=getRec(el.dataset.tid);if(r)satThumb(r,300,130).then(u=>{if(u&&el.isConnected)el.innerHTML=`<img alt="" src="${u}">`})});
+  $('#s-diari').querySelectorAll('[data-tid]').forEach(el=>{const r=getRec(el.dataset.tid);if(r)satThumb(r,360,250).then(u=>{if(u&&el.isConnected)el.innerHTML=`<img alt="" src="${u}">`})});
   const gf=$('#ghf');if(gf)gf.onsubmit=async ev=>{ev.preventDefault();const t=$('#ghi').value.trim();store.set('ghtok',t);$('#ghm').textContent='Comprovant…';
     try{await GH.get('data/llocs.json');ghOpen=false;renderDiari()}catch(e){store.set('ghtok','');$('#ghm').textContent='Aquesta clau no funciona. Mira que tingui Contents: Read and write al repositori boletus.'}};
   bindRecForm();
@@ -1165,9 +1240,11 @@ const demTried=new Set();
 function recCard(){const qui=store.get('qui','');
   return `<div class="card recc">${REC?`<strong style="font-family:var(--f-display);font-size:18px">Sortida en marxa des de les ${hm(REC.t0)}</strong>
      <button class="btn" data-goruta>Obre la pantalla de ruta</button>`
+    :`${qui?`<form class="namef slim" id="recf"><span class="recq"><strong>Sortim a buscar</strong><span>Grava la ruta i apunta cada bolet · ${esc(qui)}</span></span><input id="recwho" type="hidden" value="${esc(qui)}"><button class="btn">Comença</button></form>
+     <details class="small"><summary>Com va</summary><ol class="steps" style="margin-top:6px"><li>Toca <b>Comença</b>. L'app grava la ruta amb el GPS mentre sigui oberta.</li><li>Cada cop que trobis un bolet, toca'l.</li><li>Quan acabis, toca <b>Acaba</b>.</li></ol><button class="linkbtn" type="button" data-quireset>No soc ${esc(qui)}</button></details>`
     :`<strong style="font-family:var(--f-display);font-size:18px">Sortim a buscar</strong>
      <ol class="steps"><li>Posa el teu nom i toca <b>Comença</b>. L'app grava la ruta amb el GPS mentre sigui oberta.</li><li>Cada cop que trobis un bolet, toca'l.</li><li>Quan acabis, toca <b>Acaba</b>.</li></ol>
-     <form class="namef" id="recf"><input id="recwho" value="${esc(qui)}" placeholder="Qui ets?" aria-label="Qui ets" maxlength="30" required><button class="btn">Comença</button></form>
+     <form class="namef" id="recf"><input id="recwho" value="${esc(qui)}" placeholder="Qui ets?" aria-label="Qui ets" maxlength="30" required><button class="btn">Comença</button></form>`}
      <details class="small"><summary>Bateria i pantalla</summary><p style="margin-top:6px">El mòbil no deixa gravar amb la pantalla apagada, així que l'app la manté encesa mentre graves (ho pots canviar a la pantalla de ruta). Gasta bateria: baixa la brillantor i porta bateria externa si surts molta estona. Si bloqueges el mòbil o canvies d'app, la ruta es talla.</p></details>
      <details class="small"><summary>Prefereixo gravar amb Strava</summary><p style="margin-top:6px">Grava la ruta amb Strava, Wikiloc o Komoot, apunta els bolets aquí i, quan acabis, a la sortida toca <b>⋯</b> i <b>Afegeix la ruta (GPX)</b>. Strava només exporta el GPX des de <b>strava.com</b> (activitat, ⋯, Exporta GPX).</p></details>`}</div>
    <input type="file" id="gpxin" hidden>`}
@@ -1856,6 +1933,7 @@ function setSpecies(k){
   if(screen==='fitxa')renderFitxa();else show(screen)}
 $('#spsw').innerHTML=SHOW.map(k=>`<button data-sp="${k}" aria-pressed="${k===SP}">${spIcon(22,k)}${SPECIES[k].nom}</button>`).join('');
 setSpecies(SP);
+{const has=()=>MINE().some(x=>x.state!=='wait'),o0=SP;if(!has()){for(const k of SHOW){if(k===o0)continue;setSpecies(k);if(has())break}if(!has())setSpecies(o0)}}
 document.addEventListener('click',e=>{
   document.querySelectorAll('details.more[open]').forEach(d=>{if(!d.contains(e.target))d.removeAttribute('open')});   // el menú ⋯ es tanca en tocar fora
   const spb=e.target.closest('[data-sp]');if(spb){setSpecies(spb.dataset.sp);return}
@@ -1867,6 +1945,8 @@ document.addEventListener('click',e=>{
   const r3=e.target.closest('[data-rec3d]');if(r3){const r=getRec(r3.dataset.rec3d);if(r)(r.track?open3D(r):recMap(r));return}
   const cp=e.target.closest('[data-capes]');if(cp){const pn=$('#s-mapa .laypanel');pn.hidden=!pn.hidden;cp.setAttribute('aria-expanded',!pn.hidden);return}
   if(e.target.closest('[data-gomap]')){show('mapa');return}
+  if(e.target.closest('[data-godiari]')){show('diari');return}
+  if(e.target.closest('[data-quireset]')){store.set('qui','');renderDiari();return}
   const t=e.target.closest('.tabs button');if(t){show(t.dataset.t);return}
   if(e.target.closest('#howbtn')){show('com');return}
   if(e.target.closest('[data-goplan]')){show('plan');return}
