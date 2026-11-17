@@ -1510,10 +1510,11 @@ function buildMap(){
 // Vistes: "Bolets ara" (és bosc + on n'hi ha + spots), "Terreny" (cares i terra + spots) i "Només foto"
 const VIEWS={ara:{bosc:1,prob:1,spots:1,cares:0,acid:0},terra:{bosc:0,prob:0,spots:1,cares:1,acid:1},foto:{bosc:0,prob:0,spots:0,cares:0,acid:0}};
 function mapView(v){if(!VIEWS[v])v='ara';store.set('vista',v);
-  Object.entries(VIEWS[v]).forEach(([k,on])=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);if(b&&(b.getAttribute('aria-pressed')==='true')!==!!on)b.click()});
+  const ab=$('#s-mapa').querySelector('[data-lay=acid]');if(ab)ab.hidden=SP!=='ceps';   // als rovellons la roca no hi compta
+  Object.entries(Object.assign({},VIEWS[v],SP==='ceps'?{}:{acid:0})).forEach(([k,on])=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);if(b&&(b.getAttribute('aria-pressed')==='true')!==!!on)b.click()});
   $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-checked',b.dataset.view===v));
-  const h=$('.maphint');if(h)h.innerHTML=v==='ara'?`Color només on hi ha ${SP==='ceps'?'roures, alzines o avellaners en terra àcida':'pinar'}. <b style="color:#E2A51E">Groc</b> → <b style="color:#E24028">vermell</b>: del beix (fluixa) al marró fosc (bona), per la pluja i la temperatura. <b style="color:#9678E6">Lila</b>, aviat.`
-    :v==='terra'?'<b style="color:var(--obaga)">Blau</b>, cara nord. <b style="color:var(--solana)">Taronja</b>, cara sud. '+(SP==='ceps'?'Vora lila, terra àcida.':'Blanc, calcària.')
+  const h=$('.maphint');if(h)h.innerHTML=v==='ara'?`Color només on hi ha ${SP==='ceps'?'roures, alzines o avellaners en terra àcida':'pinar'}. Del beix (fluixa) al marró fosc (bona), per ${SP==='ceps'?'la pluja i la temperatura':'la humitat de la terra i la temperatura'}. <b style="color:#9678E6">Lila</b>, aviat.`
+    :v==='terra'?'<b style="color:var(--obaga)">Blau</b>, cara nord. <b style="color:var(--solana)">Taronja</b>, cara sud. '+(SP==='ceps'?'Vora lila, terra àcida: la que volen els ceps.':'Els rovellons volen pinar i cara nord, que guarda la humitat.')
     :'Toca qualsevol punt per saber què hi ha.'}
 function legendSync(){if($('#k-prob-t'))$('#k-prob-t').textContent=(SP==='ceps'?'Bosc de ceps':'Pinar')+': fluixa → bona';if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob');$('#k-bosc').hidden=$('#k-bosc2').hidden=!on('bosc')}
 /* ---------- On hi ha bolets ara, a tot Catalunya ----------
@@ -1591,7 +1592,7 @@ function drawSpots(R){
      .on('click',ev=>{L.DomEvent.stopPropagation(ev);spotCard(z.i,n+1)}).addTo(L1.spots)});
   if(on)L1.spots.addTo(map);if(typeof legendSync==='function'&&$('#k-spots'))legendSync()}
 function spotCard(i,n){const z=REG.zones[i],H=REG.home,km=distKm(H.lat,H.lng,z.lat,z.lng);
-  const why=SP!=='ceps'?[`pinar de ${z.ha} ha`,z.calc>=.5?(SPECIES[SP].soil?SPECIES[SP].soil.calc:'terra calcària'):z.acida>=.5?(SPECIES[SP].soil?SPECIES[SP].soil.acid:'terra àcida'):'terra barrejada',z.ob>=.3?`${Math.round(z.ob*100)}% cara nord, que guarda la humitat`:`poca cara nord: s'asseca abans`,`${z.alt} m d'altura`]:[z.acida>=.9?'terra àcida':'terra àcida en part',z.bo>=.3?`${Math.round(z.bo*100)}% roure, alzina o avellaner`:`bosc de ${z.arbre}`,z.ob>=.3?`${Math.round(z.ob*100)}% cara nord, que guarda la humitat`:`poca cara nord: s'asseca abans`,Math.abs(z.alt-450)<150?`${z.alt} m, semblant al Mas d'Anguera`:`${z.alt} m d'altura`];
+  const why=SP!=='ceps'?[`pinar de ${z.ha} ha`,z.ob>=.3?`${Math.round(z.ob*100)}% cara nord, que guarda la humitat`:`poca cara nord: s'asseca abans`,`${z.alt} m d'altura`]:[z.acida>=.9?'terra àcida':'terra àcida en part',z.bo>=.3?`${Math.round(z.bo*100)}% roure, alzina o avellaner`:`bosc de ${z.arbre}`,z.ob>=.3?`${Math.round(z.ob*100)}% cara nord, que guarda la humitat`:`poca cara nord: s'asseca abans`,Math.abs(z.alt-450)<150?`${z.alt} m, semblant al Mas d'Anguera`:`${z.alt} m d'altura`];
   if(z.pend!=null)why.push(z.emp>=.25?`força costerut (${Math.round(z.emp*100)}% amb més de 25°)`:z.pend<=12?"terreny suau, s'hi camina bé":'pendent normal');
   if(tap)map.removeLayer(tap);tap=L.marker([z.lat,z.lng],{icon:L.divIcon({className:'',html:'<div class="tapmark"></div>',iconSize:[14,14],iconAnchor:[7,7]}),interactive:false}).addTo(map);
   $('#mapcard').innerHTML=`<div class="row"><strong style="font-family:var(--f-display);font-size:20px">Possible spot ${n?'nº '+n:''}</strong><span class="spacer"></span><span class="small">a ${km.toFixed(0)} km de ${esc(H.nom)}</span></div>
@@ -1614,7 +1615,7 @@ async function regInfo(lat,lng){
   const fx=t11x(lng),fy=t11y(lat),x=Math.floor(fx),y=Math.floor(fy),d=await infoTile(x,y);if(!d)return null;
   const k=(Math.floor((fy-y)*256)*256+Math.floor((fx-x)*256))*4;return{sec:Math.round(d[k]/28),rock:Math.round(d[k+1]/80),tree:Math.round(d[k+2]/40)}}
 function tagsHtml(sec,rock){
-  const r=SP!=='ceps'?(rock===2?'<span class="tag2 t-unk">Terra calcària</span>':rock===1?'<span class="tag2 t-unk">Terra àcida</span>':rock===3?'<span class="tag2 t-unk">Terra barrejada</span>':''):rock===1||rock===3?'<span class="tag2 t-acid">Terra àcida ✓</span>':rock===2?'<span class="tag2 t-calc">Terra calcària ✗</span>':'<span class="tag2 t-unk">Roca sense dades</span>';
+  const r=SP!=='ceps'?'':rock===1||rock===3?'<span class="tag2 t-acid">Terra àcida ✓</span>':rock===2?'<span class="tag2 t-calc">Terra calcària ✗</span>':'<span class="tag2 t-unk">Roca sense dades</span>';
   const f=[7,0,1].includes(sec)?'<span class="tag2 t-ob">Cara nord</span>':[3,4,5].includes(sec)?'<span class="tag2 t-so">Cara sud</span>':sec===8?'<span class="tag2 t-pla">Pla</span>':`<span class="tag2 t-pla">Mira a l'${DIRS[sec]}</span>`;
   return `<div class="tags">${r}${f}</div>`}
 const CEP_SVG=`<svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true">
@@ -1727,9 +1728,9 @@ function detailHtml(D){
    <div class="bars">${bar('Cara nord (humida)',D.face.nord,'var(--obaga)')}${bar('Cara sud (seca)',D.face.sud,'var(--solana)')}${bar('Est o oest',D.face.eo,'#D6BA40')}${bar('Pla',D.face.pla,'#969690')}</div>
    <strong>Què hi ha</strong>
    <div class="bars">${covs.map(([n,v])=>bar(n.charAt(0).toUpperCase()+n.slice(1),v,'var(--moss)')).join('')}</div>
-   <strong>Terra</strong>
+   ${SP==='ceps'?`   <strong>Terra</strong>
    <div class="tags">${acid?`<span class="tag2 t-acid">Àcida ${pc(acid)}%</span>`:''}${D.rk[2]?`<span class="tag2 t-calc">Calcària ${pc(D.rk[2])}%</span>`:''}${D.rk[0]&&pc(D.rk[0])>=5?`<span class="tag2 t-unk">Sense dades ${pc(D.rk[0])}%</span>`:''}</div>
-   ${rocks.length?`<p class="small">Roca: ${rocks.map(([n,v])=>`${esc(n)} (${pc(v)}%)`).join(' · ')}</p>`:''}
+   ${rocks.length?`<p class="small">Roca: ${rocks.map(([n,v])=>`${esc(n)} (${pc(v)}%)`).join(' · ')}</p>`:''}`:''}
    ${D.local&&D.emax>0?`<p><strong>Altura</strong> de <span class="mono">${D.emin}</span> a <span class="mono">${D.emax}</span> m (mitjana <span class="mono">${Math.round(D.esum/D.n)}</span> m) · pendent mitjà <span class="mono">${Math.round(D.ssum/D.n)}°</span></p>`:''}`}
 const siteImg={};
 // Els vostres llocs al mapa: un punt petit (verd ara, ambre aviat, gris encara no). El nom només surt de molt a prop.
@@ -1929,7 +1930,7 @@ function setSpecies(k){
   document.querySelectorAll('[data-sp]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sp===k));
   document.documentElement.dataset.species=k;
   if(mapBuilt)drawPins();
-  if(mapBuilt){if(tap){map.removeLayer(tap);tap=null}$('#mapcard').innerHTML='';region().then(drawSpots);drawProb()}
+  if(mapBuilt){if(tap){map.removeLayer(tap);tap=null}$('#mapcard').innerHTML='';region().then(drawSpots);drawProb();if(L1.acid)mapView(store.get('vista','ara'))}
   if(screen==='fitxa')renderFitxa();else show(screen)}
 $('#spsw').innerHTML=SHOW.map(k=>`<button data-sp="${k}" aria-pressed="${k===SP}">${spIcon(22,k)}${SPECIES[k].nom}</button>`).join('');
 setSpecies(SP);
