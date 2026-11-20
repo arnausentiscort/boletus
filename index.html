@@ -1535,7 +1535,8 @@ function buildMap(){
   map.on('contextmenu',e=>{if(e.originalEvent&&e.originalEvent.preventDefault)e.originalEvent.preventDefault();if(navigator.vibrate)navigator.vibrate(15);onMapClick(e)});   // mantenir premut
   const zl=()=>map.getContainer().classList.toggle('zlab',map.getZoom()>=15);map.on('zoomend',zl);zl();map.on('zoomend',probFade);sheetInit();new MutationObserver(paintIcgc).observe($('#mapcard'),{childList:true})}
 // Vistes: "Bolets ara" (és bosc + on n'hi ha + spots), "Terreny" (cares i terra + spots) i "Només foto"
-const VIEWS={ara:{bosc:1,prob:1,spots:1,cares:0,acid:0},terra:{bosc:1,prob:0,spots:1,cares:1,acid:1},foto:{bosc:0,prob:0,spots:0,cares:0,acid:0}};
+const VIEWS={ara:{bosc:1,prob:1,spots:0,cares:0,acid:0},terra:{bosc:1,prob:0,spots:0,cares:1,acid:1},   // els 10 millors, apagats: molesten en moure's (es poden encendre a Capes)
+  foto:{bosc:0,prob:0,spots:0,cares:0,acid:0}};
 function mapView(v){if(!VIEWS[v])v='ara';store.set('vista',v);
   const ab=$('#s-mapa').querySelector('[data-lay=acid]');if(ab)ab.hidden=SP!=='ceps';   // als rovellons la roca no hi compta
   Object.entries(Object.assign({},VIEWS[v],SP==='ceps'?{}:{acid:0})).forEach(([k,on])=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);if(b&&(b.getAttribute('aria-pressed')==='true')!==!!on)b.click()});
