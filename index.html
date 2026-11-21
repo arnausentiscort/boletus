@@ -826,7 +826,7 @@ function ghCard(){return `<div class="card how" id="ghcard"><h3>Clau per pujar f
 // Portada de la sortida: foto de satèl·lit de veritat amb la ruta i els bolets dibuixats (es fa un cop i es desa)
 const THB={},dot=(g,x,y,r,c)=>{g.beginPath();g.arc(x,y,r,0,7);g.fillStyle=c;g.fill();g.lineWidth=2.5;g.strokeStyle='#fff';g.stroke()};
 async function satThumb(r,W,H){
-  const k='thd-'+r.id+'-'+(r.track?r.track.length:0)+'-'+r.pts.length;if(THB[k])return THB[k];const sv=store.get(k,null);if(sv)return THB[k]=sv;
+  const k='thf-'+r.id+'-'+(r.track?r.track.length:0)+'-'+r.pts.length;if(THB[k])return THB[k];const sv=store.get(k,null);if(sv)return THB[k]=sv;
   const pts=(r.track||[]).map(p=>[p[0],p[1]]).concat(r.pts.filter(p=>p.lat!=null).map(p=>[p.lat,p.lng]),r.start?[[r.start.lat,r.start.lng]]:[]);if(!pts.length)return null;
   const dpr=2,CW=W*dpr,CH=H*dpr,px=(la,lo,z)=>{const n=256*2**z,q=Math.sin(la*Math.PI/180);return[(lo+180)/360*n,(.5-Math.log((1+q)/(1-q))/(4*Math.PI))*n]};
   // el zoom més gran on hi cap tot, deixant lloc a baix per a les xifres
@@ -841,14 +841,23 @@ async function satThumb(r,W,H){
   const L=(la,lo)=>{const q=px(la,lo,z);return[q[0]-ox,q[1]-oy]};g.lineJoin=g.lineCap='round';
   if(r.track){const segs=trkSegs(r.track),line=(col,w,sh)=>{g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=sh;g.strokeStyle=col;g.lineWidth=w;segs.forEach(sg=>{g.beginPath();sg.forEach((p,i)=>{const[x,y]=L(p[0],p[1]);i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke()});g.shadowBlur=0};
     line('#fff',11,10);line('#2F7BFF',6,0)}
-  const ring=(x,y,rad,col)=>{g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=8;g.beginPath();g.arc(x,y,rad,0,7);g.fillStyle='#fff';g.fill();g.shadowBlur=0;g.beginPath();g.arc(x,y,rad-4.5,0,7);g.fillStyle=col;g.fill()};
-  const s0=r.start||(r.track&&r.track.length?{lat:r.track[0][0],lng:r.track[0][1]}:null);if(s0){const[x,y]=L(s0.lat,s0.lng);ring(x,y,13,'#2E8B4B')}
-  // els bolets que queden enganxats es dibuixen com un de sol amb el número
-  const cl=[];r.pts.forEach(p=>{if(p.lat==null)return;const[x,y]=L(p.lat,p.lng),n=p.n||1;const o=cl.find(q=>Math.hypot(q.x-x,q.y-y)<24);if(o){o.x=(o.x*o.n+x*n)/(o.n+n);o.y=(o.y*o.n+y*n)/(o.n+n);o.n+=n}else cl.push({x,y,n,sp:p.sp})});
-  cl.sort((a,b)=>a.n-b.n).forEach(q=>{const rad=q.n>1?Math.min(27,18+q.n*.8):13;ring(q.x,q.y,rad,bCol(q.sp));
-    if(q.n>1){g.fillStyle='#fff';g.font=`800 ${q.n>9?19:21}px system-ui,-apple-system,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(q.n,q.x,q.y+1)}});
+  // bolets: punts petits (els que s'enganxen se separen una mica) i un halo als racons bons; cap número. Escrit amb Gemini (21-11-2026)
+  // ajuda per dibuixar punts amb vora i ombra, i colors amb transparència
+  const dot=(x,y,rad,col,brd='#fff',bw=2)=>{g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=bw>3?8:5;g.beginPath();g.arc(x,y,rad,0,Math.PI*2);g.fillStyle=brd;g.fill();g.shadowBlur=0;g.beginPath();g.arc(x,y,rad-bw,0,Math.PI*2);g.fillStyle=col;g.fill()};
+  const rgba=(c,a)=>{let h=c.replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];const n=parseInt(h,16);return isNaN(n)?c:`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`};
+  // un punt per bolet, en píxels, i grups de racons bons (<40 px)
+  const bpts=[];(r.pts||[]).forEach(p=>{if(p.lat==null||p.lng==null)return;const[x,y]=L(p.lat,p.lng),n=p.n||1;for(let i=0;i<n;i++)bpts.push({x,y,sp:p.sp})});
+  const hc=[];bpts.forEach(p=>{const c=hc.find(q=>Math.hypot(q.x-p.x,q.y-p.y)<40);if(c){const m=c.pts.length;c.x=(c.x*m+p.x)/(m+1);c.y=(c.y*m+p.y)/(m+1);c.pts.push(p)}else hc.push({x:p.x,y:p.y,pts:[p]})});
+  // 1. halos translúcids als racons de 3 o més bolets
+  hc.forEach(c=>{const m=c.pts.length;if(m<3)return;const ext=Math.max(...c.pts.map(p=>Math.hypot(p.x-c.x,p.y-c.y)));const hr=Math.min(70,Math.max(30,ext+24+m*1.8)),a=Math.min(.66,.38+m*.025);const cnt={};let sp=c.pts[0].sp,mx=0;c.pts.forEach(p=>{const k=p.sp||'';cnt[k]=(cnt[k]||0)+1;if(cnt[k]>mx){mx=cnt[k];sp=p.sp}});const col=bCol(sp),gr=g.createRadialGradient(c.x,c.y,0,c.x,c.y,hr);gr.addColorStop(0,rgba(col,a));gr.addColorStop(.55,rgba(col,a*.4));gr.addColorStop(1,rgba(col,0));g.fillStyle=gr;g.beginPath();g.arc(c.x,c.y,hr,0,Math.PI*2);g.fill()});
+  // 2. inici i final de la ruta
+  const s0=r.start||(r.track&&r.track.length?{lat:r.track[0][0],lng:r.track[0][1]}:null);if(s0){const[x,y]=L(s0.lat,s0.lng);dot(x,y,13,'#2E8B4B','#fff',4.5)}
+  if(r.track&&r.track.length>2){const e0=r.track[r.track.length-1];if(e0&&e0[0]!=null){const[x,y]=L(e0[0],e0[1]),q=s0?L(s0.lat,s0.lng):null;if(!q||Math.hypot(x-q[0],y-q[1])>34)dot(x,y,8.5,'#fff','#1f2937',2.5)}}
+  // 3. punts dels bolets al damunt, separant els que s'encavalquen en anell o espiral
+  const oc=[];bpts.forEach(p=>{const c=oc.find(q=>Math.hypot(q.x-p.x,q.y-p.y)<12);if(c){const m=c.pts.length;c.x=(c.x*m+p.x)/(m+1);c.y=(c.y*m+p.y)/(m+1);c.pts.push(p)}else oc.push({x:p.x,y:p.y,pts:[p]})});
+  oc.forEach(c=>{const k=c.pts.length;for(let i=k-1;i>=0;i--){let dx=0,dy=0;if(k>1){const rad=k<=5?Math.min(11,4+k*1.4):14*Math.sqrt(i/(k-1)),ang=k<=5?i*Math.PI*2/k-Math.PI/2:i*2.399963;dx=Math.cos(ang)*rad;dy=Math.sin(ang)*rad}dot(c.x+dx,c.y+dy,9,bCol(c.pts[i].sp),'#fff',2.4)}});
   const u=c.toDataURL('image/jpeg',.82);THB[k]=u;
-  try{Object.keys(localStorage).forEach(x=>{if(/^rc3-th[bc]-/.test(x))localStorage.removeItem(x)})}catch(e){}
+  try{Object.keys(localStorage).forEach(x=>{if(/^rc3-th[bcde]-/.test(x))localStorage.removeItem(x)})}catch(e){}
   store.set(k,u);return u}
 const ptsCnt=r=>{const c={};r.pts.forEach(p=>{const k=p.nom||p.sp;(c[k]=c[k]||{p,v:0}).v+=(p.n||1)});return Object.values(c).sort((a,b)=>b.v-a.v)};
 function renderDiari(){
@@ -1630,7 +1639,7 @@ async function drawProb(){
   g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
   g.drawImage(oc,P,P,N,N,0,0,256,256);
 
-  // M├áscara de bosc suavitzada (evita esglaons en ampliar > z12)
+  // Màscara de bosc suavitzada (evita esglaons en ampliar més enllà del zoom 12)
   const mz=Math.min(z,12),k=2**(z-mz),mx=Math.floor(c.x/k),my=Math.floor(c.y/k),im=new Image();
   im.onload=()=>{
     g.globalCompositeOperation='destination-in';
