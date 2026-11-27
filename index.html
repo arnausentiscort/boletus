@@ -713,6 +713,9 @@ const cepTxt=n=>{const[u1,u2]=SPECIES[SP].u;return n==null?(SPECIES[SP].fem?'alg
 // Una frase gran (què passa als vostres llocs) i a sota la llista: cada lloc amb quan toca i tres setmanes en barres
 const wdl=n=>D(n).toLocaleDateString('ca-ES',{weekday:'long',timeZone:'UTC'});
 const cap1=t=>t.charAt(0).toUpperCase()+t.slice(1);
+// la nota d'un lloc (o d'una casella del mapa) un dia concret, com al calendari; null si és fluixa de tot (<35)
+const dayV=(x,d)=>{if(SP==='rov'&&x.sc){const q=x.sc(d);return q&&q.v>=35?q.v:null}if(!x.bolet(d))return null;const w=x.wins.find(w=>d>=w.a&&d<=w.b);return w&&w.f?w.f.v:null};
+const nNom=v=>SP==='rov'?(v>=75?'bona':v>=55?'normal':'fluixa'):(v>=60?'bona':v>=35?'normal':'fluixa');
 const dayTxt=n=>n===TODAY?'avui':n===TODAY+1?'demà':`${wdn(n)} ${D(n).getUTCDate()}`;
 const mesOk=k=>((SPECIES[k].forca.mes||{})[D(TODAY).getUTCMonth()+1]||0)>0;
 // quan toca (a la dreta de cada fila) i per què (a sota)
@@ -744,8 +747,6 @@ function renderLlocs(){
      <button class="btn" data-gomap>Obrir el mapa</button>`;return}
   const L0=leadOf(list),sun=L0.site?sunTimes(L0.day,L0.site.lat,L0.site.lng):null;
   // nota d'un lloc un dia concret (com al calendari), per dir què hi haurà dissabte i diumenge
-  const dayV=(x,d)=>{if(SP==='rov'&&x.sc){const q=x.sc(d);return q&&q.v>=35?q.v:null}if(!x.bolet(d))return null;const w=x.wins.find(w=>d>=w.a&&d<=w.b);return w&&w.f?w.f.v:null};
-  const nNom=v=>SP==='rov'?(v>=75?'bona':v>=55?'normal':'fluixa'):(v>=60?'bona':v>=35?'normal':'fluixa');
   // la nota gran és la d'avui (no la del millor dia), perquè quadri amb les rodones de sota
   {const b=L0.site,tv=b&&b.state==='go'?dayV(b,TODAY):null;if(tv!=null)L0.s=`Avui, nota ${nNom(tv)} (${tv})${b.win.peak>TODAY?` · millor dia, ${wdl(b.win.peak)}`:''}`}
   const wk=[];for(let d=TODAY;wk.length<2&&d<=TODAY+13;d++){const w=D(d).getUTCDay();if(w===6||w===0)wk.push(d)}
@@ -1483,7 +1484,7 @@ function buildMap(){
   $('#s-mapa').innerHTML=`
    <div class="mapbox"><div id="map" aria-label="Mapa de la zona"></div>
      <button class="lgbtn" data-lg aria-expanded="false">Llegenda</button>
-     <div class="mapkey" hidden><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#EADFD0,#C79A6A,#8A5530);border-radius:4px"></i><b id="k-prob-t" style="font-weight:inherit">Tanda: fluixa → bona</b></span><span id="k-prob2"><i class="sw" style="background:#9678E6;border-radius:50%"></i>Aviat</span><span class="k-tip">Mantén premut un punt per saber què hi ha</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
+     <div class="mapkey" hidden><span id="k-cares"><i class="sw" style="background:var(--obaga)"></i>Cara nord</span><span id="k-cares2"><i class="sw" style="background:var(--solana)"></i>Cara sud</span><span id="k-acid"><i class="sw" style="background:transparent;outline:2.5px solid #8A3FC0;outline-offset:-2px"></i><b id="k-acid-t" style="font-weight:inherit">Terra àcida</b></span><span id="k-calc"><i class="sw" style="background:#EEEAE2"></i><b id="k-calc-t" style="font-weight:inherit">Calcària (no)</b></span><span id="k-bosc"><i class="sw" style="background:rgba(22,26,20,.6)"></i>No és bosc</span><span id="k-bosc2"><i class="sw" style="background:transparent;outline:2.5px solid #28C85A;outline-offset:-2px"></i>Vora del bosc</span><span id="k-prob"><i class="sw" style="background:linear-gradient(90deg,#EADFD0,#C79A6A,#8A5530,#3E2410);border-radius:4px"></i><b id="k-prob-t" style="font-weight:inherit">Tanda: fluixa → bona</b></span><span class="k-tip">Mantén premut un punt per saber què hi ha</span><span id="k-spots"><i class="sw" style="background:#C9A21E;border-radius:50%;outline:2px solid #fff"></i>10 millors del que veus</span></div>
      <div class="mapctl">
        <button class="rbtn" data-onsoc aria-label="On sóc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
        <button class="rbtn" data-capes aria-expanded="false" aria-label="Capes i zones"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
@@ -1550,10 +1551,10 @@ function mapView(v){if(!VIEWS[v])v='ara';store.set('vista',v);
   const ab=$('#s-mapa').querySelector('[data-lay=acid]');if(ab)ab.hidden=SP!=='ceps';   // als rovellons la roca no hi compta
   Object.entries(Object.assign({},VIEWS[v],SP==='ceps'?{}:{acid:0})).forEach(([k,on])=>{const b=$('#s-mapa').querySelector(`[data-lay=${k}]`);if(b&&(b.getAttribute('aria-pressed')==='true')!==!!on)b.click()});
   $('#s-mapa').querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-checked',b.dataset.view===v));
-  const h=$('.maphint');if(h)h.innerHTML=v==='ara'?`Color només on hi ha ${SP==='ceps'?'roures, alzines o avellaners en terra àcida':'pinar'}. Del beix (fluixa) al marró fosc (bona), per ${SP==='ceps'?'la pluja i la temperatura':'la humitat de la terra i la temperatura'}. <b style="color:#9678E6">Lila</b>, aviat.`
+  const h=$('.maphint');if(h)h.innerHTML=v==='ara'?`Color només on hi ha ${SP==='ceps'?'roures, alzines o avellaners en terra àcida':'pinar'}: del beix (fluixa) al marró fosc (bona), segons la nota d'avui.`
     :v==='terra'?'<b style="color:var(--obaga)">Blau</b>, cara nord. <b style="color:var(--solana)">Taronja</b>, cara sud. '+(SP==='ceps'?'Vora lila, terra àcida: la que volen els ceps.':'Els rovellons volen pinar i cara nord, que guarda la humitat.')
     :'Toca qualsevol punt per saber què hi ha.'}
-function legendSync(){if($('#k-prob-t'))$('#k-prob-t').textContent=(SP==='ceps'?'Bosc de ceps':'Pinar')+': fluixa → bona';if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=$('#k-prob2').hidden=!on('prob');$('#k-bosc').hidden=$('#k-bosc2').hidden=!on('bosc')}
+function legendSync(){if($('#k-prob-t'))$('#k-prob-t').textContent="Nota d'avui: fluixa → bona";if($('#k-acid-t')){const lg=SPECIES[SP].leg||['Terra àcida','Calcària (no)'];$('#k-acid-t').textContent=lg[0];$('#k-calc-t').textContent=lg[1]}const on=k=>L1[k]&&L1[k]._map;$('#k-cares').hidden=$('#k-cares2').hidden=!on('cares');$('#k-acid').hidden=$('#k-calc').hidden=!on('acid');$('#k-spots').hidden=!on('spots');$('#k-prob').hidden=!on('prob');$('#k-bosc').hidden=$('#k-bosc2').hidden=!on('bosc')}
 /* ---------- On hi ha bolets ara, a tot Catalunya ----------
    data/grid_wx.json (es fa cada matí) té la pluja i la temperatura d'unes caselles d'11 km on hi ha boscos.
    A cada casella s'hi passa la mateixa regla i la mateixa força que als vostres llocs. */
@@ -1566,10 +1567,10 @@ async function gridSites(){
 async function drawProb(){
   if(!L1.prob)return;const G=await gridSites();L1.prob.clearLayers();
   const want=SP==='ceps'?'ceps':'pin',msk=SP==='ceps'?'ceps':'rov';GEV=G.filter(g=>g.sp.includes(want));GEV.forEach(evalAt);
-  const val=s=>s.state==='soon'?-1:s.win&&s.win.f?s.win.f.v:40;
-  const live=GEV.filter(s=>s.state!=='wait').sort((a,b)=>val(a)-val(b));if(!live.length)return;
+  // El color és la nota d'AVUI de cada casella (la mateixa que surt a la llista de llocs i al calendari), no la del millor dia de la tanda.
+  // Entren totes les caselles (0 si avui no hi ha res) perquè el color s'esvaeixi cap on no n'hi ha.
+  GEV.forEach(s=>{s._tv=dayV(s,TODAY)||0});const live=GEV;if(!live.some(s=>s._tv>0))return;
   const hiT=SP==='ceps'?60:75,midT=SP==='ceps'?35:55;  // com al calendari: groc fluixa, taronja normal, vermell bona
-  const colOf=s=>{const v=val(s);return s.state==='soon'?'rgba(150,120,230,.75)':v>=hiT?'rgba(166,95,40,.96)':v>=midT?'rgba(214,160,100,.9)':'rgba(240,226,200,.9)'};
   if(!map.getPane('probP')){const pp=map.createPane('probP');pp.style.zIndex=282;pp.style.pointerEvents='none'}
   // Cada rajola: el color de les caselles del voltant, retallat amb la màscara del bosc que toca (pinar o bosc de ceps)
   // Cada rajola: un valor continu per a cada punt (pesos gaussians de les caselles a menys de 15 km, en km: no depèn del zoom),
@@ -1583,7 +1584,7 @@ async function drawProb(){
   const cand=[];
   for(const s of live){
     if(s.lat>=se.lat-dLat&&s.lat<=nw.lat+dLat&&s.lng>=nw.lng-dLng&&s.lng<=se.lng+dLng)
-      cand.push({lat:s.lat,lng:s.lng,v:val(s)});
+      cand.push({lat:s.lat,lng:s.lng,v:s._tv});
   }
   if(!cand.length){setTimeout(()=>done(null,t));return t}
 
@@ -1598,36 +1599,31 @@ async function drawProb(){
 
   const oc=document.createElement('canvas');oc.width=oc.height=S;
   const og=oc.getContext('2d'),img=og.createImageData(S,S),px=img.data;
-  const C0=[240,226,200],C1=[214,160,100],C2=[166,95,40],CS=[150,120,230];
+  const C0=[240,226,200],C1=[199,154,106],C2=[138,85,48],C3=[62,36,16];   // beix, normal, bona, millor (com al calendari)
   let any=false;
 
   for(let iy=0;iy<S;iy++){
     const lat=lats[iy];
     for(let ix=0;ix<S;ix++){
       const lng=lngs[ix];
-      let wSum=0,wSoon=0,wVal=0,wNorm=0;
+      let wSum=0,wVal=0;
       for(let k=0;k<cand.length;k++){
         const s=cand[k];
         if(Math.abs(lat-s.lat)>.14||Math.abs(lng-s.lng)>.2)continue;
         const d=distKm(lat,lng,s.lat,s.lng);
         if(d>15)continue;
         const w=Math.exp(-d*d/50); // sigma = 5 km -> 2*sigma^2 = 50
-        wSum+=w;
-        if(s.v<0)wSoon+=w;else{wVal+=w*s.v;wNorm+=w}
+        wSum+=w;wVal+=w*s.v;
       }
-      const a=Math.min(1,wSum)*255+.5|0;
+      if(wSum<.01)continue;
+      // nota mitjana d'aquest punt (0-100) -> posició en l'escala de colors; com més nota, més color i més intens
+      const v=wVal/wSum,u=v<midT?.4*v/midT:v<hiT?.4+.35*(v-midT)/(hiT-midT):.75+.25*Math.min(1,(v-hiT)/(100-hiT));
+      const a=Math.min(1,wSum)*Math.min(1,v/12)*(.55+.45*u)*255+.5|0;
       if(!a)continue;
       any=true;
-      let r,gr,b;
-      if(wSoon>wSum*.5){[r,gr,b]=CS}
-      else{
-        const v=wVal/wNorm;
-        let cA,cB,u;
-        if(v>=hiT){cA=cB=C2;u=0}
-        else if(v>=midT){cA=C1;cB=C2;u=(v-midT)/(hiT-midT)}
-        else{cA=C0;cB=C1;u=Math.max(0,v)/midT}
-        r=cA[0]+(cB[0]-cA[0])*u;gr=cA[1]+(cB[1]-cA[1])*u;b=cA[2]+(cB[2]-cA[2])*u;
-      }
+      const st=[[0,C0],[.4,C1],[.75,C2],[1,C3]];let q=1;while(q<3&&u>st[q][0])q++;
+      const[u0,cA]=st[q-1],[u1,cB]=st[q],f=Math.max(0,Math.min(1,(u-u0)/(u1-u0)));
+      const r=cA[0]+(cB[0]-cA[0])*f,gr=cA[1]+(cB[1]-cA[1])*f,b=cA[2]+(cB[2]-cA[2])*f;
       const p=(iy*S+ix)*4;
       px[p]=r+.5|0;px[p+1]=gr+.5|0;px[p+2]=b+.5|0;px[p+3]=a;
     }
@@ -1661,7 +1657,7 @@ function probFade(){const p=map.getPane('probP');if(p)p.style.opacity=.8;
 function probHere(la,lo){
   if(!GEV.length)return'';let best=null,bd=1e9;GEV.forEach(s=>{const d=distKm(la,lo,s.lat,s.lng);if(d<bd){bd=d;best=s}});
   if(!best||bd>12)return'';const s=best,N=SPECIES[SP].nom.toLowerCase();
-  const t=s.state==='go'?`<b style="color:var(--go)">Per la pluja i la temperatura, ara toca ${N} per aquí</b>${s.win.f?' · tanda '+s.win.f.nom:''}`
+  const t=s._tv>0?`<b style="color:var(--go)">Avui, nota ${nNom(s._tv)} (${s._tv}) per aquí</b>`
     :s.state==='soon'?`<b style="color:var(--soon)">Aviat:</b> millor dia ${wdn(s.win.peak)} ${fmt(s.win.peak)}`
     :s.cold?`Va ploure, però després ha fet ${s.cold.hot?'massa calor':'fred'}: no surten`:'Per aquí encara falta aigua';
   return `<p class="small" style="margin:2px 0 6px">${t}</p>`}
